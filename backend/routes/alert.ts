@@ -5,6 +5,6 @@ import { requireAuth } from '@/middleware/auth.js';
 
 const router = Router();
 
-router.get("/", requireAuth, handleGetUserAlerts);
+router.get('/', requireAuth, handleGetUserAlerts);
 
 export default router;

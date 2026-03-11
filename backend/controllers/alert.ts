@@ -7,7 +7,7 @@ import { getTimestamp } from '@/utils/time.js';
 
 export async function handleGetUserAlerts(
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = (req as AuthenticatedRequest).user.user_id;
 
@@ -15,9 +15,9 @@ export async function handleGetUserAlerts(
   if (err) {
     console.error(
       `[${getTimestamp()}] Failed to fetch alerts for user ${userId}:`,
-      err,
+      err
     );
-    res.status(500).json({ error: "Failed to fetch alerts." });
+    res.status(500).json({ error: 'Failed to fetch alerts.' });
     return;
   }
 

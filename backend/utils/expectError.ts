@@ -1,6 +1,6 @@
 export async function expectError<T, E extends new (message?: string) => Error>(
   promise: Promise<T>,
-  errorsToCatch?: E[],
+  errorsToCatch?: E[]
 ): Promise<[undefined, T] | [InstanceType<E>]> {
   return promise
     .then((data) => {

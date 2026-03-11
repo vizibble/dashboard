@@ -1,27 +1,19 @@
-import { createContext, type ReactNode, useContext, useState } from 'react';
+import {
+  createContext, type ReactNode, useContext,
+  useState,
+} from 'react';
 
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Search,
+  ArrowDown, ArrowUp, ArrowUpDown,
+  ChevronLeft, ChevronRight, ChevronsLeft,
+  ChevronsRight, Search,
 } from 'lucide-react';
 
 import { Loader } from '@/components/loader';
 import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type SortingState,
-  type Table as TableInstance,
-  useReactTable,
+  type ColumnDef, flexRender, getCoreRowModel,
+  getFilteredRowModel, getPaginationRowModel, getSortedRowModel,
+  type SortingState, type Table as TableInstance, useReactTable,
 } from '@tanstack/react-table';
 
 // Context
@@ -63,6 +55,7 @@ const Root = <T extends object>({
   const [globalFilter, setGlobalFilter] = useState('');
   const [showFilter, setShowFilter] = useState(false);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
@@ -159,8 +152,8 @@ const Content = () => {
   const { table, loading } = useDataTableContext();
 
   return (
-    <div className="overflow-x-auto flex-grow scrollbar-thin scrollbar-thumb-slate-200">
-      <table className="w-full text-left border-collapse min-w-[600px] md:min-w-0">
+    <div className="overflow-x-auto grow scrollbar-thin scrollbar-thumb-slate-200">
+      <table className="w-full text-left border-collapse min-w-150 md:min-w-0">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr

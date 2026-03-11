@@ -9,23 +9,23 @@ export interface AuthenticatedRequest extends Request {
 export function requireAuth(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    res.status(401).json({ error: "Access denied" });
+    res.status(401).json({ error: 'Access denied' });
     return;
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.split(' ')[1];
   if (!token) {
-    res.status(401).json({ error: "Access denied" });
+    res.status(401).json({ error: 'Access denied' });
     return;
   }
 
   const decoded = verifyAccessToken(token);
   if (!decoded) {
-    res.status(401).json({ error: "Invalid token" });
+    res.status(401).json({ error: 'Invalid token' });
     return;
   }
 

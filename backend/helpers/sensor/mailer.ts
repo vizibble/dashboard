@@ -12,11 +12,11 @@ interface AlertMailOptions {
 }
 
 const CONDITION_TEXT: Record<string, string> = {
-  gt: "greater than",
-  gte: "greater than or equal to",
-  lt: "less than",
-  lte: "less than or equal to",
-  eq: "equal to",
+  gt: 'greater than',
+  gte: 'greater than or equal to',
+  lt: 'less than',
+  lte: 'less than or equal to',
+  eq: 'equal to',
 };
 
 export async function sendAlertEmail(opts: AlertMailOptions): Promise<void> {
@@ -28,15 +28,15 @@ export async function sendAlertEmail(opts: AlertMailOptions): Promise<void> {
   const html = `
     <div style="font-family: Inter, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #f8fafc; border-radius: 12px; padding: 32px; color: #0f172a;">
       <h2 style="margin: 0 0 8px 0; font-size: 20px; color: #dc2626;">⚠️ Sensor Alert Triggered</h2>
-      <p style="color: #64748b; margin: 0 0 24px 0; font-size: 14px;">${opts.firedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
+      <p style="color: #64748b; margin: 0 0 24px 0; font-size: 14px;">${opts.firedAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
 
       <table style="width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.07);">
         <tbody>
-          ${row("Device", opts.deviceName)}
-          ${row("Parameter", opts.parameter)}
-          ${row("Rule", `${opts.parameter} ${conditionText} ${opts.threshold}`)}
-          ${row("Measured Value", `<strong>${opts.actualValue}</strong>`)}
-          ${opts.label ? row("Label", opts.label) : ""}
+          ${row('Device', opts.deviceName)}
+          ${row('Parameter', opts.parameter)}
+          ${row('Rule', `${opts.parameter} ${conditionText} ${opts.threshold}`)}
+          ${row('Measured Value', `<strong>${opts.actualValue}</strong>`)}
+          ${opts.label ? row('Label', opts.label) : ''}
         </tbody>
       </table>
 
@@ -47,7 +47,7 @@ export async function sendAlertEmail(opts: AlertMailOptions): Promise<void> {
   `;
 
   await transporter.sendMail({
-    from: `"Toppan Alerts" <${process.env["SMTP_USER"]}>`,
+    from: `"Toppan Alerts" <${process.env['SMTP_USER']}>`,
     to: opts.to,
     subject,
     html,

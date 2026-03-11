@@ -3,17 +3,20 @@ import type { Request, Response } from 'express';
 import type { AuthenticatedRequest } from '@/middleware/auth.js';
 import { hasDevicePermission } from '@/models/auth.js';
 import {
-  type Condition, deleteAlertRule, getAlertRulesByDevice,
-  hasRulePermission, insertAlertRule,
+  type Condition,
+  deleteAlertRule,
+  getAlertRulesByDevice,
+  hasRulePermission,
+  insertAlertRule,
 } from '@/models/rule.js';
 import { expectError } from '@/utils/expectError.js';
 import { getTimestamp } from '@/utils/time.js';
 
-const VALID_CONDITIONS: Condition[] = ["gt", "lt", "gte", "lte", "eq"];
+const VALID_CONDITIONS: Condition[] = ['gt', 'lt', 'gte', 'lte', 'eq'];
 
 export async function handleCreateRule(
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = (req as AuthenticatedRequest).user.user_id;
   const { device_id, parameter, condition, threshold, label } = req.body as {
@@ -27,28 +30,28 @@ export async function handleCreateRule(
   if (!device_id || !parameter || !condition || threshold === undefined) {
     res.status(400).json({
       error:
-        "Missing required fields: device_id, parameter, condition, threshold.",
+        'Missing required fields: device_id, parameter, condition, threshold.',
     });
     return;
   }
 
   if (!VALID_CONDITIONS.includes(condition as Condition)) {
-    res.status(400).json({ error: "Invalid condition." });
+    res.status(400).json({ error: 'Invalid condition.' });
     return;
   }
 
   const thresholdNum = Number(threshold);
   if (isNaN(thresholdNum)) {
-    res.status(400).json({ error: "Threshold must be a number." });
+    res.status(400).json({ error: 'Threshold must be a number.' });
     return;
   }
 
   // Verify the user owns this device
   const [permErr, hasPerm] = await expectError(
-    hasDevicePermission(userId, device_id),
+    hasDevicePermission(userId, device_id)
   );
   if (permErr || !hasPerm) {
-    res.status(403).json({ error: "Device not found." });
+    res.status(403).json({ error: 'Device not found.' });
     return;
   }
 
@@ -58,15 +61,15 @@ export async function handleCreateRule(
       parameter,
       condition as Condition,
       thresholdNum,
-      label,
-    ),
+      label
+    )
   );
   if (err) {
     console.error(
       `[${getTimestamp()}] Failed to create alert rule for device ${device_id}:`,
-      err,
+      err
     );
-    res.status(500).json({ error: "Failed to create alert rule." });
+    res.status(500).json({ error: 'Failed to create alert rule.' });
     return;
   }
 
@@ -75,16 +78,16 @@ export async function handleCreateRule(
 
 export async function handleGetDeviceRules(
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = (req as AuthenticatedRequest).user.user_id;
-  const deviceId = req.query["deviceId"] as string;
+  const deviceId = req.query['deviceId'] as string;
 
   const [permErr, hasPerm] = await expectError(
-    hasDevicePermission(userId, deviceId),
+    hasDevicePermission(userId, deviceId)
   );
   if (permErr || !hasPerm) {
-    res.status(403).json({ error: "Device not found." });
+    res.status(403).json({ error: 'Device not found.' });
     return;
   }
 
@@ -92,9 +95,9 @@ export async function handleGetDeviceRules(
   if (err) {
     console.error(
       `[${getTimestamp()}] Failed to fetch alert rules for device ${deviceId}:`,
-      err,
+      err
     );
-    res.status(500).json({ error: "Failed to fetch alert rules." });
+    res.status(500).json({ error: 'Failed to fetch alert rules.' });
     return;
   }
 
@@ -103,16 +106,16 @@ export async function handleGetDeviceRules(
 
 export async function handleDeleteRule(
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> {
   const userId = (req as AuthenticatedRequest).user.user_id;
   const ruleId = req.body.ruleId as string;
 
   const [permErr, hasPerm] = await expectError(
-    hasRulePermission(userId, ruleId),
+    hasRulePermission(userId, ruleId)
   );
   if (permErr || !hasPerm) {
-    res.status(403).json({ error: "Alert rule not found." });
+    res.status(403).json({ error: 'Alert rule not found.' });
     return;
   }
 
@@ -120,9 +123,9 @@ export async function handleDeleteRule(
   if (err || !deleted) {
     console.error(
       `[${getTimestamp()}] Failed to delete alert rule ${ruleId}:`,
-      err,
+      err
     );
-    res.status(500).json({ error: "Failed to delete alert rule." });
+    res.status(500).json({ error: 'Failed to delete alert rule.' });
     return;
   }
 

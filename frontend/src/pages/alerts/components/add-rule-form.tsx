@@ -3,9 +3,7 @@ import { useForm } from 'react-hook-form';
 
 import { useCreateAlertRule } from '@/pages/alerts/hooks/device-alert-rules';
 import type {
-  AddRuleFormData,
-  AddRuleFormProps,
-  Condition,
+  AddRuleFormData, AddRuleFormProps, Condition,
 } from '@/pages/alerts/types/types';
 import { submitRuleForm } from '@/pages/alerts/utils/submit-form';
 
@@ -66,7 +64,7 @@ export const AddRuleForm = ({
           {loadingParams ? (
             <select
               disabled
-              className="bg-slate-100 border border-slate-200 text-slate-400 text-sm rounded-lg block w-full py-2.5 pl-2.5 pr-8 bg-[position:right_0.75rem_center] cursor-not-allowed"
+              className="bg-slate-100 border border-slate-200 text-slate-400 text-sm rounded-lg block w-full py-2.5 pl-2.5 pr-8 bg-position-[right_0.75rem_center] cursor-not-allowed"
             >
               <option>Loading…</option>
             </select>
@@ -74,7 +72,7 @@ export const AddRuleForm = ({
             <div className="relative">
               <select
                 {...register('parameter', { required: 'Required' })}
-                className={`bg-white border ${errors.parameter ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-[position:right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
+                className={`bg-white border ${errors.parameter ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-position-[right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
               >
                 <option value="" disabled>
                   Select parameter
@@ -90,13 +88,13 @@ export const AddRuleForm = ({
         </div>
 
         {/* Condition */}
-        <div className="flex flex-col gap-1.5 w-full sm:flex-none sm:w-[120px]">
+        <div className="flex flex-col gap-1.5 w-full sm:flex-none sm:w-30">
           <label className="text-xs font-medium text-slate-500">
             Condition
           </label>
           <select
             {...register('condition', { required: 'Required' })}
-            className={`bg-white border ${errors.condition ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-[position:right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
+            className={`bg-white border ${errors.condition ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-position-[right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
           >
             {CONDITION_OPTIONS.map(({ value, label }) => (
               <option key={value} value={value}>
@@ -107,7 +105,7 @@ export const AddRuleForm = ({
         </div>
 
         {/* Threshold */}
-        <div className="flex flex-col gap-1.5 w-full sm:flex-[0.5] md:w-[140px]">
+        <div className="flex flex-col gap-1.5 w-full sm:flex-[0.5] md:w-35">
           <label className="text-xs font-medium text-slate-500">
             Threshold
           </label>

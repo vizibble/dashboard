@@ -10,25 +10,25 @@ import { getTimestamp } from '@/utils/time';
 function checkCondition(
   value: number,
   condition: Condition,
-  threshold: number,
+  threshold: number
 ): boolean {
   switch (condition) {
-    case "gt":
+    case 'gt':
       return value > threshold;
-    case "lt":
+    case 'lt':
       return value < threshold;
-    case "gte":
+    case 'gte':
       return value >= threshold;
-    case "lte":
+    case 'lte':
       return value <= threshold;
-    case "eq":
+    case 'eq':
       return value === threshold;
   }
 }
 
 export async function evaluateAlertRules(
   deviceId: string,
-  payload: Record<string, number>,
+  payload: Record<string, number>
 ): Promise<void> {
   // Fetch rules and owner info
   const [[rulesErr, rules], [ownerErr, ownerInfo]] = await Promise.all([
@@ -59,9 +59,9 @@ export async function evaluateAlertRules(
   const insertResults = await Promise.all(
     triggered.map(({ rule, alertValue }) =>
       expectError(insertAlert(deviceId, rule.parameter, alertValue)).then(
-        ([err, alert]) => ({ rule, alertValue, err, alert }),
-      ),
-    ),
+        ([err, alert]) => ({ rule, alertValue, err, alert })
+      )
+    )
   );
 
   // Handle results and fire emails
@@ -69,13 +69,13 @@ export async function evaluateAlertRules(
     if (err || !alert) {
       console.error(
         `[${getTimestamp()}] Failed to insert alert for rule ${rule.rule_id}:`,
-        err,
+        err
       );
       continue;
     }
 
     console.log(
-      `[${getTimestamp()}] Alert fired: device=${deviceId} param=${rule.parameter} value=${alertValue} (${rule.condition} ${rule.threshold})`,
+      `[${getTimestamp()}] Alert fired: device=${deviceId} param=${rule.parameter} value=${alertValue} (${rule.condition} ${rule.threshold})`
     );
 
     if (ownerInfo) {
@@ -91,7 +91,7 @@ export async function evaluateAlertRules(
       }).catch((emailErr) => {
         console.error(
           `[${getTimestamp()}] Failed to send alert email for rule ${rule.rule_id}:`,
-          emailErr,
+          emailErr
         );
       });
     }

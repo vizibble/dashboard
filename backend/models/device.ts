@@ -13,7 +13,7 @@ export interface Device {
 export async function getUserDevices(userId: string): Promise<Device[]> {
   const result = await pool.query<Device>(
     `SELECT * FROM devices WHERE user_id = $1 ORDER BY created_at DESC`,
-    [userId],
+    [userId]
   );
   return result.rows;
 }
@@ -23,7 +23,7 @@ export interface HistoryRow {
   recorded_at: Date;
 }
 export async function getDeviceHistory(
-  deviceId: string,
+  deviceId: string
 ): Promise<HistoryRow[]> {
   const result = await pool.query<HistoryRow>(
     `
@@ -45,7 +45,7 @@ export async function getDeviceHistory(
     GROUP BY trunc_time
     ORDER BY trunc_time ASC
     `,
-    [deviceId],
+    [deviceId]
   );
   return result.rows;
 }
@@ -55,7 +55,7 @@ export interface DeviceOwnerInfo {
   deviceName: string;
 }
 export async function getDeviceOwnerInfo(
-  deviceId: string,
+  deviceId: string
 ): Promise<DeviceOwnerInfo | null> {
   const result = await pool.query<DeviceOwnerInfo>(
     `
@@ -65,7 +65,7 @@ export async function getDeviceOwnerInfo(
     WHERE d.device_id = $1
     LIMIT 1
     `,
-    [deviceId],
+    [deviceId]
   );
   return result.rows[0] ?? null;
 }
@@ -78,7 +78,7 @@ export async function getDeviceParameters(deviceId: string): Promise<string[]> {
     WHERE device_id = $1
     ORDER BY key
     `,
-    [deviceId],
+    [deviceId]
   );
   return result.rows.map((r) => formatParamLabel(r.key));
 }

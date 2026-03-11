@@ -9,11 +9,11 @@ export interface SensorDataRow {
 
 export async function insertSensorData(
   deviceId: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ): Promise<SensorDataRow> {
   const result = await pool.query<SensorDataRow>(
     `INSERT INTO sensor_readings (device_id, payload) VALUES ($1, $2) RETURNING *`,
-    [deviceId, payload],
+    [deviceId, payload]
   );
   return result.rows[0]!;
 }

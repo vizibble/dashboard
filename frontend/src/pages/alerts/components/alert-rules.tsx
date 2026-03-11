@@ -38,7 +38,7 @@ export function AlertRulesPanel() {
               </button>
             </Dialog.Close>
           </div>
-          <div className="p-4 sm:p-6 overflow-y-auto min-h-[300px] sm:min-h-[400px]">
+          <div className="p-4 sm:p-6 overflow-y-auto min-h-75 sm:min-h-100">
             {/* Device selector */}
             <div className="mb-6 overflow-hidden">
               <DeviceTabs

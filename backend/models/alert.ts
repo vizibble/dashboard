@@ -14,17 +14,17 @@ export interface Alert {
 export async function insertAlert(
   deviceId: string,
   parameter: string,
-  value: string,
+  value: string
 ): Promise<Alert> {
   const result = await pool.query<Alert>(
     `INSERT INTO alerts (device_id, parameter, value) VALUES ($1, $2, $3) RETURNING *`,
-    [deviceId, parameter, value],
+    [deviceId, parameter, value]
   );
-  
+
   const alert = result.rows[0]!;
   return {
     ...alert,
-    parameter: formatParamLabel(alert.parameter)
+    parameter: formatParamLabel(alert.parameter),
   };
 }
 
@@ -36,10 +36,10 @@ export async function getAlertsByUser(userId: string): Promise<Alert[]> {
     WHERE d.user_id = $1
     ORDER BY a.recorded_at DESC
     `,
-    [userId],
+    [userId]
   );
   return result.rows.map((row) => ({
     ...row,
-    parameter: formatParamLabel(row.parameter)
+    parameter: formatParamLabel(row.parameter),
   }));
 }

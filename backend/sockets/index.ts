@@ -13,7 +13,7 @@ interface AuthSocket extends Socket {
 
 let io: SocketIOServer | null = null;
 export function initSocket(httpServer: HttpServer): SocketIOServer {
-  const corsOrigin = process.env["CORS_ORIGIN"];
+  const corsOrigin = process.env['CORS_ORIGIN'];
 
   io = new SocketIOServer(httpServer, {
     cors: {
@@ -26,24 +26,24 @@ export function initSocket(httpServer: HttpServer): SocketIOServer {
     try {
       let token = socket.handshake.auth?.token;
 
-      if (!token) return next(new Error("AUTH_ERROR"));
+      if (!token) return next(new Error('AUTH_ERROR'));
 
       const user = verifyAccessToken(token);
-      if (!user || !user.user_id) return next(new Error("AUTH_ERROR"));
+      if (!user || !user.user_id) return next(new Error('AUTH_ERROR'));
 
       (socket as AuthSocket).user = user;
       next();
     } catch {
-      next(new Error("AUTH_ERROR"));
+      next(new Error('AUTH_ERROR'));
     }
   });
 
-  io.on("connection", (rawSocket) => {
+  io.on('connection', (rawSocket) => {
     const socket = rawSocket as AuthSocket;
     // Client subscribes to a device room
-    socket.on("subscribe", async (deviceId: string) => {
+    socket.on('subscribe', async (deviceId: string) => {
       const [err, allowed] = await expectError(
-        hasDevicePermission(socket.user.user_id, deviceId),
+        hasDevicePermission(socket.user.user_id, deviceId)
       );
       if (err) {
         console.error(`[${getTimestamp()}] Subscription error:`, err);
@@ -52,27 +52,27 @@ export function initSocket(httpServer: HttpServer): SocketIOServer {
       if (allowed) {
         socket.join(`device-${deviceId}`);
         console.log(
-          `[${getTimestamp()}] User ${socket.user.user_id} subscribed to device-${deviceId}`,
+          `[${getTimestamp()}] User ${socket.user.user_id} subscribed to device-${deviceId}`
         );
         return;
       } else {
         console.warn(
-          `[${getTimestamp()}] Unauthorized subscription attempt by user ${socket.user.user_id} for device ${deviceId}`,
+          `[${getTimestamp()}] Unauthorized subscription attempt by user ${socket.user.user_id} for device ${deviceId}`
         );
       }
     });
 
     // Client unsubscribes from a device room (on device switch)
-    socket.on("unsubscribe", (deviceId: string) => {
+    socket.on('unsubscribe', (deviceId: string) => {
       socket.leave(`device-${deviceId}`);
       console.log(
-        `[${getTimestamp()}] User ${socket.user.user_id} unsubscribed from device-${deviceId}`,
+        `[${getTimestamp()}] User ${socket.user.user_id} unsubscribed from device-${deviceId}`
       );
     });
 
-    socket.on("disconnect", () => {
+    socket.on('disconnect', () => {
       console.log(
-        `[${getTimestamp()}] User ${socket.user.user_id} disconnected`,
+        `[${getTimestamp()}] User ${socket.user.user_id} disconnected`
       );
     });
   });
@@ -86,11 +86,11 @@ export function initSocket(httpServer: HttpServer): SocketIOServer {
 export function emitToFrontend(
   room: string,
   event: string,
-  data: unknown,
+  data: unknown
 ): void {
   if (!io) {
     console.warn(
-      `[${getTimestamp()}] Socket.io not initialized. Cannot emit '${event}'.`,
+      `[${getTimestamp()}] Socket.io not initialized. Cannot emit '${event}'.`
     );
     return;
   }

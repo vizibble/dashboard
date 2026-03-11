@@ -1,30 +1,30 @@
-import jwt, { type JwtPayload } from "jsonwebtoken";
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 
 export interface AuthJwtPayload extends JwtPayload {
   user_id: string;
 }
 
 const ACCESS_TOKEN_SECRET = () => {
-  const s = process.env["ACCESS_TOKEN_SECRET"];
-  if (!s) throw new Error("ACCESS_TOKEN_SECRET not set.");
+  const s = process.env['ACCESS_TOKEN_SECRET'];
+  if (!s) throw new Error('ACCESS_TOKEN_SECRET not set.');
   return s;
 };
 
 const REFRESH_TOKEN_SECRET = () => {
-  const s = process.env["REFRESH_TOKEN_SECRET"];
-  if (!s) throw new Error("REFRESH_TOKEN_SECRET not set.");
+  const s = process.env['REFRESH_TOKEN_SECRET'];
+  if (!s) throw new Error('REFRESH_TOKEN_SECRET not set.');
   return s;
 };
 
 export function generateAccessToken(payload: AuthJwtPayload): string {
   return jwt.sign({ user_id: payload.user_id }, ACCESS_TOKEN_SECRET(), {
-    expiresIn: "15m",
+    expiresIn: '15m',
   });
 }
 
 export function generateRefreshToken(payload: AuthJwtPayload): string {
   return jwt.sign({ user_id: payload.user_id }, REFRESH_TOKEN_SECRET(), {
-    expiresIn: "30d",
+    expiresIn: '30d',
   });
 }
 
