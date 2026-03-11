@@ -1,17 +1,17 @@
-import { useRef } from "react";
+import { useRef } from 'react';
 
-import type { EChartsOption, LineSeriesOption } from "echarts";
-import type ReactECharts from "echarts-for-react";
+import type { EChartsOption, LineSeriesOption } from 'echarts';
+import type ReactECharts from 'echarts-for-react';
 
-import { LineChart } from "@/components/line-chart";
-import { ChartFooter } from "@/pages/home/components/chart-footer";
-import { ChartHeader } from "@/pages/home/components/chart-header";
-import { useChartResize } from "@/pages/home/hooks/chart-resize";
-import { useChartStats } from "@/pages/home/hooks/chart-stats";
-import { useFullscreen } from "@/pages/home/hooks/fullscreen";
-import { downloadChart } from "@/pages/home/utils/download-chart";
-import { cn } from "@/utils/cn";
-import { ChartContainer } from "@/pages/home/components/chart-container";
+import { LineChart } from '@/components/line-chart';
+import { ChartContainer } from '@/pages/home/components/chart-container';
+import { ChartFooter } from '@/pages/home/components/chart-footer';
+import { ChartHeader } from '@/pages/home/components/chart-header';
+import { useChartResize } from '@/pages/home/hooks/chart-resize';
+import { useChartStats } from '@/pages/home/hooks/chart-stats';
+import { useFullscreen } from '@/pages/home/hooks/fullscreen';
+import { downloadChart } from '@/pages/home/utils/download-chart';
+import { cn } from '@/utils/cn';
 
 export type ChartProps = {
   title: string;
@@ -23,7 +23,7 @@ export type ChartProps = {
 export const Chart = ({
   title,
   options,
-  height = "280px",
+  height = '280px',
   className,
 }: ChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
@@ -44,11 +44,11 @@ export const Chart = ({
         onDownload={() => chartRef.current && downloadChart(chartRef, title)}
         onToggleFullscreen={toggle}
       />
-      <div className={cn("min-h-0", isFullscreen && "flex-1")}>
+      <div className={cn('min-h-0', isFullscreen && 'flex-1')}>
         <LineChart
           ref={chartRef}
           options={options}
-          height={isFullscreen ? "100%" : height}
+          height={isFullscreen ? '100%' : height}
         />
       </div>
 

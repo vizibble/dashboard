@@ -1,21 +1,28 @@
-import {
-  createContext, type ReactNode, useContext,
-  useState,
-} from 'react';
+import { createContext, type ReactNode, useContext, useState } from 'react';
 
 import {
-  ArrowDown, ArrowUp, ArrowUpDown,
-  ChevronLeft, ChevronRight, ChevronsLeft,
-  ChevronsRight, Search,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
 } from 'lucide-react';
 
-import {
-  type ColumnDef, flexRender, getCoreRowModel,
-  getFilteredRowModel, getPaginationRowModel, getSortedRowModel,
-  type SortingState, type Table as TableInstance, useReactTable,
-} from '@tanstack/react-table';
-
 import { Loader } from '@/components/loader';
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState,
+  type Table as TableInstance,
+  useReactTable,
+} from '@tanstack/react-table';
 
 // Context
 interface DataTableContextValue<T> {
@@ -27,13 +34,13 @@ interface DataTableContextValue<T> {
   loading?: boolean;
 }
 const DataTableContext = createContext<DataTableContextValue<unknown> | null>(
-  null,
+  null
 );
 
 function useDataTableContext<T>() {
   const context = useContext(DataTableContext);
   if (!context)
-    throw new Error("DataTable must be rendered within a DataTable.Root");
+    throw new Error('DataTable must be rendered within a DataTable.Root');
   return context as unknown as DataTableContextValue<T>;
 }
 
@@ -53,7 +60,7 @@ const Root = <T extends object>({
   loading,
 }: DataTableRootProps<T>) => {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [globalFilter, setGlobalFilter] = useState('');
   const [showFilter, setShowFilter] = useState(false);
 
   const table = useReactTable({
@@ -102,7 +109,11 @@ interface DataTableToolbarProps {
   showSearch?: boolean;
   actions?: React.ReactNode;
 }
-const Toolbar = ({ title, showSearch = true, actions }: DataTableToolbarProps) => {
+const Toolbar = ({
+  title,
+  showSearch = true,
+  actions,
+}: DataTableToolbarProps) => {
   const { globalFilter, setGlobalFilter, showFilter, setShowFilter } =
     useDataTableContext();
 
@@ -117,7 +128,7 @@ const Toolbar = ({ title, showSearch = true, actions }: DataTableToolbarProps) =
           {showSearch && (
             <button
               onClick={() => setShowFilter(!showFilter)}
-              className={`hover:text-slate-600 transition-colors cursor-pointer p-1 rounded-md hover:bg-slate-50 ${showFilter ? "text-blue-500 bg-blue-50" : ""}`}
+              className={`hover:text-slate-600 transition-colors cursor-pointer p-1 rounded-md hover:bg-slate-50 ${showFilter ? 'text-blue-500 bg-blue-50' : ''}`}
             >
               <Search size={20} />
             </button>
@@ -132,7 +143,7 @@ const Toolbar = ({ title, showSearch = true, actions }: DataTableToolbarProps) =
             size={16}
           />
           <input
-            value={globalFilter ?? ""}
+            value={globalFilter ?? ''}
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder="Search records..."
             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -163,18 +174,18 @@ const Content = () => {
                 >
                   {header.isPlaceholder ? null : (
                     <div
-                      className={`flex items-center gap-1.5 select-none ${header.column.getCanSort() ? "cursor-pointer hover:text-blue-600" : ""}`}
+                      className={`flex items-center gap-1.5 select-none ${header.column.getCanSort() ? 'cursor-pointer hover:text-blue-600' : ''}`}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext(),
+                        header.getContext()
                       )}
                       {header.column.getCanSort() && (
                         <span className="text-slate-400">
-                          {header.column.getIsSorted() === "asc" ? (
+                          {header.column.getIsSorted() === 'asc' ? (
                             <ArrowUp size={12} className="text-blue-500" />
-                          ) : header.column.getIsSorted() === "desc" ? (
+                          ) : header.column.getIsSorted() === 'desc' ? (
                             <ArrowDown size={12} className="text-blue-500" />
                           ) : (
                             <ArrowUpDown size={12} />
@@ -195,10 +206,10 @@ const Content = () => {
                 colSpan={table.getAllColumns().length}
                 className="px-6 py-10 text-center"
               >
-                <Loader 
-                  text="Loading records..." 
-                  className="flex items-center justify-center gap-2 text-sm font-medium text-slate-400" 
-                  spinnerClassName="w-5 h-5 animate-spin text-blue-500" 
+                <Loader
+                  text="Loading records..."
+                  className="flex items-center justify-center gap-2 text-sm font-medium text-slate-400"
+                  spinnerClassName="w-5 h-5 animate-spin text-blue-500"
                 />
               </td>
             </tr>
@@ -241,7 +252,7 @@ const Pagination = () => {
   const startIndex = pagination.pageIndex * pagination.pageSize + 1;
   const endIndex = Math.min(
     (pagination.pageIndex + 1) * pagination.pageSize,
-    totalRows,
+    totalRows
   );
 
   return (
@@ -268,7 +279,7 @@ const Pagination = () => {
         <div className="text-slate-500 font-medium whitespace-nowrap">
           {totalRows > 0
             ? `Showing ${startIndex} - ${endIndex} of ${totalRows} records`
-            : "No records to show"}
+            : 'No records to show'}
         </div>
       </div>
 

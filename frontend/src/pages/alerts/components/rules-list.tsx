@@ -1,15 +1,18 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from 'lucide-react';
 
-import { useDeleteAlertRule, useFetchDeviceRules } from "@/pages/alerts/hooks/device-alert-rules";
-import type { Condition } from "@/pages/alerts/types/types";
-import { Loader } from "@/components/loader";
+import { Loader } from '@/components/loader';
+import {
+  useDeleteAlertRule,
+  useFetchDeviceRules,
+} from '@/pages/alerts/hooks/device-alert-rules';
+import type { Condition } from '@/pages/alerts/types/types';
 
 const CONDITION_LABEL: Record<Condition, string> = {
-  gt: ">",
-  gte: ">=",
-  lt: "<",
-  lte: "<=",
-  eq: "=",
+  gt: '>',
+  gte: '>=',
+  lt: '<',
+  lte: '<=',
+  eq: '=',
 };
 
 interface RulesListProps {
@@ -23,10 +26,10 @@ export const RulesList = ({ selectedDevice }: RulesListProps) => {
   return (
     <div className="bg-white">
       {loadingRules ? (
-        <Loader 
-          text="Loading rules..." 
-          className="p-6 sm:p-8 flex justify-center items-center gap-3 text-sm font-medium text-slate-400" 
-          spinnerClassName="w-5 h-5 animate-spin text-slate-400" 
+        <Loader
+          text="Loading rules..."
+          className="p-6 sm:p-8 flex justify-center items-center gap-3 text-sm font-medium text-slate-400"
+          spinnerClassName="w-5 h-5 animate-spin text-slate-400"
         />
       ) : rules.length === 0 ? (
         <div className="p-6 sm:p-10 text-center flex flex-col items-center justify-center text-slate-400">
@@ -34,17 +37,27 @@ export const RulesList = ({ selectedDevice }: RulesListProps) => {
             <Plus className="w-6 h-6 text-slate-300" />
           </div>
           <p className="text-sm font-medium text-slate-600">No rules defined</p>
-          <p className="text-xs mt-1">Add a rule above to monitor this device.</p>
+          <p className="text-xs mt-1">
+            Add a rule above to monitor this device.
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-4 font-semibold tracking-wider">Parameter</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Condition</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Threshold</th>
-                <th className="px-6 py-4 font-semibold tracking-wider">Label</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">
+                  Parameter
+                </th>
+                <th className="px-6 py-4 font-semibold tracking-wider">
+                  Condition
+                </th>
+                <th className="px-6 py-4 font-semibold tracking-wider">
+                  Threshold
+                </th>
+                <th className="px-6 py-4 font-semibold tracking-wider">
+                  Label
+                </th>
                 <th className="px-6 py-4">
                   <span className="sr-only">Actions</span>
                 </th>

@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 export const useFullscreen = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    document.documentElement.style.overflow = isFullscreen ? "hidden" : "";
+    document.documentElement.style.overflow = isFullscreen ? 'hidden' : '';
 
     return () => {
-      document.documentElement.style.overflow = "";
+      document.documentElement.style.overflow = '';
     };
   }, [isFullscreen]);
 

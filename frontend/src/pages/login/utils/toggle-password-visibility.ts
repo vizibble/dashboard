@@ -1,7 +1,7 @@
 export const togglePasswordVisibility = (
   input: HTMLInputElement | null,
   showPassword: boolean,
-  setShowPassword: (value: boolean) => void,
+  setShowPassword: (value: boolean) => void
 ) => {
   if (!input) return;
 

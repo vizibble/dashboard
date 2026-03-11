@@ -1,6 +1,6 @@
-import { Download, Maximize, Minimize } from "lucide-react";
+import { Download, Maximize, Minimize } from 'lucide-react';
 
-import { cn } from "@/utils/cn";
+import { cn } from '@/utils/cn';
 
 type Props = {
   title: string;
@@ -33,9 +33,9 @@ export const ChartHeader = ({
 
         <button
           onClick={onToggleFullscreen}
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           className={cn(
-            "p-1.5 sm:p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors",
+            'p-1.5 sm:p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors'
           )}
         >
           {isFullscreen ? (

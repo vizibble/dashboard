@@ -3,8 +3,11 @@ import { useMemo } from 'react';
 import type { EChartsOption, LineSeriesOption, SeriesOption } from 'echarts';
 
 import {
-  DEFAULT_GRID, DEFAULT_LINE_STYLE, DEFAULT_TOOLTIP,
-  DEFAULT_X_AXIS, DEFAULT_Y_AXIS,
+  DEFAULT_GRID,
+  DEFAULT_LINE_STYLE,
+  DEFAULT_TOOLTIP,
+  DEFAULT_X_AXIS,
+  DEFAULT_Y_AXIS,
 } from '@/constants/line-chart-style';
 
 export const useDefaultOptions = (options: EChartsOption) => {
@@ -42,11 +45,11 @@ export const useDefaultOptions = (options: EChartsOption) => {
       },
       dataZoom: [
         {
-          type: "inside" as const,
+          type: 'inside' as const,
           throttle: 50,
         },
       ],
-      backgroundColor: "transparent",
+      backgroundColor: 'transparent',
     } as EChartsOption;
     // JSON.stringify is used to deep-compare options so the memo
     // re-computes only when the data actually changes, not on every render

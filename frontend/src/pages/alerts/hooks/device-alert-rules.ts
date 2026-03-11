@@ -1,12 +1,14 @@
 import {
-  createAlertRule, deleteAlertRule, fetchDeviceRules,
+  createAlertRule,
+  deleteAlertRule,
+  fetchDeviceRules,
 } from '@/pages/alerts/api/alert-rules';
 import type { CreateAlertRulePayload } from '@/pages/alerts/types/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useFetchDeviceRules = (deviceId: string | null) => {
   const query = useQuery({
-    queryKey: ["alert-rules", deviceId],
+    queryKey: ['alert-rules', deviceId],
     queryFn: () => fetchDeviceRules(deviceId!),
     enabled: !!deviceId,
   });
@@ -22,7 +24,7 @@ export const useCreateAlertRule = () => {
     mutationFn: (payload: CreateAlertRulePayload) => createAlertRule(payload),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: ["alert-rules", variables.device_id],
+        queryKey: ['alert-rules', variables.device_id],
       });
     },
   });
@@ -34,7 +36,7 @@ export const useDeleteAlertRule = (deviceId: string | null) => {
     mutationFn: (ruleId: string) => deleteAlertRule(ruleId),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["alert-rules", deviceId],
+        queryKey: ['alert-rules', deviceId],
       });
     },
   });

@@ -32,7 +32,7 @@ api.interceptors.response.use(
         const res = await axios.post(
           `${BACKEND_URL}/api/auth/refresh`,
           {},
-          { withCredentials: true },
+          { withCredentials: true }
         );
         const newToken: string = res.data.accessToken;
         useAuthStore.getState().setAccessToken(newToken);
@@ -40,14 +40,14 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch {
         useAuthStore.getState().clearAccessToken();
-        if (window.location.pathname !== "/login") {
-          window.location.replace("/login");
+        if (window.location.pathname !== '/login') {
+          window.location.replace('/login');
         }
         return Promise.reject(error);
       }
     }
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;

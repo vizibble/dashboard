@@ -21,11 +21,11 @@ export const ChartContainer = ({
 
       <div
         className={cn(
-          "bg-white border border-slate-200 rounded-xl shadow-sm transition-all",
+          'bg-white border border-slate-200 rounded-xl shadow-sm transition-all',
           isFullscreen
-            ? "fixed inset-4 md:inset-10 z-50 flex flex-col p-4 md:p-6"
-            : "relative flex flex-col p-4 sm:p-5 md:p-6",
-          className,
+            ? 'fixed inset-4 md:inset-10 z-50 flex flex-col p-4 md:p-6'
+            : 'relative flex flex-col p-4 sm:p-5 md:p-6',
+          className
         )}
       >
         {children}

@@ -1,13 +1,14 @@
-import { HashRouter as Router, Route, Routes } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import 'react-toastify/dist/ReactToastify.css';
 
-import { Navbar } from "@/components/navbar";
-import { ProtectedRoute } from "@/components/protected-route";
-import { AlertsPage } from "@/pages/alerts/Index";
-import { HomePage } from "@/pages/home/Index";
-import { LoginPage } from "@/pages/login/Index";
+import { HashRouter as Router, Route, Routes } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+
+import { Navbar } from '@/components/navbar';
+import { ProtectedRoute } from '@/components/protected-route';
+import { AlertsPage } from '@/pages/alerts/Index';
+import { HomePage } from '@/pages/home/Index';
+import { LoginPage } from '@/pages/login/Index';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },

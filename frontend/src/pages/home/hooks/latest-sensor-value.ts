@@ -1,4 +1,4 @@
-import { useSensorStore } from "@/pages/home/store/sensor-store";
+import { useSensorStore } from '@/pages/home/store/sensor-store';
 
 /**
  * Returns the latest live value for a given sensor field key.

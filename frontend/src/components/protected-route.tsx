@@ -14,8 +14,8 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string;
  */
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { accessToken, setAccessToken } = useAuthStore();
-  const [status, setStatus] = useState<"loading" | "ok" | "unauth">(
-    accessToken ? "ok" : "loading",
+  const [status, setStatus] = useState<'loading' | 'ok' | 'unauth'>(
+    accessToken ? 'ok' : 'loading'
   );
 
   useEffect(() => {
@@ -27,22 +27,22 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       .post(
         `${BACKEND_URL}/api/auth/refresh`,
         {},
-        { withCredentials: true, signal: controller.signal },
+        { withCredentials: true, signal: controller.signal }
       )
       .then((res) => {
         const { accessToken: newToken } = res.data as { accessToken: string };
         setAccessToken(newToken);
-        setStatus("ok");
+        setStatus('ok');
       })
       .catch((err) => {
         if (axios.isCancel(err)) return; // component unmounted — ignore
-        setStatus("unauth");
+        setStatus('unauth');
       });
 
     return () => controller.abort();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -50,7 +50,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (status === "unauth") return <Navigate to="/login" replace />;
+  if (status === 'unauth') return <Navigate to="/login" replace />;
 
   return <>{children}</>;
 };

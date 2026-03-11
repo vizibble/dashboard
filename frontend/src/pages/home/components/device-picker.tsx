@@ -1,5 +1,5 @@
-import { DeviceTabs } from "@/components/device-tabs";
-import { useSensorStore } from "@/pages/home/store/sensor-store";
+import { DeviceTabs } from '@/components/device-tabs';
+import { useSensorStore } from '@/pages/home/store/sensor-store';
 
 export const DevicePicker = () => {
   const selectedDeviceId = useSensorStore((s) => s.selectedDeviceId);
@@ -7,8 +7,8 @@ export const DevicePicker = () => {
 
   return (
     <DeviceTabs
-      selectedDevice={selectedDeviceId} 
-      onSelectDevice={(id, type) => setDevice(id, type || "")} 
+      selectedDevice={selectedDeviceId}
+      onSelectDevice={(id, type) => setDevice(id, type || '')}
     />
   );
 };

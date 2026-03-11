@@ -9,7 +9,7 @@ export interface Alert {
   device_location: string;
 }
 
-export type Condition = "gt" | "lt" | "gte" | "lte" | "eq";
+export type Condition = 'gt' | 'lt' | 'gte' | 'lte' | 'eq';
 
 export interface AlertRule {
   id: string;

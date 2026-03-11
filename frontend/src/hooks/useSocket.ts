@@ -6,7 +6,7 @@ import { useSensorStore } from '@/pages/home/store/sensor-store';
 import { useAuthStore } from '@/store/auth-store';
 
 const BACKEND_URL =
-  import.meta.env["VITE_BACKEND_URL"] ?? "http://localhost:3000";
+  import.meta.env['VITE_BACKEND_URL'] ?? 'http://localhost:3000';
 
 export interface UpdatePayload {
   connectionID: string;
@@ -48,29 +48,29 @@ export function useSocket({ onConnectError }: UseSocketOptions = {}): void {
     });
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("[Socket] Connected:", socket.id);
+    socket.on('connect', () => {
+      console.log('[Socket] Connected:', socket.id);
       // Re-subscribe to current device on reconnect
       if (deviceIdRef.current) {
-        socket.emit("subscribe", deviceIdRef.current);
+        socket.emit('subscribe', deviceIdRef.current);
         prevDeviceIdRef.current = deviceIdRef.current;
       }
     });
 
-    socket.on("update", (data: UpdatePayload) => {
+    socket.on('update', (data: UpdatePayload) => {
       if (data.connectionID === deviceIdRef.current) {
         applyUpdate(data as Record<string, number | string>);
       }
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log("[Socket] Disconnected:", reason);
+    socket.on('disconnect', (reason) => {
+      console.log('[Socket] Disconnected:', reason);
     });
 
-    socket.on("connect_error", (err: Error) => {
+    socket.on('connect_error', (err: Error) => {
       console.error(`[Socket] Connection error: ${err.message}`);
-      if (err.message.includes("AUTH_ERROR")) {
-        window.location.href = "/#/login";
+      if (err.message.includes('AUTH_ERROR')) {
+        window.location.href = '/#/login';
       }
       onConnectErrorRef.current?.(err);
     });
@@ -91,12 +91,12 @@ export function useSocket({ onConnectError }: UseSocketOptions = {}): void {
       prevDeviceIdRef.current &&
       prevDeviceIdRef.current !== selectedDeviceId
     ) {
-      socket.emit("unsubscribe", prevDeviceIdRef.current);
+      socket.emit('unsubscribe', prevDeviceIdRef.current);
     }
 
     // Join the new device's room
     if (selectedDeviceId) {
-      socket.emit("subscribe", selectedDeviceId);
+      socket.emit('subscribe', selectedDeviceId);
     }
 
     prevDeviceIdRef.current = selectedDeviceId;

@@ -8,9 +8,7 @@ import { InputField } from '@/pages/login/components/form-input-field';
 import { FormLabel } from '@/pages/login/components/form-label';
 import { SubmitButton } from '@/pages/login/components/submit-button';
 import { useLogin } from '@/pages/login/hooks/login-user';
-import {
-  togglePasswordVisibility,
-} from '@/pages/login/utils/toggle-password-visibility';
+import { togglePasswordVisibility } from '@/pages/login/utils/toggle-password-visibility';
 
 export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,11 +26,11 @@ export const LoginPage = () => {
   };
 
   // Merge react-hook-form ref with our manual ref
-  const { ref: passwordFieldRef, ...passwordRegister } = register("password", {
-    required: "Password is required",
+  const { ref: passwordFieldRef, ...passwordRegister } = register('password', {
+    required: 'Password is required',
     minLength: {
       value: 6,
-      message: "Password must be at least 6 characters",
+      message: 'Password must be at least 6 characters',
     },
   });
 
@@ -47,11 +45,11 @@ export const LoginPage = () => {
           <div>
             <FormLabel>Email address</FormLabel>
             <InputField
-              {...register("email", {
-                required: "Email is required",
+              {...register('email', {
+                required: 'Email is required',
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "Invalid email address",
+                  message: 'Invalid email address',
                 },
               })}
               type="text"
@@ -69,7 +67,7 @@ export const LoginPage = () => {
                 passwordFieldRef(e);
                 passwordRef.current = e;
               }}
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               placeholder="Password"
               error={errors.password?.message}
               suffix={
@@ -79,7 +77,7 @@ export const LoginPage = () => {
                     togglePasswordVisibility(
                       passwordRef.current,
                       showPassword,
-                      setShowPassword,
+                      setShowPassword
                     )
                   }
                   className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"

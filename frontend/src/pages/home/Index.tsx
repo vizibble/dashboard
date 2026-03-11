@@ -1,5 +1,6 @@
 import { Droplets, Gauge, Thermometer } from 'lucide-react';
 
+import { Loader } from '@/components/loader';
 import { useSocket } from '@/hooks/useSocket';
 import { Barometer } from '@/pages/home/components/barometer';
 import { Chart } from '@/pages/home/components/chart';
@@ -10,9 +11,10 @@ import { StatWidget } from '@/pages/home/components/widget';
 import { useDeviceHistory } from '@/pages/home/hooks/fetch-device-history';
 import { useSensorStore } from '@/pages/home/store/sensor-store';
 import {
-  getHumidityOptions, getPressureOptions, getTemperatureOptions,
+  getHumidityOptions,
+  getPressureOptions,
+  getTemperatureOptions,
 } from '@/pages/home/utils/chart-options';
-import { Loader } from '@/components/loader';
 
 export const HomePage = () => {
   useSocket();
@@ -22,20 +24,20 @@ export const HomePage = () => {
   const selectedDeviceType = useSensorStore((s) => s.selectedDeviceType);
   const history = useSensorStore((s) => s.history);
 
-  const isTempHumidity = selectedDeviceType === "temp_humidity";
-  const isDiffPressure = selectedDeviceType === "diff_pressure";
+  const isTempHumidity = selectedDeviceType === 'temp_humidity';
+  const isDiffPressure = selectedDeviceType === 'diff_pressure';
 
   const temperatureOptions = getTemperatureOptions({
-    times: history["temperature"]?.times ?? [],
-    temperatureData: history["temperature"]?.values ?? [],
+    times: history['temperature']?.times ?? [],
+    temperatureData: history['temperature']?.values ?? [],
   });
   const humidityOptions = getHumidityOptions({
-    times: history["humidity"]?.times ?? [],
-    humidityData: history["humidity"]?.values ?? [],
+    times: history['humidity']?.times ?? [],
+    humidityData: history['humidity']?.values ?? [],
   });
   const pressureOptions = getPressureOptions({
-    times: history["differential_pressure"]?.times ?? [],
-    differentialPressureData: history["differential_pressure"]?.values ?? [],
+    times: history['differential_pressure']?.times ?? [],
+    differentialPressureData: history['differential_pressure']?.values ?? [],
   });
 
   return (
@@ -53,9 +55,9 @@ export const HomePage = () => {
       <div className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Loading history */}
         {selectedDeviceId && historyLoading && (
-          <Loader 
-            text="Loading 24-hour history…" 
-            className="flex items-center justify-center gap-2.5 text-sm font-medium text-slate-400 py-16" 
+          <Loader
+            text="Loading 24-hour history…"
+            className="flex items-center justify-center gap-2.5 text-sm font-medium text-slate-400 py-16"
           />
         )}
 

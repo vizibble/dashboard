@@ -13,7 +13,7 @@ export const getTemperatureOptions = (data: {
   },
   series: [
     {
-      name: "Temperature",
+      name: 'Temperature',
       data: data.temperatureData,
       tooltip: {
         valueFormatter: (value: unknown) => `${value} °C`,
@@ -35,7 +35,7 @@ export const getHumidityOptions = (data: {
   },
   series: [
     {
-      name: "Humidity",
+      name: 'Humidity',
       data: data.humidityData,
       tooltip: {
         valueFormatter: (value: unknown) => `${value} %RH`,
@@ -57,7 +57,7 @@ export const getPressureOptions = (data: {
   },
   series: [
     {
-      name: "Pressure",
+      name: 'Pressure',
       data: data.differentialPressureData,
       tooltip: {
         valueFormatter: (value: unknown) => `${value} Pa`,

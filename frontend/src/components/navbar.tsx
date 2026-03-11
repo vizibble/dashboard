@@ -60,9 +60,10 @@ const Item = ({
       {({ isActive }) => (
         <motion.div
           whileHover={{ scale: 1.05 }}
-          transition={{ type: "spring", stiffness: 300 }}
-          className={`relative text-sm font-medium tracking-wide transition-colors duration-300 ${isActive ? "text-white" : "text-slate-100 hover:text-white"
-            }`}
+          transition={{ type: 'spring', stiffness: 300 }}
+          className={`relative text-sm font-medium tracking-wide transition-colors duration-300 ${
+            isActive ? 'text-white' : 'text-slate-100 hover:text-white'
+          }`}
         >
           {children}
 
@@ -71,7 +72,7 @@ const Item = ({
             <motion.span
               layoutId="navbar-underline"
               className="absolute -bottom-1 left-0 right-0 h-0.5 bg-white"
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             />
           )}
         </motion.div>

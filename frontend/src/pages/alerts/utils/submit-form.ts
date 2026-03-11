@@ -1,6 +1,7 @@
-import type { AddRuleFormData, CreateAlertRulePayload } from "@/pages/alerts/types/types";
-
-
+import type {
+  AddRuleFormData,
+  CreateAlertRulePayload,
+} from '@/pages/alerts/types/types';
 
 export const submitRuleForm = async (
   data: AddRuleFormData,
@@ -19,6 +20,6 @@ export const submitRuleForm = async (
     reset();
   } catch (error) {
     // Error is handled by the mutation or global error boundary
-    console.error("Error creating rule:", error);
+    console.error('Error creating rule:', error);
   }
 };

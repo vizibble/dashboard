@@ -23,7 +23,7 @@ export const LineChart = forwardRef<ReactECharts, Props>(
         lazyUpdate
       />
     );
-  },
+  }
 );
 
-LineChart.displayName = "LineChart";
+LineChart.displayName = 'LineChart';

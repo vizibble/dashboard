@@ -10,8 +10,8 @@ export function useLogin() {
   return useMutation({
     mutationFn: loginRequest,
     onSuccess: () => {
-      toast.success("Login successful");
-      navigate("/");
+      toast.success('Login successful');
+      navigate('/');
     },
     onError: (error: Error) => {
       toast.error(error.message);

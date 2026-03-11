@@ -1,16 +1,20 @@
-import { Plus } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Plus } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 
-import { useCreateAlertRule } from "@/pages/alerts/hooks/device-alert-rules";
-import type { AddRuleFormData, AddRuleFormProps, Condition } from "@/pages/alerts/types/types";
-import { submitRuleForm } from "@/pages/alerts/utils/submit-form";
+import { useCreateAlertRule } from '@/pages/alerts/hooks/device-alert-rules';
+import type {
+  AddRuleFormData,
+  AddRuleFormProps,
+  Condition,
+} from '@/pages/alerts/types/types';
+import { submitRuleForm } from '@/pages/alerts/utils/submit-form';
 
 const CONDITION_OPTIONS: { value: Condition; label: string }[] = [
-  { value: "gt", label: ">" },
-  { value: "gte", label: ">=" },
-  { value: "lt", label: "<" },
-  { value: "lte", label: "<=" },
-  { value: "eq", label: "=" },
+  { value: 'gt', label: '>' },
+  { value: 'gte', label: '>=' },
+  { value: 'lt', label: '<' },
+  { value: 'lte', label: '<=' },
+  { value: 'eq', label: '=' },
 ];
 
 export const AddRuleForm = ({
@@ -27,16 +31,21 @@ export const AddRuleForm = ({
     formState: { errors, isValid },
   } = useForm<AddRuleFormData>({
     defaultValues: {
-      parameter: "",
-      condition: "gt",
-      threshold: "",
-      label: "",
+      parameter: '',
+      condition: 'gt',
+      threshold: '',
+      label: '',
     },
-    mode: "onChange",
+    mode: 'onChange',
   });
 
   const onSubmit = async (data: AddRuleFormData) => {
-    await submitRuleForm(data, selectedDeviceId, createMutation.mutateAsync, reset);
+    await submitRuleForm(
+      data,
+      selectedDeviceId,
+      createMutation.mutateAsync,
+      reset
+    );
   };
 
   return (
@@ -64,7 +73,7 @@ export const AddRuleForm = ({
           ) : (
             <div className="relative">
               <select
-                {...register("parameter", { required: "Required" })}
+                {...register('parameter', { required: 'Required' })}
                 className={`bg-white border ${errors.parameter ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-[position:right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
               >
                 <option value="" disabled>
@@ -82,9 +91,11 @@ export const AddRuleForm = ({
 
         {/* Condition */}
         <div className="flex flex-col gap-1.5 w-full sm:flex-none sm:w-[120px]">
-          <label className="text-xs font-medium text-slate-500">Condition</label>
+          <label className="text-xs font-medium text-slate-500">
+            Condition
+          </label>
           <select
-            {...register("condition", { required: "Required" })}
+            {...register('condition', { required: 'Required' })}
             className={`bg-white border ${errors.condition ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-[position:right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
           >
             {CONDITION_OPTIONS.map(({ value, label }) => (
@@ -97,13 +108,16 @@ export const AddRuleForm = ({
 
         {/* Threshold */}
         <div className="flex flex-col gap-1.5 w-full sm:flex-[0.5] md:w-[140px]">
-          <label className="text-xs font-medium text-slate-500">Threshold</label>
+          <label className="text-xs font-medium text-slate-500">
+            Threshold
+          </label>
           <input
             type="number"
-            {...register("threshold", {
-              required: "Required",
+            {...register('threshold', {
+              required: 'Required',
               valueAsNumber: false,
-              validate: (val) => !isNaN(Number(val)) || "Must be a valid number",
+              validate: (val) =>
+                !isNaN(Number(val)) || 'Must be a valid number',
             })}
             placeholder="e.g. 30"
             className={`bg-white border ${errors.threshold ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full p-2.5 shadow-sm transition-colors`}
@@ -116,7 +130,7 @@ export const AddRuleForm = ({
             Label (optional)
           </label>
           <input
-            {...register("label")}
+            {...register('label')}
             placeholder="e.g. High temp warning"
             className="bg-white border text-slate-900 text-sm rounded-lg focus:ring-2 border-slate-300 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm transition-colors"
           />
@@ -129,7 +143,7 @@ export const AddRuleForm = ({
             className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 focus:outline-none rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
           >
             {createMutation.isPending ? (
-              "Saving…"
+              'Saving…'
             ) : (
               <>
                 <Plus className="w-4 h-4" />
@@ -139,11 +153,11 @@ export const AddRuleForm = ({
           </button>
         </div>
       </form>
-      
+
       {createMutation.isError && (
-          <p className="mt-3 text-sm text-red-500 font-medium">
-             Failed to create rule. Please try again.
-          </p>
+        <p className="mt-3 text-sm text-red-500 font-medium">
+          Failed to create rule. Please try again.
+        </p>
       )}
     </div>
   );

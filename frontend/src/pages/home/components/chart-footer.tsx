@@ -1,6 +1,6 @@
-import type { EChartsOption, SeriesOption } from "echarts";
+import type { EChartsOption, SeriesOption } from 'echarts';
 
-import type { SeriesStats } from "@/pages/home/utils/get-series-stats";
+import type { SeriesStats } from '@/pages/home/utils/get-series-stats';
 
 type Props = {
   stats: SeriesStats;
@@ -15,18 +15,18 @@ export const ChartFooter = ({ stats, options }: Props) => {
     : rawSeries;
 
   const seriesName =
-    series && "name" in series && typeof series.name === "string"
+    series && 'name' in series && typeof series.name === 'string'
       ? series.name
-      : "Value";
+      : 'Value';
 
   const seriesColor =
     series &&
-    "itemStyle" in series &&
+    'itemStyle' in series &&
     series.itemStyle &&
-    typeof series.itemStyle === "object" &&
-    "color" in series.itemStyle
-      ? ((series.itemStyle as { color?: string }).color ?? "#2563eb")
-      : "#2563eb";
+    typeof series.itemStyle === 'object' &&
+    'color' in series.itemStyle
+      ? ((series.itemStyle as { color?: string }).color ?? '#2563eb')
+      : '#2563eb';
 
   return (
     <footer className="flex flex-col xs:flex-row items-start xs:items-center gap-2 sm:gap-3 mt-4 md:mt-6 pt-3 md:pt-4 border-t border-slate-100">

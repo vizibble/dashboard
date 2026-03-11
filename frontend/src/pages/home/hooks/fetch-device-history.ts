@@ -9,7 +9,7 @@ export function useDeviceHistory() {
   const loadHistory = useSensorStore((s) => s.loadHistory);
 
   const query = useQuery({
-    queryKey: ["device-history", selectedDeviceId],
+    queryKey: ['device-history', selectedDeviceId],
     queryFn: () => fetchHistory(selectedDeviceId!),
     enabled: !!selectedDeviceId,
     staleTime: 60_000,

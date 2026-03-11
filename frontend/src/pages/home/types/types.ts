@@ -25,7 +25,7 @@ export interface SensorStore {
   setDevice: (id: string, type: string) => void;
   applyUpdate: (payload: Record<string, number | string>) => void;
   loadHistory: (
-    points: Array<{ payload: Record<string, number>; recorded_at: string }>,
+    points: Array<{ payload: Record<string, number>; recorded_at: string }>
   ) => void;
   clearDevice: () => void;
 }

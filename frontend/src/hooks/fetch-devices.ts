@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 export const useFetchDevices = () => {
   const query = useQuery({
-    queryKey: ["fetch-all-devices"],
+    queryKey: ['fetch-all-devices'],
     queryFn: fetchDevices,
   });
 

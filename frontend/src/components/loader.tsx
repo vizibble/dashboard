@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2 } from 'lucide-react';
 
 interface LoaderProps {
   text?: string;
@@ -8,10 +8,10 @@ interface LoaderProps {
 }
 
 export const Loader = ({
-  text = "Loading...",
-  className = "flex items-center justify-center gap-2.5 text-slate-400 py-12 text-sm font-medium",
-  spinnerClassName = "w-5 h-5 animate-spin text-blue-500",
-  textClassName = "",
+  text = 'Loading...',
+  className = 'flex items-center justify-center gap-2.5 text-slate-400 py-12 text-sm font-medium',
+  spinnerClassName = 'w-5 h-5 animate-spin text-blue-500',
+  textClassName = '',
 }: LoaderProps) => {
   return (
     <div className={className}>

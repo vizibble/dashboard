@@ -7,9 +7,9 @@ interface HistoryPoint {
 
 export async function fetchHistory(deviceId: string): Promise<HistoryPoint[]> {
   try {
-    const res = await api.get("/api/device/history", { params: { deviceId } });
+    const res = await api.get('/api/device/history', { params: { deviceId } });
     return res.data;
   } catch {
-    throw new Error("Failed to fetch history.");
+    throw new Error('Failed to fetch history.');
   }
 }
