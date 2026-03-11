@@ -15,6 +15,7 @@ export async function loginRequest(data: LoginFormData) {
     useAuthStore.getState().setAccessToken(accessToken);
     return res.data;
   } catch (err: unknown) {
+    console.error('Login error:', err);
     if (axios.isAxiosError(err)) {
       throw new Error(err.response?.data?.error ?? 'Login failed');
     }
