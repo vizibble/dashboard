@@ -11,8 +11,7 @@ export function useDeviceHistory() {
   const query = useQuery({
     queryKey: ['device-history', selectedDeviceId],
     queryFn: () => fetchHistory(selectedDeviceId!),
-    enabled: !!selectedDeviceId,
-    staleTime: 60_000,
+    enabled: !!selectedDeviceId
   });
 
   useEffect(() => {

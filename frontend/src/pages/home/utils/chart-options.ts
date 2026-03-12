@@ -52,8 +52,8 @@ export const getPressureOptions = (data: {
     data: data.times,
   },
   yAxis: {
-    min: -10,
-    max: 10,
+    min: -50,
+    max: 50,
   },
   series: [
     {
