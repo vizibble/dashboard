@@ -1,0 +1,195 @@
+import { useState } from 'react';
+
+import { CalendarIcon } from 'lucide-react';
+
+import { DeviceSelect } from '@/components/device-select';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
+import { Chart } from '@/pages/home/components/chart';
+import {
+  getHumidityOptions,
+  getPressureOptions,
+  getTemperatureOptions,
+} from '@/pages/home/utils/chart-options';
+import { formatTimeLabel } from '@/pages/home/utils/format-time';
+import { useAvailableDates } from '@/pages/records/hooks/use-available-dates';
+import { useDeviceRecords } from '@/pages/records/hooks/use-device-records';
+import { cn } from '@/utils/cn';
+
+// Helper to format Date state to YYYY-MM-DD
+const formatDateForApi = (date?: Date) => {
+  if (!date) return null;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const RecordsPage = () => {
+  const [date, setDate] = useState<Date | undefined>();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
+
+  const isTempHumidity = selectedDeviceType === 'temp_humidity';
+  const isDiffPressure = selectedDeviceType === 'diff_pressure';
+
+  const { dates: availableDates, isLoading: loadingDates } = useAvailableDates(selectedDeviceId);
+  
+  const { data, isLoading: loadingRecords } = useDeviceRecords(
+    selectedDeviceId,
+    formatDateForApi(date)
+  );
+
+  const isLoading = loadingDates || loadingRecords;
+
+  // Process data for charts
+  const history = data?.rows ?? [];
+  const times: string[] = [];
+  const temperatureData: number[] = [];
+  const humidityData: number[] = [];
+  const pressureData: number[] = [];
+
+  history.forEach((row) => {
+    const d = new Date(row.recorded_at);
+    const label = formatTimeLabel(d, 'daily');
+    times.push(label);
+
+    if (row.payload['temperature'] !== undefined) {
+      temperatureData.push(row.payload['temperature']);
+    }
+    if (row.payload['humidity'] !== undefined) {
+      humidityData.push(row.payload['humidity']);
+    }
+    if (row.payload['differential_pressure'] !== undefined) {
+      pressureData.push(row.payload['differential_pressure']);
+    }
+  });
+
+  const temperatureOptions = getTemperatureOptions({ times, temperatureData });
+  const humidityOptions = getHumidityOptions({ times, humidityData });
+  const pressureOptions = getPressureOptions({
+    times,
+    differentialPressureData: pressureData,
+    thresholds: { min: -1, max: 5 },
+  });
+
+  return (
+    <main className="flex flex-col w-full min-h-0 bg-slate-50 min-h-screen">
+      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-sm border-b px-4 sm:px-6 py-3">
+        <div className="flex items-center gap-6 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3">
+            <span className="text-xs hidden sm:block font-bold uppercase tracking-widest text-muted-foreground shrink-0">
+              Device
+            </span>
+            <Separator className="hidden sm:block h-4" orientation="vertical" />
+            <DeviceSelect
+              selectedDevice={selectedDeviceId}
+              onSelectDevice={(id, type) => {
+                setSelectedDeviceId(id);
+                setSelectedDeviceType(type || '');
+                // Reset date when device changes if desired, or keep it.
+                // Keeping it is fine, but we might want to reset if the new device has no data for that date.
+                setDate(undefined);
+              }}
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground shrink-0 hidden sm:block">
+              Date
+            </span>
+            <div className="h-4 w-[1px] bg-border hidden sm:block" />
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={'outline'}
+                  disabled={!selectedDeviceId || loadingDates}
+                  className={cn(
+                    'w-[240px] justify-start text-left font-normal',
+                    !date && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? (
+                    date.toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => {
+                    setDate(d);
+                    setCalendarOpen(false);
+                  }}
+                  disabled={(date) => {
+                    const formattedDate = formatDateForApi(date);
+                    return !formattedDate || !availableDates.includes(formattedDate);
+                  }}
+                  autoFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 p-3 sm:p-4 md:p-6 space-y-6">
+        {!selectedDeviceId && (
+          <div className="py-24 text-center text-muted-foreground">
+            Please select a device to view records.
+          </div>
+        )}
+
+        {selectedDeviceId && !date && (
+          <div className="py-24 text-center text-muted-foreground">
+            Please pick a date to view records.
+          </div>
+        )}
+
+        {selectedDeviceId && date && isLoading && (
+          <div className="flex items-center justify-center gap-2.5 text-sm font-medium text-muted-foreground py-16">
+            <Spinner className="size-5 text-primary" />
+            <span>Loading records...</span>
+          </div>
+        )}
+
+        {selectedDeviceId && date && !isLoading && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+              {isTempHumidity && (
+                <>
+                  <Chart title="Humidity" options={humidityOptions} />
+                  <Chart title="Temperature" options={temperatureOptions} />
+                </>
+              )}
+              {isDiffPressure && (
+                <div className="col-span-full">
+                  <Chart
+                    title="Differential Pressure"
+                    options={pressureOptions}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+};

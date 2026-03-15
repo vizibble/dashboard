@@ -13,6 +13,7 @@ import { LoginPage } from '@/pages/login/Index';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SettingsPage } from '@/pages/settings/Index';
+import { RecordsPage } from '@/pages/records/index';
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
@@ -38,6 +39,7 @@ function App() {
                           <Route path="/" element={<HomePage />} />
                           <Route path="/alerts" element={<AlertsPage />} />
                           <Route path="/settings" element={<SettingsPage />} />
+                          <Route path="/records" element={<RecordsPage />} />
                         </Routes>
                       </div>
                     </div>

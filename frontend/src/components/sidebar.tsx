@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { Bell, Home, Settings } from 'lucide-react';
+import { Bell, Home, Settings, Calendar } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const NAV_ITEMS = [
@@ -22,6 +22,11 @@ const NAV_ITEMS = [
     title: 'Alerts',
     url: '/alerts',
     icon: Bell,
+  },
+  {
+    title: 'Records',
+    url: '/records',
+    icon: Calendar,
   },
   {
     title: 'Settings',
@@ -38,7 +43,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 h-16 bg-primary">
         <div className="flex items-center gap-2 justify-center">
           <img
-            src="/public/images/logo.svg"
+            src="/images/logo.svg"
             alt="logo"
             width={25}
             height={25}

@@ -75,6 +75,60 @@ export async function getDeviceHistory(
   return result.rows;
 }
 
+export async function getDeviceRecordsByDate(
+  deviceId: string,
+  dateString: string,
+  timezone = 'Asia/Kolkata'
+): Promise<HistoryRow[]> {
+  const result = await pool.query<HistoryRow>(
+    `
+    WITH aggregated_data AS (
+      SELECT 
+        date_trunc('hour', recorded_at, CAST($3 AS text)) AS trunc_time,
+        key,
+        AVG(value::numeric) AS avg_value
+      FROM sensor_readings
+      CROSS JOIN jsonb_each_text(payload)
+      WHERE device_id = $1
+        AND recorded_at >= ($2 || ' 00:00:00 ' || $3)::timestamptz
+        AND recorded_at < ($2 || ' 00:00:00 ' || $3)::timestamptz + INTERVAL '1 day'
+      GROUP BY trunc_time, key
+    )
+    SELECT 
+      jsonb_object_agg(key, ROUND(avg_value, 2)) AS payload,
+      trunc_time AS recorded_at
+    FROM aggregated_data
+    GROUP BY trunc_time
+    ORDER BY trunc_time ASC
+    `,
+    [deviceId, dateString, timezone]
+  );
+  return result.rows;
+}
+
+export async function getAvailableDates(
+  deviceId: string,
+  timezone = 'Asia/Kolkata'
+): Promise<string[]> {
+  const result = await pool.query<{ date: Date }>(
+    `
+    SELECT DISTINCT date_trunc('day', recorded_at, CAST($2 AS text)) AS date
+    FROM sensor_readings
+    WHERE device_id = $1
+    ORDER BY date DESC
+    `,
+    [deviceId, timezone]
+  );
+  // Return in YYYY-MM-DD format based on the database returned localized date
+  return result.rows.map((r) => {
+    const d = new Date(r.date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
+}
+
 export interface DeviceOwnerInfo {
   email: string;
   alertEmails?: string[];

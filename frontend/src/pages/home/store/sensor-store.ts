@@ -5,6 +5,7 @@ import type {
   SensorStore,
   SensorValues,
 } from '@/pages/home/types/types';
+import { formatTimeLabel } from '../utils/format-time';
 
 export const useSensorStore = create<SensorStore>((set) => ({
   selectedDeviceId: null,
@@ -30,24 +31,8 @@ export const useSensorStore = create<SensorStore>((set) => ({
       const history: Record<string, FieldHistory> = {};
 
       for (const { payload, recorded_at } of rows) {
-        let label = '';
         const date = new Date(recorded_at);
-
-        if (mode === 'instant') {
-          label = date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-          });
-        } else if (mode === 'daily') {
-          label = date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-          });
-        } else if (mode === 'monthly') {
-          label = date.toLocaleDateString('en-IN', {
-            day: '2-digit',
-            month: 'short',
-          });
-        }
+        const label = formatTimeLabel(date, mode);
 
         for (const [field, val] of Object.entries(payload)) {
           if (typeof val !== 'number') continue;
@@ -76,16 +61,11 @@ export const useSensorStore = create<SensorStore>((set) => ({
       }
 
       const incoming: SensorValues = {};
-      const label =
+      const date =
         typeof payload['timestamp'] === 'string'
-          ? new Date(payload['timestamp']).toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : new Date().toLocaleTimeString('en-IN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
+          ? new Date(payload['timestamp'])
+          : new Date();
+      const label = formatTimeLabel(date, state.mode);
 
       const nextHistory = { ...state.history };
 
