@@ -7,6 +7,7 @@ import {
   getDeviceParameters,
   getUserDevices,
 } from '@/models/device.js';
+import { getUserSettings } from '@/models/user.js';
 import { expectError } from '@/utils/expectError.js';
 import { getTimestamp } from '@/utils/time.js';
 
@@ -33,19 +34,24 @@ export async function handleGetDeviceHistory(
   req: Request,
   res: Response
 ): Promise<void> {
+  const userId = (req as AuthenticatedRequest).user.user_id;
   const deviceId = req.query['deviceId'] as string;
+  
+  const [settingsErr, settings] = await expectError(getUserSettings(userId));
+  if (settingsErr) {
+    console.error(`[${getTimestamp()}] Failed to fetch settings for user ${userId}:`,settingsErr);
+    res.status(500).json({ error: 'Failed to fetch settings.' });
+    return;
+  }
+  const mode = settings.history_mode;
 
-  const [err, rows] = await expectError(getDeviceHistory(deviceId));
+  const [err, rows] = await expectError(getDeviceHistory(deviceId, mode));
   if (err) {
-    console.error(
-      `[${getTimestamp()}] Failed to fetch history for device '${deviceId}':`,
-      err
-    );
+    console.error(`[${getTimestamp()}] Failed to fetch history for device '${deviceId}':`,err);
     res.status(500).json({ error: 'Failed to fetch device history.' });
     return;
   }
-
-  res.status(200).json(rows);
+  res.status(200).json({ rows, mode });
 }
 
 export async function handleGetDeviceParams(

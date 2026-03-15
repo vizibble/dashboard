@@ -79,8 +79,12 @@ export async function evaluateAlertRules(
     );
 
     if (ownerInfo) {
+      const recipient =
+        ownerInfo.alertEmails && ownerInfo.alertEmails.length > 0
+          ? ownerInfo.alertEmails.join(',')
+          : ownerInfo.email;
       void sendAlertEmail({
-        to: ownerInfo.email,
+        to: recipient,
         deviceName: ownerInfo.deviceName,
         parameter: rule.parameter,
         condition: rule.condition,

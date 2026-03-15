@@ -5,14 +5,26 @@ export interface Device {
   id: number;
   device_id: string;
   user_id: string;
-  name: string;
-  type: string;
-  location: string;
+  device_info: {
+    name: string;
+    type: string;
+    location: string;
+  };
   created_at: Date;
 }
 export async function getUserDevices(userId: string): Promise<Device[]> {
   const result = await pool.query<Device>(
-    `SELECT * FROM devices WHERE user_id = $1 ORDER BY created_at DESC`,
+    `SELECT 
+       d.id, d.device_id, d.user_id, d.created_at,
+       json_build_object(
+         'name', COALESCE(di.name, 'Unknown'),
+         'type', COALESCE(di.type, 'Unknown'),
+         'location', COALESCE(di.location, 'Unknown')
+       ) AS device_info
+     FROM devices d
+     LEFT JOIN device_info di ON d.device_id = di.device_id
+     WHERE d.user_id = $1 
+     ORDER BY d.created_at DESC`,
     [userId]
   );
   return result.rows;
@@ -23,35 +35,49 @@ export interface HistoryRow {
   recorded_at: Date;
 }
 export async function getDeviceHistory(
-  deviceId: string
+  deviceId: string,
+  mode = 'instant',
+  timezone = 'Asia/Kolkata'
 ): Promise<HistoryRow[]> {
+  let truncation = 'minute';
+  let startTimeExpr = `date_trunc('day', NOW(), $3)`;
+
+  if (mode === 'daily') {
+    truncation = 'hour';
+    startTimeExpr = `date_trunc('day', NOW(), $3)`;
+  } else if (mode === 'monthly') {
+    truncation = 'day';
+    startTimeExpr = `date_trunc('day', NOW() - INTERVAL '30 days', $3)`;
+  }
+
   const result = await pool.query<HistoryRow>(
     `
-    WITH minute_data AS (
+    WITH aggregated_data AS (
       SELECT 
-        date_trunc('minute', recorded_at) AS trunc_time,
+        date_trunc($2, recorded_at, CAST($3 AS text)) AS trunc_time,
         key,
         AVG(value::numeric) AS avg_value
       FROM sensor_readings
       CROSS JOIN jsonb_each_text(payload)
       WHERE device_id = $1
-        AND recorded_at >= NOW() - INTERVAL '24 hours'
+        AND recorded_at >= ${startTimeExpr}
       GROUP BY trunc_time, key
     )
     SELECT 
       jsonb_object_agg(key, ROUND(avg_value, 2)) AS payload,
       trunc_time AS recorded_at
-    FROM minute_data
+    FROM aggregated_data
     GROUP BY trunc_time
     ORDER BY trunc_time ASC
     `,
-    [deviceId]
+    [deviceId, truncation, timezone]
   );
   return result.rows;
 }
 
 export interface DeviceOwnerInfo {
   email: string;
+  alertEmails?: string[];
   deviceName: string;
 }
 export async function getDeviceOwnerInfo(
@@ -59,9 +85,14 @@ export async function getDeviceOwnerInfo(
 ): Promise<DeviceOwnerInfo | null> {
   const result = await pool.query<DeviceOwnerInfo>(
     `
-    SELECT u.email, d.name AS "deviceName"
+    SELECT 
+      u.email, 
+      us.alert_emails AS "alertEmails",
+      di.name AS "deviceName"
     FROM devices d
     JOIN users u ON d.user_id = u.user_id
+    LEFT JOIN user_settings us ON u.user_id = us.user_id
+    LEFT JOIN device_info di ON d.device_id = di.device_id
     WHERE d.device_id = $1
     LIMIT 1
     `,

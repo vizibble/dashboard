@@ -10,6 +10,7 @@ import authRouter from '@/routes/auth.js';
 import deviceRouter from '@/routes/device.js';
 import ruleRouter from '@/routes/rule.js';
 import sensorRouter from '@/routes/sensor.js';
+import userRouter from '@/routes/user.js';
 import { initSocket } from '@/sockets/index.js';
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/device', deviceRouter);
 app.use('/api/sensor', sensorRouter);
 app.use('/api/alert', alertRouter);
 app.use('/api/rule', ruleRouter);
+app.use('/api/user', userRouter);
 
 app.use(
   (

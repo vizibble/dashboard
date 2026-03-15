@@ -4,7 +4,18 @@ CREATE TABLE users (
   user_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password TEXT NOT NULL,
+  name VARCHAR(100) NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- USER SETTINGS
+CREATE TABLE user_settings (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE UNIQUE,
+  alert_emails TEXT[] DEFAULT '{}',
+  history_mode VARCHAR(20) DEFAULT 'instant',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- DEVICES
@@ -12,10 +23,18 @@ CREATE TABLE devices (
   id SERIAL PRIMARY KEY,
   device_id UUID DEFAULT gen_random_uuid() UNIQUE NOT NULL,
   user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  type VARCHAR(30) NOT NULL,
-  name VARCHAR(100) NOT NULL,
-  location VARCHAR(200) NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- DEVICE INFO
+CREATE TABLE device_info (
+  id SERIAL PRIMARY KEY,
+  device_id UUID NOT NULL REFERENCES devices(device_id) ON DELETE CASCADE UNIQUE,
+  name VARCHAR(255) NOT NULL,
+  type VARCHAR(100) NOT NULL,
+  location VARCHAR(255),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- SENSOR READINGS
