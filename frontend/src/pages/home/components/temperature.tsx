@@ -7,12 +7,12 @@ export const Temp = () => {
   const value = useSensorField('temperature') ?? 0;
   return (
     <ThermometerComponent
-      theme="light"
       value={value}
       max="50"
       steps="1"
-      format="°C"
+      theme="light"
       size="normal"
+      format="°C"
     />
   );
 };

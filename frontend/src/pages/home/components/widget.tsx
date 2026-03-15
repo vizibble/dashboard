@@ -1,3 +1,4 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type ReactNode } from 'react';
 
 interface StatWidgetProps {
@@ -8,16 +9,16 @@ interface StatWidgetProps {
 
 export const StatWidget = ({ title, icon, children }: StatWidgetProps) => {
   return (
-    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-      <header className="flex items-center gap-2 mb-2">
+    <Card className="flex flex-col shadow-sm">
+      <CardHeader className="flex flex-row items-center gap-2 p-4 pb-2 space-y-0">
         {icon}
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {title}
-        </h3>
-      </header>
-      <div className="flex-1 flex items-center justify-center min-h-0">
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 flex items-center justify-center p-4 pt-0 min-h-0">
         {children}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

@@ -11,14 +11,14 @@ export function useDeviceHistory() {
   const query = useQuery({
     queryKey: ['device-history', selectedDeviceId],
     queryFn: () => fetchHistory(selectedDeviceId!),
-    enabled: !!selectedDeviceId
+    enabled: !!selectedDeviceId,
   });
 
   useEffect(() => {
     if (query.data) {
-      loadHistory(query.data);
+      loadHistory(query.data as Parameters<typeof loadHistory>[0]);
     }
   }, [query.data, loadHistory]);
 
-  return { isLoading: query.isLoading, isError: query.isError };
+  return { isLoading: query.isLoading, isError: query.isError, query };
 }

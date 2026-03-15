@@ -63,7 +63,7 @@ export const AlertsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-6">
       <div className="max-w-350 mx-auto">
-        <DataTable columns={columns} data={alerts} loading={loading}>
+        <DataTable data={alerts} loading={loading} columns={columns}>
           <DataTable.Toolbar title="Alerts" actions={<AlertRulesPanel />} />
           <DataTable.Content />
           <DataTable.Pagination />

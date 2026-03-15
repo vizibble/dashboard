@@ -6,13 +6,15 @@ import type {
   SensorValues,
 } from '@/pages/home/types/types';
 
-const MAX_HISTORY = 200; // keep the last N points
 export const useSensorStore = create<SensorStore>((set) => ({
   selectedDeviceId: null,
   selectedDeviceType: null,
   sensorValues: {},
   history: {},
   lastTimestamp: null,
+  mode: 'instant',
+
+  setMode: (mode) => set({ mode }),
 
   setDevice: (id, type) =>
     set({
@@ -23,14 +25,30 @@ export const useSensorStore = create<SensorStore>((set) => ({
       lastTimestamp: null,
     }),
 
-  loadHistory: (points) =>
+  loadHistory: ({ rows, mode }) =>
     set(() => {
       const history: Record<string, FieldHistory> = {};
-      for (const { payload, recorded_at } of points) {
-        const label = new Date(recorded_at).toLocaleTimeString('en-IN', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
+
+      for (const { payload, recorded_at } of rows) {
+        let label = '';
+        const date = new Date(recorded_at);
+
+        if (mode === 'instant') {
+          label = date.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+        } else if (mode === 'daily') {
+          label = date.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+          });
+        } else if (mode === 'monthly') {
+          label = date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+          });
+        }
+
         for (const [field, val] of Object.entries(payload)) {
           if (typeof val !== 'number') continue;
           if (!history[field]) history[field] = { times: [], values: [] };
@@ -38,12 +56,13 @@ export const useSensorStore = create<SensorStore>((set) => ({
           history[field]!.values.push(val);
         }
       }
-      const lastPoint = points.at(-1);
+      const lastPoint = rows.at(-1);
       const latestValues: SensorValues = lastPoint
         ? { ...lastPoint.payload }
         : {};
       return {
         history,
+        mode,
         sensorValues: latestValues,
         lastTimestamp: lastPoint?.recorded_at ?? null,
       };
@@ -51,6 +70,11 @@ export const useSensorStore = create<SensorStore>((set) => ({
 
   applyUpdate: (payload) =>
     set((state) => {
+      // Do not update gauges or history if not in instant mode
+      if (state.mode !== 'instant') {
+        return state;
+      }
+
       const incoming: SensorValues = {};
       const label =
         typeof payload['timestamp'] === 'string'
@@ -64,16 +88,19 @@ export const useSensorStore = create<SensorStore>((set) => ({
             });
 
       const nextHistory = { ...state.history };
+
       for (const [key, val] of Object.entries(payload)) {
         if (key === 'connectionID' || key === 'timestamp') continue;
         if (typeof val !== 'number') continue;
         incoming[key] = val;
+
         const prev = nextHistory[key] ?? { times: [], values: [] };
         nextHistory[key] = {
-          times: [...prev.times, label].slice(-MAX_HISTORY),
-          values: [...prev.values, val].slice(-MAX_HISTORY),
+          times: [...prev.times, label],
+          values: [...prev.values, val],
         };
       }
+
       return {
         sensorValues: { ...state.sensorValues, ...incoming },
         history: nextHistory,
@@ -91,5 +118,6 @@ export const useSensorStore = create<SensorStore>((set) => ({
       sensorValues: {},
       history: {},
       lastTimestamp: null,
+      mode: 'instant',
     }),
 }));

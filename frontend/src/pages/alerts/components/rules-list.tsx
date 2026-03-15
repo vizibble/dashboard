@@ -1,6 +1,16 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Trash2 } from 'lucide-react';
 
-import { Loader } from '@/components/loader';
+import { Spinner } from '@/components/ui/spinner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   useDeleteAlertRule,
   useFetchDeviceRules,
@@ -24,86 +34,92 @@ export const RulesList = ({ selectedDevice }: RulesListProps) => {
   const deleteMutation = useDeleteAlertRule(selectedDevice);
 
   return (
-    <div className="bg-white">
+    <div className="w-full">
       {loadingRules ? (
-        <Loader
-          text="Loading rules..."
-          className="p-6 sm:p-8 flex justify-center items-center gap-3 text-sm font-medium text-slate-400"
-          spinnerClassName="w-5 h-5 animate-spin text-slate-400"
-        />
+        <div className="p-10 flex flex-col justify-center items-center gap-3 text-sm font-medium text-muted-foreground">
+          <Spinner className="size-6 text-primary" />
+          <span>Loading rules...</span>
+        </div>
       ) : rules.length === 0 ? (
-        <div className="p-6 sm:p-10 text-center flex flex-col items-center justify-center text-slate-400">
-          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 border border-slate-100">
-            <Plus className="w-6 h-6 text-slate-300" />
+        <div className="p-10 text-center flex flex-col items-center justify-center text-muted-foreground">
+          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4 border">
+            <AlertCircle className="w-6 h-6 text-muted-foreground/50" />
           </div>
-          <p className="text-sm font-medium text-slate-600">No rules defined</p>
+          <p className="text-sm font-semibold text-foreground">
+            No rules defined
+          </p>
           <p className="text-xs mt-1">
-            Add a rule above to monitor this device.
+            Add a rule below to monitor this device.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left whitespace-nowrap">
-            <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-4 font-semibold tracking-wider">
+        <div className="overflow-x-auto w-full border rounded-xl">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="px-3 sm:px-4 h-12 font-semibold">
                   Parameter
-                </th>
-                <th className="px-6 py-4 font-semibold tracking-wider">
+                </TableHead>
+                <TableHead className="px-3 sm:px-4 h-12 font-semibold">
                   Condition
-                </th>
-                <th className="px-6 py-4 font-semibold tracking-wider">
+                </TableHead>
+                <TableHead className="px-3 sm:px-4 h-12 font-semibold">
                   Threshold
-                </th>
-                <th className="px-6 py-4 font-semibold tracking-wider">
+                </TableHead>
+                <TableHead className="px-3 sm:px-4 h-12 font-semibold truncate max-w-24">
                   Label
-                </th>
-                <th className="px-6 py-4">
+                </TableHead>
+                <TableHead className="px-3 sm:px-4 h-12 text-right">
                   <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {rules.map((rule) => (
-                <tr
+                <TableRow
                   key={rule.rule_id}
-                  className="hover:bg-slate-50/50 transition-colors group"
+                  className="hover:bg-muted/50 transition-colors group"
                 >
-                  <td className="px-6 py-4 font-medium text-slate-900">
+                  <TableCell className="px-3 sm:px-4 py-4 font-semibold text-foreground whitespace-nowrap truncate max-w-40 sm:max-w-60">
                     {rule.parameter}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold font-mono bg-blue-50 text-blue-700 border border-blue-100">
-                      {CONDITION_LABEL[rule.condition as Condition]}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 font-mono text-slate-700 font-medium">
-                    {rule.threshold}
-                  </td>
-                  <td className="px-6 py-4 text-slate-500">
-                    {rule.label ? (
-                      <span className="inline-flex items-center px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">
-                        {rule.label}
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => deleteMutation.mutate(rule.rule_id)}
-                      disabled={deleteMutation.isPending}
-                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors focus:ring-2 focus:outline-none focus:ring-red-100 disabled:opacity-50 disabled:cursor-not-allowed group-hover:opacity-100 sm:opacity-0"
-                      title="Delete rule"
+                  </TableCell>
+                  <TableCell className="px-3 sm:px-4 py-4 font-mono whitespace-nowrap">
+                    <Badge
+                      className="font-bold bg-primary/5 text-primary border-primary/20"
+                      variant="outline"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {CONDITION_LABEL[rule.condition as Condition]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-3 sm:px-4 py-4 font-mono font-medium whitespace-nowrap">
+                    {rule.threshold}
+                  </TableCell>
+                  <TableCell className="px-3 sm:px-4 py-4 truncate max-w-20 sm:max-w-40">
+                    {rule.label ? (
+                      <Badge className="font-normal" variant="secondary">
+                        {rule.label}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground/30">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="px-3 sm:px-4 py-4 text-right">
+                    <Button
+                      className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 sm:opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Delete rule"
+                      variant="ghost"
+                      disabled={deleteMutation.isPending}
+                      size="icon"
+                      onClick={() => deleteMutation.mutate(rule.rule_id)}
+                    >
+                      <Trash2 className="size-4" />
                       <span className="sr-only">Delete</span>
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

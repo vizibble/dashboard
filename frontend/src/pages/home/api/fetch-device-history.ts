@@ -5,9 +5,13 @@ interface HistoryPoint {
   recorded_at: string;
 }
 
-export async function fetchHistory(deviceId: string): Promise<HistoryPoint[]> {
+export async function fetchHistory(
+  deviceId: string
+): Promise<{ rows: HistoryPoint[]; mode: string }> {
   try {
-    const res = await api.get('/api/device/history', { params: { deviceId } });
+    const res = await api.get('/api/device/history', {
+      params: { deviceId },
+    });
     return res.data;
   } catch {
     throw new Error('Failed to fetch history.');

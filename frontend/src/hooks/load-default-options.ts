@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import type { EChartsOption, LineSeriesOption, SeriesOption } from 'echarts';
 
 import {
+  DEFAULT_DATA_ZOOM,
   DEFAULT_GRID,
   DEFAULT_LINE_STYLE,
   DEFAULT_TOOLTIP,
@@ -43,12 +44,7 @@ export const useDefaultOptions = (options: EChartsOption) => {
         ...DEFAULT_Y_AXIS,
         ...options.yAxis,
       },
-      dataZoom: [
-        {
-          type: 'inside' as const,
-          throttle: 50,
-        },
-      ],
+      dataZoom: options.dataZoom || DEFAULT_DATA_ZOOM,
       backgroundColor: 'transparent',
     } as EChartsOption;
     // JSON.stringify is used to deep-compare options so the memo

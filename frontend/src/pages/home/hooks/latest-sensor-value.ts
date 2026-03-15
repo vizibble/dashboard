@@ -1,9 +1,17 @@
 import { useSensorStore } from '@/pages/home/store/sensor-store';
 
-/**
- * Returns the latest live value for a given sensor field key.
- * Returns null if no data has arrived yet.
- */
 export function useSensorField(key: string): number | null {
-  return useSensorStore((s) => s.sensorValues[key] ?? null);
+  const mode = useSensorStore((s) => s.mode);
+  const liveValue = useSensorStore((s) => s.sensorValues[key] ?? null);
+  const history = useSensorStore((s) => s.history[key]);
+
+  if (mode === 'instant') {
+    return liveValue;
+  }
+
+  if (history && history.values.length > 0) {
+    return history.values[history.values.length - 1];
+  }
+
+  return liveValue;
 }

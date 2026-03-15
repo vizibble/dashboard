@@ -1,9 +1,28 @@
 import { Plus } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
+
+import { Button } from '@/components/ui/button';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { useCreateAlertRule } from '@/pages/alerts/hooks/device-alert-rules';
 import type {
-  AddRuleFormData, AddRuleFormProps, Condition,
+  AddRuleFormData,
+  AddRuleFormProps,
+  Condition,
 } from '@/pages/alerts/types/types';
 import { submitRuleForm } from '@/pages/alerts/utils/submit-form';
 
@@ -22,12 +41,7 @@ export const AddRuleForm = ({
 }: AddRuleFormProps) => {
   const createMutation = useCreateAlertRule();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isValid },
-  } = useForm<AddRuleFormData>({
+  const form = useForm<AddRuleFormData>({
     defaultValues: {
       parameter: '',
       condition: 'gt',
@@ -36,6 +50,13 @@ export const AddRuleForm = ({
     },
     mode: 'onChange',
   });
+
+  const {
+    handleSubmit,
+    reset,
+    control,
+    formState: { isValid },
+  } = form;
 
   const onSubmit = async (data: AddRuleFormData) => {
     await submitRuleForm(
@@ -47,113 +68,162 @@ export const AddRuleForm = ({
   };
 
   return (
-    <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50">
-      <h3 className="text-xs font-semibold text-slate-600 mb-4 uppercase tracking-wider">
-        Add New Rule
+    <div className="px-4 py-3 border-t bg-muted/20">
+      <h3 className="text-[11px] font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+        Add Rule
       </h3>
 
       <form
+        id="add-rule-form"
+        className="flex flex-wrap items-end gap-x-3 gap-y-3"
         onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col md:flex-row items-start md:items-end gap-4"
       >
-        {/* Parameter */}
-        <div className="flex flex-col gap-1.5 w-full sm:flex-1 md:w-auto">
-          <label className="text-xs font-medium text-slate-500">
-            Parameter
-          </label>
-          {loadingParams ? (
-            <select
-              disabled
-              className="bg-slate-100 border border-slate-200 text-slate-400 text-sm rounded-lg block w-full py-2.5 pl-2.5 pr-8 bg-position-[right_0.75rem_center] cursor-not-allowed"
-            >
-              <option>Loading…</option>
-            </select>
-          ) : (
-            <div className="relative">
-              <select
-                {...register('parameter', { required: 'Required' })}
-                className={`bg-white border ${errors.parameter ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-position-[right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
+        <FieldGroup className="flex flex-wrap items-end gap-x-3 gap-y-3 w-full">
+          {/* Parameter */}
+          <Controller
+            name="parameter"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field
+                data-invalid={fieldState.invalid}
+                className="w-full lg:flex-1 min-w-[180px]"
               >
-                <option value="" disabled>
-                  Select parameter
-                </option>
-                {availableParams.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+                <FieldLabel className="text-[11px]">Parameter</FieldLabel>
 
-        {/* Condition */}
-        <div className="flex flex-col gap-1.5 w-full sm:flex-none sm:w-30">
-          <label className="text-xs font-medium text-slate-500">
-            Condition
-          </label>
-          <select
-            {...register('condition', { required: 'Required' })}
-            className={`bg-white border ${errors.condition ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full py-2.5 pl-2.5 pr-8 bg-position-[right_0.75rem_center] shadow-sm transition-colors cursor-pointer`}
-          >
-            {CONDITION_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
+                {loadingParams ? (
+                  <Skeleton className="h-9 w-full" />
+                ) : (
+                  <Select
+                    name={field.name}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger
+                      className="h-9"
+                      aria-invalid={fieldState.invalid}
+                    >
+                      <SelectValue placeholder="Select parameter" />
+                    </SelectTrigger>
 
-        {/* Threshold */}
-        <div className="flex flex-col gap-1.5 w-full sm:flex-[0.5] md:w-35">
-          <label className="text-xs font-medium text-slate-500">
-            Threshold
-          </label>
-          <input
-            type="number"
-            {...register('threshold', {
+                    <SelectContent>
+                      {availableParams.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+            rules={{ required: 'Required' }}
+          />
+
+          {/* Condition */}
+          <Controller
+            name="condition"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel className="text-[11px]">Condition</FieldLabel>
+
+                <Select
+                  name={field.name}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger
+                    className="h-9"
+                    aria-invalid={fieldState.invalid}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {CONDITION_OPTIONS.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+            rules={{ required: 'Required' }}
+          />
+
+          {/* Threshold */}
+          <Controller
+            name="threshold"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel className="text-[11px]">Value</FieldLabel>
+
+                <Input
+                  {...field}
+                  className="h-9"
+                  placeholder="30"
+                  aria-invalid={fieldState.invalid}
+                />
+
+                {fieldState.invalid && (
+                  <FieldError errors={[fieldState.error]} />
+                )}
+              </Field>
+            )}
+            rules={{
               required: 'Required',
-              valueAsNumber: false,
-              validate: (val) =>
-                !isNaN(Number(val)) || 'Must be a valid number',
-            })}
-            placeholder="e.g. 30"
-            className={`bg-white border ${errors.threshold ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500'} text-slate-900 text-sm rounded-lg focus:ring-2 block w-full p-2.5 shadow-sm transition-colors`}
+              validate: (val) => !isNaN(Number(val)) || 'Must be a number',
+            }}
           />
-        </div>
 
-        {/* Label */}
-        <div className="flex flex-col gap-1.5 w-full sm:flex-1 md:w-auto">
-          <label className="text-xs font-medium text-slate-500">
-            Label (optional)
-          </label>
-          <input
-            {...register('label')}
-            placeholder="e.g. High temp warning"
-            className="bg-white border text-slate-900 text-sm rounded-lg focus:ring-2 border-slate-300 focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 shadow-sm transition-colors"
+          {/* Label */}
+          <Controller
+            name="label"
+            control={control}
+            render={({ field }) => (
+              <Field className="w-full lg:flex-1 min-w-[180px]">
+                <FieldLabel className="text-[11px]">Label</FieldLabel>
+
+                <Input
+                  {...field}
+                  className="h-9"
+                  placeholder="High temp warning"
+                />
+              </Field>
+            )}
           />
-        </div>
 
-        <div className="w-full md:w-auto mt-2 md:mt-0">
-          <button
+          {/* Button */}
+          <Button
+            className="gap-2 h-9 px-4"
             type="submit"
             disabled={createMutation.isPending || !isValid}
-            className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 focus:outline-none rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+            form="add-rule-form"
           >
             {createMutation.isPending ? (
               'Saving…'
             ) : (
               <>
-                <Plus className="w-4 h-4" />
-                Add Rule
+                <Plus className="size-4" />
+                Add
               </>
             )}
-          </button>
-        </div>
+          </Button>
+        </FieldGroup>
       </form>
 
       {createMutation.isError && (
-        <p className="mt-3 text-sm text-red-500 font-medium">
+        <p className="mt-2 text-xs text-destructive font-medium">
           Failed to create rule. Please try again.
         </p>
       )}

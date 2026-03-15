@@ -1,6 +1,6 @@
 import { Droplets, Gauge, Thermometer } from 'lucide-react';
 
-import { Loader } from '@/components/loader';
+import { Spinner } from '@/components/ui/spinner';
 import { useSocket } from '@/hooks/useSocket';
 import { Barometer } from '@/pages/home/components/barometer';
 import { Chart } from '@/pages/home/components/chart';
@@ -19,7 +19,6 @@ import {
 export const HomePage = () => {
   useSocket();
   const { isLoading: historyLoading } = useDeviceHistory();
-
   const selectedDeviceId = useSensorStore((s) => s.selectedDeviceId);
   const selectedDeviceType = useSensorStore((s) => s.selectedDeviceType);
   const history = useSensorStore((s) => s.history);
@@ -38,16 +37,13 @@ export const HomePage = () => {
   const pressureOptions = getPressureOptions({
     times: history['differential_pressure']?.times ?? [],
     differentialPressureData: history['differential_pressure']?.values ?? [],
+    thresholds: { min: -1, max: 5 },
   });
 
   return (
-    <main className="flex-1 flex flex-col w-full min-h-0">
-      <div className="sticky top-20 z-30 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200 px-4 sm:px-6 py-3">
-        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
-          <span className="text-xs hidden sm:block font-bold uppercase tracking-widest text-slate-400 shrink-0">
-            Device
-          </span>
-          <div className="h-4 w-px bg-slate-200 shrink-0 hidden sm:block" />
+    <main className="flex flex-col w-full min-h-0">
+      <div className="sticky top-0 z-30 bg-background/90 backdrop-blur-sm border-b px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
           <DevicePicker />
         </div>
       </div>
@@ -55,25 +51,24 @@ export const HomePage = () => {
       <div className="flex-1 p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6">
         {/* Loading history */}
         {selectedDeviceId && historyLoading && (
-          <Loader
-            text="Loading 24-hour history…"
-            className="flex items-center justify-center gap-2.5 text-sm font-medium text-slate-400 py-16"
-          />
+          <div className="flex items-center justify-center gap-2.5 text-sm font-medium text-muted-foreground py-16">
+            <Spinner className="size-5 text-primary" />
+            <span>Loading data...</span>
+          </div>
         )}
-
         {/* Temp + Humidity */}
         {selectedDeviceId && !historyLoading && isTempHumidity && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6">
               <StatWidget
                 title="Humidity"
-                icon={<Droplets size={16} className="text-blue-500" />}
+                icon={<Droplets className="text-blue-500" size={16} />}
               >
                 <HumidityWidget />
               </StatWidget>
               <StatWidget
                 title="Temperature"
-                icon={<Thermometer size={16} className="text-orange-500" />}
+                icon={<Thermometer className="text-orange-500" size={16} />}
               >
                 <Temp />
               </StatWidget>
@@ -90,7 +85,7 @@ export const HomePage = () => {
             <div className="w-full">
               <StatWidget
                 title="Differential Pressure"
-                icon={<Gauge size={16} className="text-green-500" />}
+                icon={<Gauge className="text-green-500" size={16} />}
               >
                 <Barometer />
               </StatWidget>

@@ -25,7 +25,7 @@ export const DEFAULT_TOOLTIP = {
 export const DEFAULT_GRID = {
   left: '2%',
   right: '2%',
-  bottom: '8%',
+  bottom: '40px',
   top: '16px',
   containLabel: true,
 };
@@ -64,3 +64,24 @@ export const DEFAULT_Y_AXIS = {
     },
   },
 };
+
+export const DEFAULT_DATA_ZOOM = [
+  {
+    type: 'inside' as const,
+    throttle: 50,
+  },
+  {
+    type: 'slider' as const,
+    bottom: 0,
+    height: 25,
+    borderColor: 'transparent',
+    backgroundColor: '#f1f5f9',
+    fillerColor: 'rgba(59, 130, 246, 0.1)',
+    handleSize: '80%',
+    showDetail: false,
+    textStyle: {
+      color: '#64748b',
+      fontSize: 10,
+    },
+  },
+];

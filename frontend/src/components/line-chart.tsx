@@ -17,10 +17,10 @@ export const LineChart = forwardRef<ReactECharts, Props>(
     return (
       <ReactECharts
         ref={ref}
-        option={chartOptions}
-        style={{ height: height }}
-        notMerge
         lazyUpdate
+        notMerge={false}
+        style={{ height: height }}
+        option={chartOptions}
       />
     );
   }

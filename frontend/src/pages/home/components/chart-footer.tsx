@@ -56,6 +56,13 @@ export const ChartFooter = ({ stats, options }: Props) => {
             {stats.max.toFixed(2)}
           </span>
         </div>
+
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <span className="text-slate-400">Avg:</span>
+          <span className="text-blue-500 bg-blue-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-blue-100 font-mono tabular-nums">
+            {stats.avg.toFixed(2)}
+          </span>
+        </div>
       </div>
     </footer>
   );

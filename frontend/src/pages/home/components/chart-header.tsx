@@ -23,30 +23,30 @@ export const ChartHeader = ({
 
       <div className="flex gap-0.5 sm:gap-1 shrink-0">
         <button
-          onClick={onDownload}
-          title="Download PNG"
           className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+          title="Download PNG"
+          onClick={onDownload}
         >
-          <Download size={16} className="sm:hidden" />
-          <Download size={18} className="hidden sm:block" />
+          <Download className="sm:hidden" size={16} />
+          <Download className="hidden sm:block" size={18} />
         </button>
 
         <button
-          onClick={onToggleFullscreen}
-          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           className={cn(
             'p-1.5 sm:p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors'
           )}
+          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+          onClick={onToggleFullscreen}
         >
           {isFullscreen ? (
-            <Minimize size={16} className="sm:hidden" />
+            <Minimize className="sm:hidden" size={16} />
           ) : (
-            <Maximize size={16} className="sm:hidden" />
+            <Maximize className="sm:hidden" size={16} />
           )}
           {isFullscreen ? (
-            <Minimize size={18} className="hidden sm:block" />
+            <Minimize className="hidden sm:block" size={18} />
           ) : (
-            <Maximize size={18} className="hidden sm:block" />
+            <Maximize className="hidden sm:block" size={18} />
           )}
         </button>
       </div>

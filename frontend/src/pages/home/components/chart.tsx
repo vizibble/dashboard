@@ -37,7 +37,7 @@ export const Chart = ({
   const stats = useChartStats(firstSeries);
 
   return (
-    <ChartContainer isFullscreen={isFullscreen} className={className}>
+    <ChartContainer className={className} isFullscreen={isFullscreen}>
       <ChartHeader
         title={title}
         isFullscreen={isFullscreen}
@@ -47,12 +47,12 @@ export const Chart = ({
       <div className={cn('min-h-0', isFullscreen && 'flex-1')}>
         <LineChart
           ref={chartRef}
-          options={options}
           height={isFullscreen ? '100%' : height}
+          options={options}
         />
       </div>
 
-      <ChartFooter stats={stats} options={options} />
+      <ChartFooter options={options} stats={stats} />
     </ChartContainer>
   );
 };
