@@ -21,7 +21,6 @@ export function useUserSettings() {
         setHistoryMode(settings.history_mode || 'instant');
       } catch (error) {
         console.error('Failed to fetch settings:', error);
-        toast.error('Failed to load settings.');
       } finally {
         setLoading(false);
       }
@@ -54,10 +53,8 @@ export function useUserSettings() {
         alert_emails: alertEmails,
         history_mode: historyMode,
       });
-      toast.success('Settings updated successfully!');
     } catch (error) {
       console.error('Failed to save settings:', error);
-      toast.error('Failed to update settings.');
     } finally {
       setSaving(false);
     }

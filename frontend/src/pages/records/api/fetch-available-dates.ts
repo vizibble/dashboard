@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 import api from '@/api/axios';
 
 export async function fetchAvailableDates(
@@ -5,11 +7,14 @@ export async function fetchAvailableDates(
   timezone?: string
 ): Promise<{ dates: string[] }> {
   try {
-    const res = await api.get('/api/device/records/dates', {
+    return await api.get('/api/device/records/dates', {
       params: { deviceId, timezone },
     });
-    return res.data;
-  } catch {
-    throw new Error('Failed to fetch available dates.');
+  } catch (err: unknown) {
+    let message = 'Failed to fetch available dates.';
+    if (axios.isAxiosError(err)) {
+      message = err.response?.data?.message || message;
+    }
+    throw new Error(message);
   }
 }

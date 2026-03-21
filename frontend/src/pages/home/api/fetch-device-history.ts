@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 import api from '@/api/axios';
 
 interface HistoryPoint {
@@ -9,11 +11,14 @@ export async function fetchHistory(
   deviceId: string
 ): Promise<{ rows: HistoryPoint[]; mode: string }> {
   try {
-    const res = await api.get('/api/device/history', {
+    return await api.get('/api/device/history', {
       params: { deviceId },
     });
-    return res.data;
-  } catch {
-    throw new Error('Failed to fetch history.');
+  } catch (err: unknown) {
+    let message = 'Failed to fetch history.';
+    if (axios.isAxiosError(err)) {
+      message = err.response?.data?.message || message;
+    }
+    throw new Error(message);
   }
 }

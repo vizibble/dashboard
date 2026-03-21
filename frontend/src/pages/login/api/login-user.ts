@@ -10,14 +10,14 @@ export interface LoginFormData {
 
 export async function loginRequest(data: LoginFormData) {
   try {
-    const res = await api.post('/api/auth/login', data);
-    const { accessToken } = res.data as { accessToken: string };
-    useAuthStore.getState().setAccessToken(accessToken);
-    return res.data;
+    const res = await api.post<{ accessToken: string }>('/api/auth/login', data);
+    useAuthStore.getState().setAccessToken(res.accessToken);
+    return res;
   } catch (err: unknown) {
+    let message = 'Login failed';
     if (axios.isAxiosError(err)) {
-      throw new Error(err.response?.data?.error ?? 'Login failed');
+      message = err.response?.data?.message || message;
     }
-    throw new Error('An unexpected error occurred.');
+    throw new Error(message);
   }
 }

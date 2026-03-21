@@ -2,8 +2,9 @@ import type { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 
 import { hasDevicePermission } from '@/models/auth.js';
+import { verifyAccessToken } from '@/service/JWTToken.js';
+import type { AuthJwtPayload } from '@/types/index.js';
 import { expectError } from '@/utils/expectError.js';
-import { type AuthJwtPayload, verifyAccessToken } from '@/utils/jwtToken.js';
 import { getTimestamp } from '@/utils/time.js';
 
 // Extend Socket to carry the authenticated user

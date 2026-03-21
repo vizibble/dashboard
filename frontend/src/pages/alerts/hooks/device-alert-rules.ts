@@ -2,7 +2,7 @@ import {
   createAlertRule,
   deleteAlertRule,
   fetchDeviceRules,
-} from '@/pages/alerts/api/alert-rules';
+} from '@/pages/alerts/api/alerts-api';
 import type { CreateAlertRulePayload } from '@/pages/alerts/types/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 

@@ -1,49 +1,58 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
+import { checkAlerts } from '@/helpers/sensor/checkAlerts.js';
 import { insertSensorData } from '@/models/sensor.js';
 import { emitToFrontend } from '@/sockets/index.js';
+import { APIError } from '@/utils/apiError.js';
+import { ErrorCodes } from '@/utils/errorCodes.js';
 import { expectError } from '@/utils/expectError.js';
+import { ApiResponse } from '@/utils/response.js';
 
 export async function handleSensorData(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> {
-  const { device_id, ...rest } = req.body as Record<string, unknown>;
+  try {
+    const { device_id, ...rest } = req.body as Record<string, unknown>;
 
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (typeof device_id !== 'string' || !uuidRegex.test(device_id)) {
-    res.status(400).json({ error: 'Invalid device ID.' });
-    return;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (typeof device_id !== 'string' || !uuidRegex.test(device_id)) {
+      ApiResponse.fail(res, ErrorCodes.VALIDATION_ERROR, 400);
+      return;
+    }
+
+    const sensorPayload: Record<string, number> = {};
+    for (const [key, val] of Object.entries(rest)) {
+      const num = Number(val);
+      if (isNaN(num)) continue;
+      sensorPayload[key] = num;
+    }
+    if (Object.keys(sensorPayload).length === 0) {
+      ApiResponse.fail(res, ErrorCodes.VALIDATION_ERROR, 400);
+      return;
+    }
+
+    const [insertErr, sensorRow] = await expectError(
+      insertSensorData(device_id, sensorPayload)
+    );
+    if (insertErr) {
+      next(new APIError('Internal Server Error', 500));
+      return;
+    }
+
+    emitToFrontend(`device-${device_id}`, 'update', {
+      connectionID: device_id,
+      ...sensorPayload,
+      timestamp: sensorRow.recorded_at,
+    });
+
+    ApiResponse.success(res, { success: true });
+
+    // Evaluate alert rules in a non-blocking way
+    void checkAlerts(device_id, sensorPayload);
+  } catch (error) {
+    next(error);
   }
-
-  const sensorPayload: Record<string, number> = {};
-  for (const [key, val] of Object.entries(rest)) {
-    const num = Number(val);
-    if (isNaN(num)) continue;
-    sensorPayload[key] = num;
-  }
-  if (Object.keys(sensorPayload).length === 0) {
-    res.status(400).json({ error: 'No valid sensor data provided.' });
-    return;
-  }
-
-  const [insertErr, sensorRow] = await expectError(
-    insertSensorData(device_id, sensorPayload)
-  );
-  if (insertErr) {
-    res.status(500).json({ error: 'Internal Server Error' });
-    return;
-  }
-
-  emitToFrontend(`device-${device_id}`, 'update', {
-    connectionID: device_id,
-    ...sensorPayload,
-    timestamp: sensorRow.recorded_at,
-  });
-
-  res.status(200).json({ success: true });
-
-  // Evaluate alert rules in a non-blocking way
-  // void evaluateAlertRules(device_id, sensorPayload);
 }

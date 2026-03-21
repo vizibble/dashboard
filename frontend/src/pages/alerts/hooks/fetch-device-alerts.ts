@@ -1,4 +1,4 @@
-import { fetchAlerts } from '@/pages/alerts/api/fetch-alerts';
+import { fetchAlerts } from '@/pages/alerts/api/alerts-api';
 import { useQuery } from '@tanstack/react-query';
 
 export const useFetchAlerts = () => {

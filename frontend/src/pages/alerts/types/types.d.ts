@@ -1,5 +1,5 @@
 export interface Alert {
-  id: string;
+  id: number;
   device_id: string;
   parameter: string;
   formatted_parameter?: string;
@@ -7,12 +7,13 @@ export interface Alert {
   recorded_at: string;
   device_name: string;
   device_location: string;
+  device_type: string;
 }
 
 export type Condition = 'gt' | 'lt' | 'gte' | 'lte' | 'eq';
 
 export interface AlertRule {
-  id: string;
+  id: number;
   rule_id: string;
   device_id: string;
   parameter: string;

@@ -8,10 +8,16 @@ import {
 
 const router = Router();
 
-router.post('/login', handleLogin);
+router.post('/login', (req, res, next) => {
+  handleLogin(req, res, next).catch(next);
+});
 
-router.post('/refresh', handleRefresh);
+router.post('/refresh', (req, res, next) => {
+  handleRefresh(req, res, next);
+});
 
-router.post('/logout', handleLogout);
+router.post('/logout', (req, res, next) => {
+  handleLogout(req, res, next);
+});
 
 export default router;

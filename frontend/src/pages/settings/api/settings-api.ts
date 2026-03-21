@@ -1,13 +1,30 @@
+import axios from 'axios';
+
 import api from '@/api/axios';
 import type { UserSettings } from '@/pages/settings/types/types';
 
 export async function fetchUserSettings(): Promise<UserSettings> {
-  const res = await api.get('/api/user/settings');
-  return res.data;
+  try {
+    return await api.get<UserSettings>('/api/user/settings');
+  } catch (err: unknown) {
+    let message = 'Failed to fetch settings.';
+    if (axios.isAxiosError(err)) {
+      message = err.response?.data?.message || message;
+    }
+    throw new Error(message);
+  }
 }
 
 export async function updateUserSettings(
   settings: UserSettings
 ): Promise<void> {
-  await api.post('/api/user/settings', settings);
+  try {
+    await api.put('/api/user/settings', settings);
+  } catch (err: unknown) {
+    let message = 'Failed to update settings.';
+    if (axios.isAxiosError(err)) {
+      message = err.response?.data?.message || message;
+    }
+    throw new Error(message);
+  }
 }

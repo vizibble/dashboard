@@ -5,13 +5,12 @@ import type { Device } from '@/pages/home/types/types';
 
 export async function fetchDevices(): Promise<Device[]> {
   try {
-    const res = await api.get('/api/device');
-    return res.data;
+    return await api.get<Device[]>('/api/device');
   } catch (err: unknown) {
-    if (axios.isAxiosError(err) && err.response?.status === 401) {
-      window.location.href = '/#/login';
-      return [];
+    let message = 'Failed to load devices.';
+    if (axios.isAxiosError(err)) {
+      message = err.response?.data?.message || message;
     }
-    throw new Error('Failed to load devices.');
+    throw new Error(message);
   }
 }

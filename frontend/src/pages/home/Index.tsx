@@ -6,6 +6,9 @@ import { Barometer } from '@/pages/home/components/barometer';
 import { Chart } from '@/pages/home/components/chart';
 import { DevicePicker } from '@/pages/home/components/device-picker';
 import { HumidityWidget } from '@/pages/home/components/humidity';
+import { MachineStatusChart } from '@/pages/home/components/machine-status-chart';
+import { PulseBarChart } from '@/pages/home/components/pulse-bar-chart';
+import { PulseStat } from '@/pages/home/components/pulse-stat';
 import { Temp } from '@/pages/home/components/temperature';
 import { StatWidget } from '@/pages/home/components/widget';
 import { useDeviceHistory } from '@/pages/home/hooks/fetch-device-history';
@@ -25,6 +28,7 @@ export const HomePage = () => {
 
   const isTempHumidity = selectedDeviceType === 'temp_humidity';
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
+  const isLengthCount = selectedDeviceType === 'production_count';
 
   const temperatureOptions = getTemperatureOptions({
     times: history['temperature']?.times ?? [],
@@ -93,6 +97,19 @@ export const HomePage = () => {
             <div className="w-full">
               <Chart title="Differential Pressure" options={pressureOptions} />
             </div>
+          </>
+        )}
+        {/* Length Count — Tynor device */}
+        {selectedDeviceId && !historyLoading && isLengthCount && (
+          <>
+            {/* Row 1: Today's total stat */}
+            <PulseStat />
+
+            {/* Row 2: Per-minute bar chart */}
+            <PulseBarChart />
+
+            {/* Row 3: Active / Idle / Offline timeline */}
+            <MachineStatusChart />
           </>
         )}
       </div>

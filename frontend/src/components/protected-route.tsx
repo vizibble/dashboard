@@ -30,7 +30,8 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         { withCredentials: true, signal: controller.signal }
       )
       .then((res) => {
-        const { accessToken: newToken } = res.data as { accessToken: string };
+        const payload = res.data as { status: string; data: { accessToken: string } };
+        const newToken = payload.data.accessToken;
         setAccessToken(newToken);
         setStatus('ok');
       })

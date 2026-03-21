@@ -1,8 +1,6 @@
-import jwt, { type JwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-export interface AuthJwtPayload extends JwtPayload {
-  user_id: string;
-}
+import type { AuthJwtPayload } from '@/types/index.js';
 
 const ACCESS_TOKEN_SECRET = () => {
   const s = process.env['ACCESS_TOKEN_SECRET'];

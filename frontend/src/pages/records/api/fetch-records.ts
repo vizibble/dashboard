@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 import api from '@/api/axios';
 
 export interface RecordPoint {
@@ -8,14 +10,17 @@ export interface RecordPoint {
 export async function fetchRecords(
   deviceId: string,
   date: string,
-  timezone?: string
+  timezone: string
 ): Promise<{ rows: RecordPoint[] }> {
   try {
-    const res = await api.get('/api/device/records', {
+    return await api.get('/api/device/records', {
       params: { deviceId, date, timezone },
     });
-    return res.data;
-  } catch {
-    throw new Error('Failed to fetch records.');
+  } catch (err: unknown) {
+    let message = 'Failed to fetch records.';
+    if (axios.isAxiosError(err)) {
+      message = err.response?.data?.message || message;
+    }
+    throw new Error(message);
   }
 }

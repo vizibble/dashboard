@@ -1,7 +1,7 @@
-import pool from '@/db.js';
+import pool from '@/service/dbConnection.js';
 
 export interface SensorDataRow {
-  id: bigint;
+  id: number;
   device_id: string;
   payload: Record<string, unknown>;
   recorded_at: Date;

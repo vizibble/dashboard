@@ -1,17 +1,7 @@
-import pool from '@/db.js';
+import pool from '@/service/dbConnection.js';
+import type { Device, DeviceOwnerInfo, HistoryRow } from '@/types/index.js';
 import { formatParamLabel } from '@/utils/formatParam.js';
 
-export interface Device {
-  id: number;
-  device_id: string;
-  user_id: string;
-  device_info: {
-    name: string;
-    type: string;
-    location: string;
-  };
-  created_at: Date;
-}
 export async function getUserDevices(userId: string): Promise<Device[]> {
   const result = await pool.query<Device>(
     `SELECT 
@@ -30,13 +20,9 @@ export async function getUserDevices(userId: string): Promise<Device[]> {
   return result.rows;
 }
 
-export interface HistoryRow {
-  payload: Record<string, number>;
-  recorded_at: Date;
-}
 export async function getDeviceHistory(
   deviceId: string,
-  mode = 'instant',
+  mode: 'instant' | 'daily' | 'monthly' = 'instant',
   timezone = 'Asia/Kolkata'
 ): Promise<HistoryRow[]> {
   let truncation = 'minute';
@@ -129,11 +115,6 @@ export async function getAvailableDates(
   });
 }
 
-export interface DeviceOwnerInfo {
-  email: string;
-  alertEmails?: string[];
-  deviceName: string;
-}
 export async function getDeviceOwnerInfo(
   deviceId: string
 ): Promise<DeviceOwnerInfo | null> {

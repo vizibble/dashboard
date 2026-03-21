@@ -19,5 +19,6 @@ const formatters: Record<string, Intl.DateTimeFormat> = {
 };
 
 export const formatTimeLabel = (date: Date, mode: SensorStore['mode']) => {
-  return formatters[mode]?.format(date) ?? date.toLocaleString();
+  const currentMode = mode || 'instant';
+  return formatters[currentMode]?.format(date) ?? date.toLocaleTimeString();
 };

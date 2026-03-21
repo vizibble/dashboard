@@ -1,10 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { type AuthJwtPayload, verifyAccessToken } from '@/utils/jwtToken.js';
-
-export interface AuthenticatedRequest extends Request {
-  user: AuthJwtPayload;
-}
+import { verifyAccessToken } from '@/service/JWTToken.js';
+import type { AuthenticatedRequest } from '@/types/index.js';
 
 export function requireAuth(
   req: Request,

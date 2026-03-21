@@ -1,9 +1,5 @@
-import pool from '@/db.js';
-
-export interface UserSettings {
-  alert_emails?: string[];
-  history_mode?: 'instant' | 'daily' | 'monthly';
-}
+import pool from '@/service/dbConnection.js';
+import type { UserSettings } from '@/types/index.js';
 
 export async function getUserSettings(userId: string): Promise<UserSettings> {
   const result = await pool.query<UserSettings>(
@@ -21,9 +17,9 @@ export async function updateUserSettings(
     `INSERT INTO user_settings (user_id, alert_emails, history_mode)
      VALUES ($1, $2, $3)
      ON CONFLICT (user_id) DO UPDATE 
-     SET alert_emails = EXCLUDED.alert_emails,
-         history_mode = EXCLUDED.history_mode,
+     SET alert_emails = COALESCE($2, user_settings.alert_emails),
+         history_mode = COALESCE($3, user_settings.history_mode),
          updated_at = NOW()`,
-    [userId, settings.alert_emails || [], settings.history_mode || 'instant']
+    [userId, settings.alert_emails ?? null, settings.history_mode ?? null]
   );
 }

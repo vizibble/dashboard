@@ -1,13 +1,5 @@
-import pool from '@/db.js';
-
-export interface User {
-  id: number;
-  user_id: string;
-  email: string;
-  password: string;
-  name: string;
-  created_at: Date;
-}
+import pool from '@/service/dbConnection.js';
+import type { User } from '@/types/index.js';
 
 export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await pool.query<User>(
