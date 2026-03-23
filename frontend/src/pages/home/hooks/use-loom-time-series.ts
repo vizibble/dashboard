@@ -17,8 +17,17 @@ export const useLoomTimeSeries = (propTimes: string[], propValues: number[]) => 
     // Build a fast lookup: timestamp (ms, seconds zeroed) → value
     const dataMap = new Map<number, number>();
     for (let i = 0; i < propTimes.length; i++) {
-      const d = new Date(propTimes[i]);
-      if (isNaN(d.getTime())) continue;
+      let d = new Date(propTimes[i]);
+      // If it's a formatted time string like "HH:mm" or "HH:mm:ss" (which sensor-store outputs), new Date() will fail.
+      if (isNaN(d.getTime())) {
+        const parts = propTimes[i].split(':').map(Number);
+        if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          d = new Date();
+          d.setHours(parts[0], parts[1], 0, 0);
+        } else {
+          continue;
+        }
+      }
       d.setSeconds(0, 0);
       dataMap.set(d.getTime(), propValues[i]);
     }
