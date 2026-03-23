@@ -4,7 +4,7 @@ import { getUserSettings, updateUserSettings } from '@/models/user.js';
 import type { AuthenticatedRequest } from '@/types/index.js';
 import { APIError } from '@/utils/apiError.js';
 import { expectError } from '@/utils/expectError.js';
-import { ApiResponse } from '@/utils/response.js';
+import { ApiResponse } from '@/utils/apiResponse.js';
 
 export async function handleGetSettings(
   req: Request,

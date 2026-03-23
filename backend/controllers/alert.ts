@@ -12,7 +12,7 @@ import type { AuthenticatedRequest, Condition } from '@/types/index.js';
 import { APIError } from '@/utils/apiError.js';
 import { ErrorCodes } from '@/utils/errorCodes.js';
 import { expectError } from '@/utils/expectError.js';
-import { ApiResponse } from '@/utils/response.js';
+import { ApiResponse } from '@/utils/apiResponse.js';
 
 const VALID_CONDITIONS: Condition[] = ['gt', 'lt', 'gte', 'lte', 'eq'];
 

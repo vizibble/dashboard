@@ -11,7 +11,7 @@ import deviceRouter from '@/routes/device.js';
 import sensorRouter from '@/routes/sensor.js';
 import userRouter from '@/routes/user.js';
 import { initSocket } from '@/sockets/index.js';
-import { spawnEmailWorker } from '@/service/bullMQQueue.js';
+// import { spawnEmailWorker, shutdownEmailWorker } from '@/service/bullMQQueue.js';
 import { globalErrorHandler } from '@/middleware/errorHandler.js';
 
 const app = express();
@@ -40,10 +40,22 @@ app.use(globalErrorHandler);
 
 const httpServer = http.createServer(app);
 initSocket(httpServer);
-spawnEmailWorker();
+// spawnEmailWorker();
 
 const PORT = Number(process.env['PORT']);
 
 httpServer.listen(PORT, () =>
   console.log(`Listening on http://localhost:${PORT}`)
 );
+
+const handleShutdown = async (signal: string) => {
+  console.log(`\nReceived ${signal}.`);
+  // await shutdownEmailWorker();
+  httpServer.close(() => {
+    console.log('Server closed. Exiting.');
+    process.exit(0);
+  });
+};
+
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));

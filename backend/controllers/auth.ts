@@ -11,7 +11,7 @@ import type { LoginBody } from '@/types/index.js';
 import { APIError } from '@/utils/apiError.js';
 import { ErrorCodes } from '@/utils/errorCodes.js';
 import { expectError } from '@/utils/expectError.js';
-import { ApiResponse } from '@/utils/response.js';
+import { ApiResponse } from '@/utils/apiResponse.js';
 
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 

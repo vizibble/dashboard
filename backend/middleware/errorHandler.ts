@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { APIError } from '@/utils/apiError.js';
-import { ApiResponse } from '@/utils/response.js';
+import { ApiResponse } from '@/utils/apiResponse.js';
 import { getTimestamp } from '@/utils/time.js';
 
 export function globalErrorHandler(

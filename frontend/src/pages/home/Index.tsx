@@ -7,8 +7,6 @@ import { Chart } from '@/pages/home/components/chart';
 import { DevicePicker } from '@/pages/home/components/device-picker';
 import { HumidityWidget } from '@/pages/home/components/humidity';
 import { MachineStatusChart } from '@/pages/home/components/machine-status-chart';
-import { PulseBarChart } from '@/pages/home/components/pulse-bar-chart';
-import { PulseStat } from '@/pages/home/components/pulse-stat';
 import { Temp } from '@/pages/home/components/temperature';
 import { StatWidget } from '@/pages/home/components/widget';
 import { useDeviceHistory } from '@/pages/home/hooks/fetch-device-history';
@@ -19,9 +17,16 @@ import {
   getTemperatureOptions,
 } from '@/pages/home/utils/chart-options';
 
+import { useMemo } from 'react';
+import { getLoomDummyData } from '@/pages/home/components/loom-dummy-data';
+import { LoomCumulativeChart } from '@/pages/home/components/loom-cumulative-chart';
+import { LoomStats } from '@/pages/home/components/loom-stats';
+import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
+
 export const HomePage = () => {
   useSocket();
   const { isLoading: historyLoading } = useDeviceHistory();
+  const dummyLoomData = useMemo(() => getLoomDummyData(), []);
   const selectedDeviceId = useSensorStore((s) => s.selectedDeviceId);
   const selectedDeviceType = useSensorStore((s) => s.selectedDeviceType);
   const history = useSensorStore((s) => s.history);
@@ -29,6 +34,10 @@ export const HomePage = () => {
   const isTempHumidity = selectedDeviceType === 'temp_humidity';
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
+
+  const loomTimes = selectedDeviceId ? history['length']?.times ?? [] : dummyLoomData.times;
+  const loomValues = selectedDeviceId ? history['length']?.values ?? [] : dummyLoomData.values;
+  const loomMetrics = useLoomTimeSeries(loomTimes, loomValues);
 
   const temperatureOptions = getTemperatureOptions({
     times: history['temperature']?.times ?? [],
@@ -99,17 +108,32 @@ export const HomePage = () => {
             </div>
           </>
         )}
-        {/* Length Count — Tynor device */}
+        {/* Fabric Production — Weaving Loom */}
         {selectedDeviceId && !historyLoading && isLengthCount && (
           <>
-            {/* Row 1: Today's total stat */}
-            <PulseStat />
+            {/* Row 1: Stats */}
+            <LoomStats summary={loomMetrics.summary} />
 
-            {/* Row 2: Per-minute bar chart */}
-            <PulseBarChart />
+            {/* Row 2: Cumulative Area Chart */}
+            <LoomCumulativeChart times={loomMetrics.times} values={loomMetrics.cumulativeValues} />
 
             {/* Row 3: Active / Idle / Offline timeline */}
-            <MachineStatusChart />
+            <MachineStatusChart 
+              statusData={loomMetrics.statusData} 
+              summary={loomMetrics.summary} 
+            />
+          </>
+        )}
+
+        {/* Start page demo if nothing selected */}
+        {!selectedDeviceId && (
+          <>
+            <LoomStats summary={loomMetrics.summary} />
+            <LoomCumulativeChart times={loomMetrics.times} values={loomMetrics.cumulativeValues} />
+            <MachineStatusChart 
+              statusData={loomMetrics.statusData} 
+              summary={loomMetrics.summary} 
+            />
           </>
         )}
       </div>

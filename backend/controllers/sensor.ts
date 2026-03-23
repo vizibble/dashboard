@@ -6,7 +6,7 @@ import { emitToFrontend } from '@/sockets/index.js';
 import { APIError } from '@/utils/apiError.js';
 import { ErrorCodes } from '@/utils/errorCodes.js';
 import { expectError } from '@/utils/expectError.js';
-import { ApiResponse } from '@/utils/response.js';
+import { ApiResponse } from '@/utils/apiResponse.js';
 
 export async function handleSensorData(
   req: Request,
@@ -51,7 +51,7 @@ export async function handleSensorData(
     ApiResponse.success(res, { success: true });
 
     // Evaluate alert rules in a non-blocking way
-    void checkAlerts(device_id, sensorPayload);
+    // void checkAlerts(device_id, sensorPayload);
   } catch (error) {
     next(error);
   }

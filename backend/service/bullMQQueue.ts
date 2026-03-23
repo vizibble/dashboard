@@ -40,3 +40,11 @@ export function spawnEmailWorker() {
     console.error(`[Worker] Job ${job?.id} failed:`, err.message);
   });
 }
+
+export async function shutdownEmailWorker() {
+  if (emailWorker) {
+    await emailWorker.close();
+    emailWorker = null;
+    console.log('Worker shutdown complete');
+  }
+}
