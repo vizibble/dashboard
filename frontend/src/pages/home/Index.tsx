@@ -17,8 +17,6 @@ import {
   getTemperatureOptions,
 } from '@/pages/home/utils/chart-options';
 
-import { useMemo } from 'react';
-import { getLoomDummyData } from '@/pages/home/components/loom-dummy-data';
 import { LoomCumulativeChart } from '@/pages/home/components/loom-cumulative-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
 import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
@@ -26,7 +24,6 @@ import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
 export const HomePage = () => {
   useSocket();
   const { isLoading: historyLoading } = useDeviceHistory();
-  const dummyLoomData = useMemo(() => getLoomDummyData(), []);
   const selectedDeviceId = useSensorStore((s) => s.selectedDeviceId);
   const selectedDeviceType = useSensorStore((s) => s.selectedDeviceType);
   const history = useSensorStore((s) => s.history);
@@ -35,8 +32,8 @@ export const HomePage = () => {
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
 
-  const loomTimes = selectedDeviceId ? history['length']?.times ?? [] : dummyLoomData.times;
-  const loomValues = selectedDeviceId ? history['length']?.values ?? [] : dummyLoomData.values;
+  const loomTimes = history['length']?.times ?? [];
+  const loomValues = history['length']?.values ?? [];
   const loomMetrics = useLoomTimeSeries(loomTimes, loomValues);
 
   const temperatureOptions = getTemperatureOptions({
@@ -118,18 +115,6 @@ export const HomePage = () => {
             <LoomCumulativeChart times={loomMetrics.times} values={loomMetrics.cumulativeValues} />
 
             {/* Row 3: Active / Idle / Offline timeline */}
-            <MachineStatusChart 
-              statusData={loomMetrics.statusData} 
-              summary={loomMetrics.summary} 
-            />
-          </>
-        )}
-
-        {/* Start page demo if nothing selected */}
-        {!selectedDeviceId && (
-          <>
-            <LoomStats summary={loomMetrics.summary} />
-            <LoomCumulativeChart times={loomMetrics.times} values={loomMetrics.cumulativeValues} />
             <MachineStatusChart 
               statusData={loomMetrics.statusData} 
               summary={loomMetrics.summary} 
