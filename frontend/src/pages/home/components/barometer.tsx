@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react';
 
 import { RadialGauge } from 'canvas-gauges';
 
-import { useSensorField } from '@/pages/home/hooks/latest-sensor-value';
+import { useDailyAverage } from '@/pages/home/hooks/latest-sensor-value';
 
 export const Barometer = () => {
-  const value = useSensorField('differential_pressure') ?? 0;
+  const value = useDailyAverage('differential_pressure') ?? 0;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gaugeRef = useRef<RadialGauge | null>(null);
 
@@ -18,7 +18,7 @@ export const Barometer = () => {
       height: 220,
 
       units: 'Pa',
-      title: '',
+      title: 'Daily Avg',
 
       minValue: -10,
       maxValue: 10,

@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react';
 
 import { RadialGauge } from 'canvas-gauges';
 
-import { useSensorField } from '@/pages/home/hooks/latest-sensor-value';
+import { useDailyAverage } from '@/pages/home/hooks/latest-sensor-value';
 
 export const HumidityWidget = () => {
-  const value = useSensorField('humidity') ?? 0;
+  const value = useDailyAverage('humidity') ?? 0;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gaugeRef = useRef<RadialGauge | null>(null);
@@ -19,7 +19,7 @@ export const HumidityWidget = () => {
       height: 220,
 
       units: '%RH',
-      title: 'Humidity',
+      title: 'Daily Avg',
 
       minValue: 0,
       maxValue: 100,

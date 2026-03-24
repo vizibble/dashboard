@@ -8,6 +8,7 @@ interface Thresholds {
 export const getTemperatureOptions = (data: {
   times: string[];
   temperatureData: number[];
+  thresholds?: Thresholds;
 }): EChartsOption => ({
   xAxis: {
     data: data.times,
@@ -16,6 +17,7 @@ export const getTemperatureOptions = (data: {
     min: 15,
     max: 40,
   },
+  visualMap: getVisualMap(data.thresholds?.min, data.thresholds?.max),
   series: [
     {
       name: 'Temperature',
@@ -26,6 +28,7 @@ export const getTemperatureOptions = (data: {
       tooltip: {
         valueFormatter: (value: unknown) => `${value} °C`,
       },
+      markLine: getMarkLine(data.thresholds?.min, data.thresholds?.max),
     },
   ],
 });
@@ -33,6 +36,7 @@ export const getTemperatureOptions = (data: {
 export const getHumidityOptions = (data: {
   times: string[];
   humidityData: number[];
+  thresholds?: Thresholds;
 }): EChartsOption => ({
   xAxis: {
     data: data.times,
@@ -41,6 +45,7 @@ export const getHumidityOptions = (data: {
     min: 0,
     max: 100,
   },
+  visualMap: getVisualMap(data.thresholds?.min, data.thresholds?.max),
   series: [
     {
       name: 'Humidity',
@@ -51,6 +56,7 @@ export const getHumidityOptions = (data: {
       tooltip: {
         valueFormatter: (value: unknown) => `${value} %RH`,
       },
+      markLine: getMarkLine(data.thresholds?.min, data.thresholds?.max),
     },
   ],
 });

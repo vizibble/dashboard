@@ -39,10 +39,12 @@ export const HomePage = () => {
   const temperatureOptions = getTemperatureOptions({
     times: history['temperature']?.times ?? [],
     temperatureData: history['temperature']?.values ?? [],
+    thresholds: { min: 21, max: 25 },
   });
   const humidityOptions = getHumidityOptions({
     times: history['humidity']?.times ?? [],
     humidityData: history['humidity']?.values ?? [],
+    thresholds: { min: 40, max: 60 },
   });
   const pressureOptions = getPressureOptions({
     times: history['differential_pressure']?.times ?? [],
@@ -71,13 +73,13 @@ export const HomePage = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6">
               <StatWidget
-                title="Humidity"
+                title="Humidity (Daily Avg)"
                 icon={<Droplets className="text-blue-500" size={16} />}
               >
                 <HumidityWidget />
               </StatWidget>
               <StatWidget
-                title="Temperature"
+                title="Temperature (Daily Avg)"
                 icon={<Thermometer className="text-orange-500" size={16} />}
               >
                 <Temp />
@@ -94,7 +96,7 @@ export const HomePage = () => {
           <>
             <div className="w-full">
               <StatWidget
-                title="Differential Pressure"
+                title="Differential Pressure (Daily Avg)"
                 icon={<Gauge className="text-green-500" size={16} />}
               >
                 <Barometer />
