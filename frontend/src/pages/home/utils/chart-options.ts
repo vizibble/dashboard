@@ -5,6 +5,10 @@ interface Thresholds {
   max?: number;
 }
 
+export const DEFAULT_TEMPERATURE_THRESHOLDS: Thresholds = { min: 21, max: 25 };
+export const DEFAULT_HUMIDITY_THRESHOLDS: Thresholds = { min: 40, max: 60 };
+export const DEFAULT_PRESSURE_THRESHOLDS: Thresholds = { min: -1, max: 5 };
+
 export const getTemperatureOptions = (data: {
   times: string[];
   temperatureData: number[];

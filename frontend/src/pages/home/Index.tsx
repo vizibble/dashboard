@@ -12,6 +12,9 @@ import { StatWidget } from '@/pages/home/components/widget';
 import { useDeviceHistory } from '@/pages/home/hooks/fetch-device-history';
 import { useSensorStore } from '@/pages/home/store/sensor-store';
 import {
+  DEFAULT_HUMIDITY_THRESHOLDS,
+  DEFAULT_PRESSURE_THRESHOLDS,
+  DEFAULT_TEMPERATURE_THRESHOLDS,
   getHumidityOptions,
   getPressureOptions,
   getTemperatureOptions,
@@ -39,17 +42,17 @@ export const HomePage = () => {
   const temperatureOptions = getTemperatureOptions({
     times: history['temperature']?.times ?? [],
     temperatureData: history['temperature']?.values ?? [],
-    thresholds: { min: 21, max: 25 },
+    thresholds: DEFAULT_TEMPERATURE_THRESHOLDS,
   });
   const humidityOptions = getHumidityOptions({
     times: history['humidity']?.times ?? [],
     humidityData: history['humidity']?.values ?? [],
-    thresholds: { min: 40, max: 60 },
+    thresholds: DEFAULT_HUMIDITY_THRESHOLDS,
   });
   const pressureOptions = getPressureOptions({
     times: history['differential_pressure']?.times ?? [],
     differentialPressureData: history['differential_pressure']?.values ?? [],
-    thresholds: { min: -1, max: 5 },
+    thresholds: DEFAULT_PRESSURE_THRESHOLDS,
   });
 
   return (

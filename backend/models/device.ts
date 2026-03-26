@@ -64,13 +64,14 @@ export async function getDeviceHistory(
 export async function getDeviceRecordsByDate(
   deviceId: string,
   dateString: string,
-  timezone = 'Asia/Kolkata'
+  timezone = 'Asia/Kolkata',
+  resolution: 'hour' | 'minute' = 'hour'
 ): Promise<HistoryRow[]> {
   const result = await pool.query<HistoryRow>(
     `
     WITH aggregated_data AS (
       SELECT 
-        date_trunc('hour', recorded_at, CAST($3 AS text)) AS trunc_time,
+        date_trunc($4, recorded_at, CAST($3 AS text)) AS trunc_time,
         key,
         AVG(value::numeric) AS avg_value
       FROM sensor_readings
@@ -87,7 +88,7 @@ export async function getDeviceRecordsByDate(
     GROUP BY trunc_time
     ORDER BY trunc_time ASC
     `,
-    [deviceId, dateString, timezone]
+    [deviceId, dateString, timezone, resolution]
   );
   return result.rows;
 }

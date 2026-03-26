@@ -1,14 +1,19 @@
 import { fetchRecords } from '@/pages/records/api/fetch-records';
 import { useQuery } from '@tanstack/react-query';
 
-export function useDeviceRecords(deviceId: string | null, date: string | null) {
+export function useDeviceRecords(
+  deviceId: string | null,
+  date: string | null,
+  resolution: 'hour' | 'minute' = 'hour'
+) {
   const query = useQuery({
-    queryKey: ['device-records', deviceId, date],
+    queryKey: ['device-records', deviceId, date, resolution],
     queryFn: () =>
       fetchRecords(
         deviceId!,
         date!,
-        Intl.DateTimeFormat().resolvedOptions().timeZone
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+        resolution
       ),
     enabled: !!deviceId && !!date,
   });

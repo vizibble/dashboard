@@ -102,6 +102,7 @@ export async function handleGetDeviceRecords(
     const deviceId = req.query['deviceId'] as string;
     const date = req.query['date'] as string;
     const timezone = req.query['timezone'] as string;
+    const resolution = (req.query['resolution'] as 'hour' | 'minute') || 'hour';
 
     if (!deviceId || !date || !timezone) {
       ApiResponse.fail(res, ErrorCodes.VALIDATION_ERROR, 400);
@@ -117,7 +118,7 @@ export async function handleGetDeviceRecords(
     }
 
     const [err, rows] = await expectError(
-      getDeviceRecordsByDate(deviceId, date, timezone)
+      getDeviceRecordsByDate(deviceId, date, timezone, resolution)
     );
     if (err) {
       next(new APIError('Failed to fetch device records.', 500));

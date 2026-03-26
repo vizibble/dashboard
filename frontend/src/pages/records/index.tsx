@@ -13,7 +13,14 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { Chart } from '@/pages/home/components/chart';
+import { LoomCumulativeChart } from '@/pages/home/components/loom-cumulative-chart';
+import { LoomStats } from '@/pages/home/components/loom-stats';
+import { MachineStatusChart } from '@/pages/home/components/machine-status-chart';
+import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
 import {
+  DEFAULT_HUMIDITY_THRESHOLDS,
+  DEFAULT_PRESSURE_THRESHOLDS,
+  DEFAULT_TEMPERATURE_THRESHOLDS,
   getHumidityOptions,
   getPressureOptions,
   getTemperatureOptions,
@@ -40,12 +47,15 @@ export const RecordsPage = () => {
 
   const isTempHumidity = selectedDeviceType === 'temp_humidity';
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
+  const isLengthCount = selectedDeviceType === 'production_count';
 
   const { dates: availableDates, isLoading: loadingDates } = useAvailableDates(selectedDeviceId);
   
+  const resolution = isLengthCount ? 'minute' : 'hour';
   const { data, isLoading: loadingRecords } = useDeviceRecords(
     selectedDeviceId,
-    formatDateForApi(date)
+    formatDateForApi(date),
+    resolution
   );
 
   const isLoading = loadingDates || loadingRecords;
@@ -56,6 +66,9 @@ export const RecordsPage = () => {
   const temperatureData: number[] = [];
   const humidityData: number[] = [];
   const pressureData: number[] = [];
+
+  const loomTimesApi: string[] = [];
+  const loomValuesApi: number[] = [];
 
   history.forEach((row) => {
     const d = new Date(row.recorded_at);
@@ -71,14 +84,32 @@ export const RecordsPage = () => {
     if (row.payload['differential_pressure'] !== undefined) {
       pressureData.push(row.payload['differential_pressure']);
     }
+    if (row.payload['length'] !== undefined) {
+      loomTimesApi.push(row.recorded_at);
+      loomValuesApi.push(row.payload['length']);
+    }
   });
 
-  const temperatureOptions = getTemperatureOptions({ times, temperatureData });
-  const humidityOptions = getHumidityOptions({ times, humidityData });
+  const loomMetrics = useLoomTimeSeries(
+    loomTimesApi, 
+    loomValuesApi, 
+    date || new Date()
+  );
+
+  const temperatureOptions = getTemperatureOptions({
+    times,
+    temperatureData,
+    thresholds: DEFAULT_TEMPERATURE_THRESHOLDS,
+  });
+  const humidityOptions = getHumidityOptions({
+    times,
+    humidityData,
+    thresholds: DEFAULT_HUMIDITY_THRESHOLDS,
+  });
   const pressureOptions = getPressureOptions({
     times,
     differentialPressureData: pressureData,
-    thresholds: { min: -1, max: 5 },
+    thresholds: DEFAULT_PRESSURE_THRESHOLDS,
   });
 
   return (
@@ -174,19 +205,32 @@ export const RecordsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
               {isTempHumidity && (
                 <>
-                  <Chart title="Humidity" options={humidityOptions} />
-                  <Chart title="Temperature" options={temperatureOptions} />
+                  <Chart key={`hum-${date.toISOString()}`} title="Humidity" options={humidityOptions} />
+                  <Chart key={`temp-${date.toISOString()}`} title="Temperature" options={temperatureOptions} />
                 </>
               )}
               {isDiffPressure && (
                 <div className="col-span-full">
                   <Chart
+                    key={`press-${date.toISOString()}`}
                     title="Differential Pressure"
                     options={pressureOptions}
                   />
                 </div>
               )}
             </div>
+            {isLengthCount && (
+              <>
+                <LoomStats summary={loomMetrics.summary} />
+                <LoomCumulativeChart key={`loomcum-${date.toISOString()}`} times={loomMetrics.times} values={loomMetrics.cumulativeValues} targetDate={date} />
+                <MachineStatusChart 
+                  key={`loomstat-${date.toISOString()}`}
+                  statusData={loomMetrics.statusData} 
+                  summary={loomMetrics.summary}
+                  targetDate={date}
+                />
+              </>
+            )}
           </div>
         )}
       </div>

@@ -14,9 +14,11 @@ interface LoomCumulativeChartProps {
   times: string[];
   /** Running cumulative production total at each time point (metres) */
   values: number[];
+  /** The date being viewed — defaults to today */
+  targetDate?: Date;
 }
 
-export const LoomCumulativeChart = ({ times, values }: LoomCumulativeChartProps) => {
+export const LoomCumulativeChart = ({ times, values, targetDate }: LoomCumulativeChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
   const { isFullscreen, toggle } = useFullscreen();
   useChartResize(chartRef);
@@ -26,14 +28,21 @@ export const LoomCumulativeChart = ({ times, values }: LoomCumulativeChartProps)
     return times.map((t, i) => [new Date(t).getTime(), values[i]]);
   }, [times, values]);
 
-  // Axis bounds: midnight → now
+  // Axis bounds: midnight → end of the viewed day (now if today, 23:59 if historical)
   const [axisMin, axisMax] = useMemo(() => {
-    const now = new Date();
-    now.setSeconds(0, 0);
-    const midnight = new Date(now);
+    const base = targetDate ?? new Date();
+    const midnight = new Date(base);
     midnight.setHours(0, 0, 0, 0);
-    return [midnight.getTime(), now.getTime()];
-  }, []);
+    const isToday = base.toDateString() === new Date().toDateString();
+    if (isToday) {
+      const now = new Date();
+      now.setSeconds(0, 0);
+      return [midnight.getTime(), now.getTime()];
+    }
+    const endOfDay = new Date(base);
+    endOfDay.setHours(23, 59, 0, 0);
+    return [midnight.getTime(), endOfDay.getTime()];
+  }, [targetDate]);
 
   const options = useMemo(() => ({
     tooltip: {

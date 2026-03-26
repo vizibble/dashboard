@@ -28,6 +28,8 @@ interface MachineStatusChartProps {
     idleMinutes: number;
     offlineMinutes: number;
   };
+  /** The date being viewed — defaults to today */
+  targetDate?: Date;
 }
 
 /** Convert statusData into contiguous segments for the custom series */
@@ -59,7 +61,7 @@ function buildSegments(statusData: [string, number, number][]) {
   return segments;
 }
 
-export const MachineStatusChart = ({ statusData, summary }: MachineStatusChartProps) => {
+export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineStatusChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
   const { isFullscreen, toggle } = useFullscreen();
   useChartResize(chartRef);
@@ -67,11 +69,17 @@ export const MachineStatusChart = ({ statusData, summary }: MachineStatusChartPr
   const segments = useMemo(() => buildSegments(statusData), [statusData]);
 
   const options = useMemo(() => {
-    // Always span midnight → current minute so both charts align
-    const nowMs = (() => { const d = new Date(); d.setSeconds(0, 0); return d.getTime(); })();
-    const midnightMs = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+    // Span the correct day: midnight → now (today) or midnight → 23:59 (historical)
+    const base = targetDate ?? new Date();
+    const midnight = new Date(base);
+    midnight.setHours(0, 0, 0, 0);
+    const midnightMs = midnight.getTime();
+    const isToday = base.toDateString() === new Date().toDateString();
+    const endMs = isToday
+      ? (() => { const d = new Date(); d.setSeconds(0, 0); return d.getTime(); })()
+      : (() => { const d = new Date(base); d.setHours(23, 59, 0, 0); return d.getTime(); })();
     const startTs = midnightMs;
-    const endTs = nowMs + 60_000; // +1 min so last segment fills to right edge
+    const endTs = endMs + 60_000; // +1 min so last segment fills to right edge
 
     return {
       tooltip: {
@@ -151,7 +159,7 @@ export const MachineStatusChart = ({ statusData, summary }: MachineStatusChartPr
         },
       ],
     };
-  }, [segments]);
+  }, [segments, targetDate]);
 
   return (
     <ChartContainer isFullscreen={isFullscreen} className='mt-3'>

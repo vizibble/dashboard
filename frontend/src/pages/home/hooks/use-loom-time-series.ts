@@ -12,7 +12,7 @@ import { useMemo } from 'react';
  *   value === 0 → IDLE   (minute present but no production)
  *   missing     → OFFLINE (machine was off, no record)
  */
-export const useLoomTimeSeries = (propTimes: string[], propValues: number[]) => {
+export const useLoomTimeSeries = (propTimes: string[], propValues: number[], targetDate: Date = new Date()) => {
   return useMemo(() => {
     // Build a fast lookup: timestamp (ms, seconds zeroed) → value
     const dataMap = new Map<number, number>();
@@ -22,7 +22,7 @@ export const useLoomTimeSeries = (propTimes: string[], propValues: number[]) => 
       if (isNaN(d.getTime())) {
         const parts = propTimes[i].split(':').map(Number);
         if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-          d = new Date();
+          d = new Date(targetDate);
           d.setHours(parts[0], parts[1], 0, 0);
         } else {
           continue;
@@ -32,14 +32,24 @@ export const useLoomTimeSeries = (propTimes: string[], propValues: number[]) => 
       dataMap.set(d.getTime(), propValues[i]);
     }
 
-    // 24-hour window: midnight today → now (minute resolution)
-    const now = new Date();
-    now.setSeconds(0, 0);
-    const endTime = now.getTime();
-
-    const midnight = new Date(now);
+    // 24-hour window
+    // If today, end at current time. If past date, end at 23:59:00.
+    const isToday = targetDate.toDateString() === new Date().toDateString();
+    
+    const midnight = new Date(targetDate);
     midnight.setHours(0, 0, 0, 0);
     const startTime = midnight.getTime();
+
+    let endTime;
+    if (isToday) {
+      const now = new Date();
+      now.setSeconds(0, 0);
+      endTime = now.getTime();
+    } else {
+      const endOfDay = new Date(targetDate);
+      endOfDay.setHours(23, 59, 0, 0);
+      endTime = endOfDay.getTime();
+    }
 
     // Output arrays
     const times: string[] = [];          // ISO string for every minute (active + idle only — used by cumulative chart)
@@ -100,5 +110,5 @@ export const useLoomTimeSeries = (propTimes: string[], propValues: number[]) => 
         offlineMinutes,
       },
     };
-  }, [propTimes, propValues]);
+  }, [propTimes, propValues, targetDate]);
 };

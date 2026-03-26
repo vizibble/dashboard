@@ -10,11 +10,12 @@ export interface RecordPoint {
 export async function fetchRecords(
   deviceId: string,
   date: string,
-  timezone: string
+  timezone: string,
+  resolution: 'hour' | 'minute' = 'hour'
 ): Promise<{ rows: RecordPoint[] }> {
   try {
     return await api.get('/api/device/records', {
-      params: { deviceId, date, timezone },
+      params: { deviceId, date, timezone, resolution },
     });
   } catch (err: unknown) {
     let message = 'Failed to fetch records.';
