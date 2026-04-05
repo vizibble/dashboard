@@ -12,7 +12,6 @@ export interface Alert {
 export type Condition = 'gt' | 'lt' | 'gte' | 'lte' | 'eq';
 
 export interface AlertRule {
-  id: number;
   rule_id: string;
   device_id: string;
   parameter: string;
@@ -21,4 +20,5 @@ export interface AlertRule {
   label: string | null;
   enabled: boolean;
   created_at: Date;
+  updated_at: Date;
 }

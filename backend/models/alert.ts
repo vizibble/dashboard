@@ -21,10 +21,9 @@ export async function insertAlert(
 
 export async function getAlertsByUser(userId: string): Promise<Alert[]> {
   const result = await pool.query<Alert>(
-    `SELECT a.*, di.name as device_name, di.location as device_location, di.type as device_type
+    `SELECT a.*, d.name as device_name, d.location as device_location, d.type as device_type
     FROM alerts a
     JOIN devices d ON a.device_id = d.device_id
-    LEFT JOIN device_info di ON d.device_id = di.device_id
     WHERE d.user_id = $1
     ORDER BY a.recorded_at DESC
     `,

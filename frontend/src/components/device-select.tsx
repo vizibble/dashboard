@@ -49,7 +49,7 @@ export const DeviceSelect = ({
       value={selectedDevice ?? ''}
       onValueChange={(value) => {
         const device = devices.find((d) => d.device_id === value);
-        if (device) onSelectDevice(device.device_id, device.device_info.type);
+        if (device) onSelectDevice(device.device_id, device.type);
       }}
     >
       <SelectTrigger
@@ -64,13 +64,13 @@ export const DeviceSelect = ({
             <div className="flex items-center gap-2 overflow-hidden">
               <span className="size-2 shrink-0 rounded-full bg-green-400 animate-pulse" />
               <span className="truncate font-medium">
-                {selected.device_info.name}
+                {selected.name}
               </span>
               <Badge
                 className="ml-1 h-4 px-1.5 py-0 text-[10px] opacity-70"
                 variant="secondary"
               >
-                {selected.device_info.location}
+                {selected.location}
               </Badge>
             </div>
           )}
@@ -93,12 +93,12 @@ export const DeviceSelect = ({
                     active && 'bg-green-400 animate-pulse'
                   )}
                 />
-                <span className="truncate">{d.device_info.name}</span>
+                <span className="truncate">{d.name}</span>
                 <Badge
                   className="ml-auto h-4 px-1.5 py-0 text-[9px] opacity-60"
                   variant="outline"
                 >
-                  {d.device_info.location}
+                  {d.location}
                 </Badge>
               </div>
             </SelectItem>

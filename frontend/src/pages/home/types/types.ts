@@ -1,12 +1,9 @@
 export interface Device {
-  id: number;
   device_id: string;
   user_id: string;
-  device_info: {
-    name: string;
-    type: string;
-    location: string;
-  };
+  name: string;
+  type: string;
+  location: string;
   created_at: string;
 }
 

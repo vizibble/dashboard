@@ -5,16 +5,10 @@ import { formatParamLabel } from '@/utils/formatParam.js';
 export async function getUserDevices(userId: string): Promise<Device[]> {
   const result = await pool.query<Device>(
     `SELECT 
-       d.id, d.device_id, d.user_id, d.created_at,
-       json_build_object(
-         'name', COALESCE(di.name, 'Unknown'),
-         'type', COALESCE(di.type, 'Unknown'),
-         'location', COALESCE(di.location, 'Unknown')
-       ) AS device_info
-     FROM devices d
-     LEFT JOIN device_info di ON d.device_id = di.device_id
-     WHERE d.user_id = $1 
-     ORDER BY d.created_at DESC`,
+       device_id, user_id, name, type, location, created_at, updated_at
+     FROM devices
+     WHERE user_id = $1 
+     ORDER BY created_at DESC`,
     [userId]
   );
   return result.rows;
@@ -123,13 +117,13 @@ export async function getDeviceOwnerInfo(
     `
     SELECT 
       u.email, 
-      us.alert_emails AS "alertEmails",
-      di.name AS "deviceName"
+      COALESCE(array_agg(uae.email) FILTER (WHERE uae.email IS NOT NULL), '{}') AS "alertEmails",
+      d.name AS "deviceName"
     FROM devices d
     JOIN users u ON d.user_id = u.user_id
-    LEFT JOIN user_settings us ON u.user_id = us.user_id
-    LEFT JOIN device_info di ON d.device_id = di.device_id
+    LEFT JOIN user_alert_emails uae ON u.user_id = uae.user_id
     WHERE d.device_id = $1
+    GROUP BY u.email, d.name
     LIMIT 1
     `,
     [deviceId]
