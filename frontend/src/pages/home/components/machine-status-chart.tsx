@@ -10,14 +10,14 @@ import { useFullscreen } from '@/pages/home/hooks/fullscreen';
 import { downloadChart } from '@/pages/home/utils/download-chart';
 
 const STATE_COLORS = {
-  active:  '#22c55e',
-  idle:    '#eab308',
+  active: '#22c55e',
+  idle: '#eab308',
   offline: '#ef4444',
 };
 
 const STATE_LABELS = {
-  active:  'Active',
-  idle:    'Idle',
+  active: 'Active',
+  idle: 'Idle',
   offline: 'Offline',
 };
 
@@ -36,7 +36,11 @@ interface MachineStatusChartProps {
 function buildSegments(statusData: [string, number, number][]) {
   if (statusData.length === 0) return [];
 
-  type Segment = { start: number; end: number; state: 'active' | 'idle' | 'offline' };
+  type Segment = {
+    start: number;
+    end: number;
+    state: 'active' | 'idle' | 'offline';
+  };
   const segments: Segment[] = [];
 
   const stateOf = (code: number): Segment['state'] =>
@@ -55,13 +59,18 @@ function buildSegments(statusData: [string, number, number][]) {
     }
   }
   // push last segment up to one-minute past the last timestamp
-  const lastT = new Date(statusData[statusData.length - 1][0]).getTime() + 60_000;
+  const lastT =
+    new Date(statusData[statusData.length - 1][0]).getTime() + 60_000;
   segments.push({ start: segStart, end: lastT, state: segState });
 
   return segments;
 }
 
-export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineStatusChartProps) => {
+export const MachineStatusChart = ({
+  statusData,
+  summary,
+  targetDate,
+}: MachineStatusChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
   const { isFullscreen, toggle } = useFullscreen();
   useChartResize(chartRef);
@@ -76,8 +85,16 @@ export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineS
     const midnightMs = midnight.getTime();
     const isToday = base.toDateString() === new Date().toDateString();
     const endMs = isToday
-      ? (() => { const d = new Date(); d.setSeconds(0, 0); return d.getTime(); })()
-      : (() => { const d = new Date(base); d.setHours(23, 59, 0, 0); return d.getTime(); })();
+      ? (() => {
+          const d = new Date();
+          d.setSeconds(0, 0);
+          return d.getTime();
+        })()
+      : (() => {
+          const d = new Date(base);
+          d.setHours(23, 59, 0, 0);
+          return d.getTime();
+        })();
     const startTs = midnightMs;
     const endTs = endMs + 60_000; // +1 min so last segment fills to right edge
 
@@ -88,23 +105,39 @@ export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineS
         formatter: (params: any) => {
           const { start, end, state } = params.data;
           const fmt = (ts: number) =>
-            new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            new Date(ts).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
           const durationMin = Math.round((end - start) / 60_000);
-          const dot = state === 'active' ? '🟢' : state === 'idle' ? '🟡' : '🔴';
+          const dot =
+            state === 'active' ? '🟢' : state === 'idle' ? '🟡' : '🔴';
           return `<b>${fmt(start)} – ${fmt(end)}</b><br/>${dot} ${STATE_LABELS[state as keyof typeof STATE_LABELS]} (${durationMin} min)`;
         },
       },
       animation: false,
-      grid: { left: '1%', right: '1%', bottom: '15%', top: '8%', containLabel: true },
+      grid: {
+        left: '1%',
+        right: '1%',
+        bottom: '15%',
+        top: '8%',
+        containLabel: true,
+      },
       xAxis: {
         type: 'time' as const,
         min: startTs,
         max: endTs,
+        minInterval: 2 * 3600 * 1000, // at most one label per 2 hours
         axisLabel: {
           fontSize: 10,
           color: '#94a3b8',
+          hideOverlap: true,
+          rotate: 0,
           formatter: (val: number) =>
-            new Date(val).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            new Date(val).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
         },
         axisTick: { show: false },
         axisLine: { lineStyle: { color: '#e2e8f0' } },
@@ -122,11 +155,11 @@ export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineS
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             params: any,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            api: any,
+            api: any
           ) => {
             const seg = segments[params.dataIndex];
             const x1 = api.coord([seg.start, 0])[0];
-            const x2 = api.coord([seg.end,   0])[0];
+            const x2 = api.coord([seg.end, 0])[0];
             const y0 = api.coord([0, 0])[1];
             const y1 = api.coord([0, 1])[1];
             const color = STATE_COLORS[seg.state as keyof typeof STATE_COLORS];
@@ -148,10 +181,10 @@ export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineS
               ],
             };
           },
-          data: segments.map(seg => ({
+          data: segments.map((seg) => ({
             value: [seg.start, 1],
             start: seg.start,
-            end:   seg.end,
+            end: seg.end,
             state: seg.state,
           })),
           encode: { x: 0, y: 1 },
@@ -162,11 +195,13 @@ export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineS
   }, [segments, targetDate]);
 
   return (
-    <ChartContainer isFullscreen={isFullscreen} className='mt-3'>
+    <ChartContainer className="mt-3" isFullscreen={isFullscreen}>
       <ChartHeader
         title="Machine Status per Minute"
         isFullscreen={isFullscreen}
-        onDownload={() => chartRef.current && downloadChart(chartRef, 'Machine Status')}
+        onDownload={() =>
+          chartRef.current && downloadChart(chartRef, 'Machine Status')
+        }
         onToggleFullscreen={toggle}
       />
 
@@ -187,30 +222,50 @@ export const MachineStatusChart = ({ statusData, summary, targetDate }: MachineS
       {/* Summary row */}
       <footer className="flex flex-wrap items-center gap-3 sm:gap-5 mt-4 pt-3 border-t border-slate-100">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATE_COLORS.active }} />
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{STATE_LABELS.active}</span>
+          <span
+            className="w-2.5 h-2.5 rounded-sm"
+            style={{ backgroundColor: STATE_COLORS.active }}
+          />
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {STATE_LABELS.active}
+          </span>
           <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded border tabular-nums text-emerald-600 bg-emerald-50 border-emerald-100">
             {summary.activeMinutes} min
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATE_COLORS.idle }} />
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{STATE_LABELS.idle}</span>
+          <span
+            className="w-2.5 h-2.5 rounded-sm"
+            style={{ backgroundColor: STATE_COLORS.idle }}
+          />
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {STATE_LABELS.idle}
+          </span>
           <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded border tabular-nums text-yellow-600 bg-yellow-50 border-yellow-100">
             {summary.idleMinutes} min
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATE_COLORS.offline }} />
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{STATE_LABELS.offline}</span>
+          <span
+            className="w-2.5 h-2.5 rounded-sm"
+            style={{ backgroundColor: STATE_COLORS.offline }}
+          />
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {STATE_LABELS.offline}
+          </span>
           <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded border tabular-nums text-red-600 bg-red-50 border-red-100">
             {summary.offlineMinutes} min
           </span>
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Total
+          </span>
           <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 tabular-nums">
-            {summary.activeMinutes + summary.idleMinutes + summary.offlineMinutes} min
+            {summary.activeMinutes +
+              summary.idleMinutes +
+              summary.offlineMinutes}{' '}
+            min
           </span>
         </div>
       </footer>

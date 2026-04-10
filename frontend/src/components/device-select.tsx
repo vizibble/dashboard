@@ -63,9 +63,7 @@ export const DeviceSelect = ({
           {selected && (
             <div className="flex items-center gap-2 overflow-hidden">
               <span className="size-2 shrink-0 rounded-full bg-green-400 animate-pulse" />
-              <span className="truncate font-medium">
-                {selected.name}
-              </span>
+              <span className="truncate font-medium">{selected.name}</span>
               <Badge
                 className="ml-1 h-4 px-1.5 py-0 text-[10px] opacity-70"
                 variant="secondary"

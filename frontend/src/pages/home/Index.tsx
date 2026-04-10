@@ -116,13 +116,16 @@ export const HomePage = () => {
             {/* Row 1: Stats */}
             <LoomStats summary={loomMetrics.summary} />
 
-            {/* Row 2: Cumulative Area Chart */}
-            <LoomCumulativeChart times={loomMetrics.times} values={loomMetrics.cumulativeValues} />
+            {/* Row 2: Active / Idle / Offline timeline */}
+            <MachineStatusChart
+              statusData={loomMetrics.statusData}
+              summary={loomMetrics.summary}
+            />
 
-            {/* Row 3: Active / Idle / Offline timeline */}
-            <MachineStatusChart 
-              statusData={loomMetrics.statusData} 
-              summary={loomMetrics.summary} 
+            {/* Row 3: Cumulative Area Chart */}
+            <LoomCumulativeChart
+              times={loomMetrics.times}
+              values={loomMetrics.cumulativeValues}
             />
           </>
         )}

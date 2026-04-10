@@ -1,4 +1,4 @@
-import type { SensorStore } from "@/pages/home/types/types";
+import type { SensorStore } from '@/pages/home/types/types';
 
 const formatters: Record<string, Intl.DateTimeFormat> = {
   instant: new Intl.DateTimeFormat('en-IN', {

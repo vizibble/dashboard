@@ -21,7 +21,9 @@ export async function fetchAlerts(): Promise<Alert[]> {
 
 export async function fetchDeviceRules(deviceId: string): Promise<AlertRule[]> {
   try {
-    return await api.get<AlertRule[]>('/api/alert/rules', { params: { deviceId } });
+    return await api.get<AlertRule[]>('/api/alert/rules', {
+      params: { deviceId },
+    });
   } catch (err: unknown) {
     let message = 'Failed to fetch alert rules.';
     if (axios.isAxiosError(err)) {

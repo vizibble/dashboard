@@ -49,8 +49,9 @@ export const RecordsPage = () => {
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
 
-  const { dates: availableDates, isLoading: loadingDates } = useAvailableDates(selectedDeviceId);
-  
+  const { dates: availableDates, isLoading: loadingDates } =
+    useAvailableDates(selectedDeviceId);
+
   const resolution = isLengthCount ? 'minute' : 'hour';
   const { data, isLoading: loadingRecords } = useDeviceRecords(
     selectedDeviceId,
@@ -91,8 +92,8 @@ export const RecordsPage = () => {
   });
 
   const loomMetrics = useLoomTimeSeries(
-    loomTimesApi, 
-    loomValuesApi, 
+    loomTimesApi,
+    loomValuesApi,
     date || new Date()
   );
 
@@ -122,7 +123,6 @@ export const RecordsPage = () => {
             </span>
             <Separator className="hidden sm:block h-4" orientation="vertical" />
             <DeviceSelect
-              selectedDevice={selectedDeviceId}
               onSelectDevice={(id, type) => {
                 setSelectedDeviceId(id);
                 setSelectedDeviceType(type || '');
@@ -130,6 +130,7 @@ export const RecordsPage = () => {
                 // Keeping it is fine, but we might want to reset if the new device has no data for that date.
                 setDate(undefined);
               }}
+              selectedDevice={selectedDeviceId}
             />
           </div>
 
@@ -141,12 +142,12 @@ export const RecordsPage = () => {
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
-                  variant={'outline'}
-                  disabled={!selectedDeviceId || loadingDates}
                   className={cn(
                     'w-[240px] justify-start text-left font-normal',
                     !date && 'text-muted-foreground'
                   )}
+                  variant={'outline'}
+                  disabled={!selectedDeviceId || loadingDates}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {date ? (
@@ -162,17 +163,19 @@ export const RecordsPage = () => {
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
-                  mode="single"
+                  disabled={(date) => {
+                    const formattedDate = formatDateForApi(date);
+                    return (
+                      !formattedDate || !availableDates.includes(formattedDate)
+                    );
+                  }}
                   selected={date}
+                  mode="single"
+                  autoFocus
                   onSelect={(d) => {
                     setDate(d);
                     setCalendarOpen(false);
                   }}
-                  disabled={(date) => {
-                    const formattedDate = formatDateForApi(date);
-                    return !formattedDate || !availableDates.includes(formattedDate);
-                  }}
-                  autoFocus
                 />
               </PopoverContent>
             </Popover>
@@ -205,8 +208,16 @@ export const RecordsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
               {isTempHumidity && (
                 <>
-                  <Chart key={`hum-${date.toISOString()}`} title="Humidity" options={humidityOptions} />
-                  <Chart key={`temp-${date.toISOString()}`} title="Temperature" options={temperatureOptions} />
+                  <Chart
+                    key={`hum-${date.toISOString()}`}
+                    title="Humidity"
+                    options={humidityOptions}
+                  />
+                  <Chart
+                    key={`temp-${date.toISOString()}`}
+                    title="Temperature"
+                    options={temperatureOptions}
+                  />
                 </>
               )}
               {isDiffPressure && (
@@ -221,13 +232,18 @@ export const RecordsPage = () => {
             </div>
             {isLengthCount && (
               <>
-                <LoomStats summary={loomMetrics.summary} />
-                <LoomCumulativeChart key={`loomcum-${date.toISOString()}`} times={loomMetrics.times} values={loomMetrics.cumulativeValues} targetDate={date} />
-                <MachineStatusChart 
+                <LoomStats isHistory={true} summary={loomMetrics.summary} />
+                <MachineStatusChart
                   key={`loomstat-${date.toISOString()}`}
-                  statusData={loomMetrics.statusData} 
+                  statusData={loomMetrics.statusData}
                   summary={loomMetrics.summary}
                   targetDate={date}
+                />
+                <LoomCumulativeChart
+                  key={`loomcum-${date.toISOString()}`}
+                  times={loomMetrics.times}
+                  targetDate={date}
+                  values={loomMetrics.cumulativeValues}
                 />
               </>
             )}

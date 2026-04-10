@@ -10,7 +10,10 @@ export interface LoginFormData {
 
 export async function loginRequest(data: LoginFormData) {
   try {
-    const res = await api.post<{ accessToken: string }>('/api/auth/login', data);
+    const res = await api.post<{ accessToken: string }>(
+      '/api/auth/login',
+      data
+    );
     useAuthStore.getState().setAccessToken(res.accessToken);
     return res;
   } catch (err: unknown) {

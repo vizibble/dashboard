@@ -42,12 +42,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 h-16 bg-primary">
         <div className="flex items-center gap-2 justify-center">
-          <img
-            src="/images/logo.svg"
-            alt="logo"
-            width={25}
-            height={25}
-          />
+          <img src="/images/logo.svg" alt="logo" width={25} height={25} />
           <span className="text-xl font-bold tracking-wide text-white ">
             Vizibble
           </span>

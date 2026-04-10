@@ -35,7 +35,9 @@ export async function updateUserSettings(
 
     // Update alert_emails if provided
     if (settings.alert_emails !== undefined) {
-      await client.query('DELETE FROM user_alert_emails WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM user_alert_emails WHERE user_id = $1', [
+        userId,
+      ]);
       if (settings.alert_emails && settings.alert_emails.length > 0) {
         await client.query(
           `INSERT INTO user_alert_emails (user_id, email)

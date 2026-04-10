@@ -18,7 +18,11 @@ interface LoomCumulativeChartProps {
   targetDate?: Date;
 }
 
-export const LoomCumulativeChart = ({ times, values, targetDate }: LoomCumulativeChartProps) => {
+export const LoomCumulativeChart = ({
+  times,
+  values,
+  targetDate,
+}: LoomCumulativeChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
   const { isFullscreen, toggle } = useFullscreen();
   useChartResize(chartRef);
@@ -44,77 +48,100 @@ export const LoomCumulativeChart = ({ times, values, targetDate }: LoomCumulativ
     return [midnight.getTime(), endOfDay.getTime()];
   }, [targetDate]);
 
-  const options = useMemo(() => ({
-    tooltip: {
-      trigger: 'axis' as const,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      formatter: (params: any) => {
-        const p = params[0];
-        if (!p) return '';
-        const val = Array.isArray(p.value) ? p.value[1] : p.value;
-        const timeStr = new Date(p.axisValue).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-        return `<b>${timeStr}</b><br/>Cumulative: <b>${val.toLocaleString()}</b> m`;
+  const options = useMemo(
+    () => ({
+      tooltip: {
+        trigger: 'axis' as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        formatter: (params: any) => {
+          const p = params[0];
+          if (!p) return '';
+          const val = Array.isArray(p.value) ? p.value[1] : p.value;
+          const timeStr = new Date(p.axisValue).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          return `<b>${timeStr}</b><br/>Cumulative: <b>${val.toLocaleString()}</b> m`;
+        },
+        axisPointer: { type: 'line' as const },
       },
-      axisPointer: { type: 'line' as const },
-    },
-    dataZoom: [],
-    grid: { left: '3%', right: '4%', bottom: '8%', top: '8%', containLabel: true },
-    xAxis: {
-      type: 'time' as const,
-      min: axisMin,
-      max: axisMax,
-      axisLabel: {
-        fontSize: 10,
-        color: '#94a3b8',
-        formatter: (val: number) =>
-          new Date(val).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      dataZoom: [],
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '8%',
+        top: '8%',
+        containLabel: true,
       },
-      axisTick: { show: false },
-      axisLine: { lineStyle: { color: '#e2e8f0' } },
-      splitLine: { show: false },
-    },
-    yAxis: {
-      type: 'value' as const,
-      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' as const } },
-      axisLabel: { fontSize: 10, color: '#94a3b8' },
-    },
-    series: [
-      {
-        name: 'Cumulative Production',
-        type: 'line' as const,
-        data: seriesData,
-        smooth: 0.05,
-        symbol: 'none',
-        // connectNulls: false keeps gaps where offline minutes are not plotted
-        connectNulls: false,
-        lineStyle: { width: 3, color: '#2563eb' },
-        areaStyle: {
-          color: {
-            type: 'linear' as const,
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(37, 99, 235, 0.35)' },
-              { offset: 1, color: 'rgba(37, 99, 235, 0.0)' },
-            ],
+      xAxis: {
+        type: 'time' as const,
+        min: axisMin,
+        max: axisMax,
+        axisLabel: {
+          fontSize: 10,
+          color: '#94a3b8',
+          hideOverlap: true,
+          formatter: (val: number) =>
+            new Date(val).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+        },
+        minInterval: 3600 * 1000, // One hour
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: '#e2e8f0' } },
+        splitLine: { show: false },
+      },
+      yAxis: {
+        type: 'value' as const,
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' as const } },
+        axisLabel: { fontSize: 10, color: '#94a3b8' },
+      },
+      series: [
+        {
+          name: 'Cumulative Production',
+          type: 'line' as const,
+          data: seriesData,
+          smooth: 0.05,
+          symbol: 'none',
+          // connectNulls: false keeps gaps where offline minutes are not plotted
+          connectNulls: false,
+          lineStyle: { width: 3, color: '#2563eb' },
+          areaStyle: {
+            color: {
+              type: 'linear' as const,
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(37, 99, 235, 0.35)' },
+                { offset: 1, color: 'rgba(37, 99, 235, 0.0)' },
+              ],
+            },
           },
         },
-      },
-    ],
-  }), [seriesData, axisMin, axisMax]);
+      ],
+    }),
+    [seriesData, axisMin, axisMax]
+  );
 
   return (
     <ChartContainer isFullscreen={isFullscreen}>
       <ChartHeader
         title="Cumulative Production"
         isFullscreen={isFullscreen}
-        onDownload={() => chartRef.current && downloadChart(chartRef, 'Cumulative Production')}
+        onDownload={() =>
+          chartRef.current && downloadChart(chartRef, 'Cumulative Production')
+        }
         onToggleFullscreen={toggle}
       />
       <div className={isFullscreen ? 'flex-1' : ''}>
-        <LineChart ref={chartRef} height={isFullscreen ? '100%' : '260px'} options={options} />
+        <LineChart
+          ref={chartRef}
+          height={isFullscreen ? '100%' : '260px'}
+          options={options}
+        />
       </div>
     </ChartContainer>
   );

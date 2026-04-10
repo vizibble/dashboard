@@ -7,11 +7,29 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 // Custom interface to handle the unwrapped data return in TypeScript
 interface ApiInstance extends AxiosInstance {
-  get<T = unknown, R = T, D = unknown>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
-  post<T = unknown, R = T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
-  put<T = unknown, R = T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
-  patch<T = unknown, R = T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig<D>): Promise<R>;
-  delete<T = unknown, R = T, D = unknown>(url: string, config?: AxiosRequestConfig<D>): Promise<R>;
+  get<T = unknown, R = T, D = unknown>(
+    url: string,
+    config?: AxiosRequestConfig<D>
+  ): Promise<R>;
+  post<T = unknown, R = T, D = unknown>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<D>
+  ): Promise<R>;
+  put<T = unknown, R = T, D = unknown>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<D>
+  ): Promise<R>;
+  patch<T = unknown, R = T, D = unknown>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<D>
+  ): Promise<R>;
+  delete<T = unknown, R = T, D = unknown>(
+    url: string,
+    config?: AxiosRequestConfig<D>
+  ): Promise<R>;
 }
 
 const apiInstance = axios.create({
@@ -70,7 +88,8 @@ api.interceptors.response.use(
     }
 
     // Centralized error toasting: show message from backend
-    const errorMessage = error.response?.data?.message || 'An unexpected error occurred.';
+    const errorMessage =
+      error.response?.data?.message || 'An unexpected error occurred.';
     toast.error(errorMessage);
 
     return Promise.reject(error);
