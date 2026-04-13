@@ -283,7 +283,7 @@ const ContextRow = () => (
    Main Export
 ───────────────────────────────────────────── */
 export const LoomStats = ({ summary, isHistory }: LoomStatsProps) => {
-  const target = 500;
+  const target = 90;
   const activeShift = summary.shifts[summary.currentShiftIndex];
 
   /* ── Historical layout ── */

@@ -19,12 +19,22 @@ export async function getDeviceHistory(
   mode: 'instant' | 'daily' | 'monthly' = 'instant',
   timezone = 'Asia/Kolkata'
 ): Promise<HistoryRow[]> {
+  const deviceResult = await pool.query<{ type: string }>(
+    'SELECT type FROM devices WHERE device_id = $1',
+    [deviceId]
+  );
+  const type = deviceResult.rows[0]?.type;
+
   let truncation = 'minute';
   let startTimeExpr = `date_trunc('day', NOW(), $3)`;
 
-  if (mode === 'daily') {
-    truncation = 'hour';
-    startTimeExpr = `date_trunc('day', NOW(), $3)`;
+  if (mode === 'instant' || mode === 'daily') {
+    if (type === 'production_count') {
+      startTimeExpr = `NOW() - INTERVAL '30 hours'`;
+    } else {
+      startTimeExpr = `date_trunc('day', NOW(), $3)`;
+    }
+    if (mode === 'daily') truncation = 'hour';
   } else if (mode === 'monthly') {
     truncation = 'day';
     startTimeExpr = `date_trunc('day', NOW() - INTERVAL '30 days', $3)`;

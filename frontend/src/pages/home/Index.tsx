@@ -35,7 +35,7 @@ export const HomePage = () => {
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
 
-  const loomTimes = history['length']?.times ?? [];
+  const loomTimes = history['length']?.rawTimes ?? [];
   const loomValues = history['length']?.values ?? [];
   const loomMetrics = useLoomTimeSeries(loomTimes, loomValues);
 

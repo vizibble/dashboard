@@ -36,9 +36,10 @@ export const useSensorStore = create<SensorStore>((set) => ({
 
         for (const [field, val] of Object.entries(payload)) {
           if (typeof val !== 'number') continue;
-          if (!history[field]) history[field] = { times: [], values: [] };
+          if (!history[field]) history[field] = { times: [], values: [], rawTimes: [] };
           history[field]!.times.push(label);
           history[field]!.values.push(val);
+          history[field]!.rawTimes.push(recorded_at);
         }
       }
       const lastPoint = rows.at(-1);
@@ -74,10 +75,11 @@ export const useSensorStore = create<SensorStore>((set) => ({
         if (typeof val !== 'number') continue;
         incoming[key] = val;
 
-        const prev = nextHistory[key] ?? { times: [], values: [] };
+        const prev = nextHistory[key] ?? { times: [], values: [], rawTimes: [] };
         nextHistory[key] = {
           times: [...prev.times, label],
           values: [...prev.values, val],
+          rawTimes: [...prev.rawTimes, payload['timestamp'] as string],
         };
       }
 

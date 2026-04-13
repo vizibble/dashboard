@@ -13,6 +13,7 @@ export interface SensorValues {
 export interface FieldHistory {
   times: string[];
   values: number[];
+  rawTimes: string[];
 }
 
 export interface SensorStore {

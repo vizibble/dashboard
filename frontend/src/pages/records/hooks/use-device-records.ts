@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 export function useDeviceRecords(
   deviceId: string | null,
   date: string | null,
-  resolution: 'hour' | 'minute' = 'hour'
+  resolution: 'hour' | 'minute' = 'hour',
+  enabled: boolean = true
 ) {
   const query = useQuery({
     queryKey: ['device-records', deviceId, date, resolution],
@@ -15,7 +16,7 @@ export function useDeviceRecords(
         Intl.DateTimeFormat().resolvedOptions().timeZone,
         resolution
       ),
-    enabled: !!deviceId && !!date,
+    enabled: enabled && !!deviceId && !!date,
   });
 
   return {

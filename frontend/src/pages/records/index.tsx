@@ -53,16 +53,28 @@ export const RecordsPage = () => {
     useAvailableDates(selectedDeviceId);
 
   const resolution = isLengthCount ? 'minute' : 'hour';
-  const { data, isLoading: loadingRecords } = useDeviceRecords(
+  const nextDate = date ? new Date(date) : undefined;
+  if (nextDate) nextDate.setDate(nextDate.getDate() + 1);
+
+  const { data: data1, isLoading: loadingRecords1 } = useDeviceRecords(
     selectedDeviceId,
     formatDateForApi(date),
     resolution
   );
 
-  const isLoading = loadingDates || loadingRecords;
+  const { data: data2, isLoading: loadingRecords2 } = useDeviceRecords(
+    selectedDeviceId,
+    formatDateForApi(nextDate),
+    resolution,
+    isLengthCount
+  );
+
+  const isLoading = loadingDates || loadingRecords1 || (isLengthCount && loadingRecords2);
 
   // Process data for charts
-  const history = data?.rows ?? [];
+  const history1 = data1?.rows ?? [];
+  const history2 = data2?.rows ?? [];
+  const history = isLengthCount ? [...history1, ...history2] : history1;
   const times: string[] = [];
   const temperatureData: number[] = [];
   const humidityData: number[] = [];

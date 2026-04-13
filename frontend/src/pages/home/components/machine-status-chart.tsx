@@ -27,6 +27,7 @@ interface MachineStatusChartProps {
     activeMinutes: number;
     idleMinutes: number;
     offlineMinutes: number;
+    totalStops: number;
   };
   /** The date being viewed — defaults to today */
   targetDate?: Date;
@@ -80,22 +81,30 @@ export const MachineStatusChart = ({
   const options = useMemo(() => {
     // Span the correct day: midnight → now (today) or midnight → 23:59 (historical)
     const base = targetDate ?? new Date();
-    const midnight = new Date(base);
-    midnight.setHours(0, 0, 0, 0);
-    const midnightMs = midnight.getTime();
-    const isToday = base.toDateString() === new Date().toDateString();
+    const operationalDate = new Date(base);
+    // If we're looking at "today" (no specific targetDate or targetDate is today)
+    // and it's before 6 AM, then the operational day is yesterday.
+    if (!targetDate || targetDate.toDateString() === new Date().toDateString()) {
+      const now = new Date();
+      if (now.getHours() < 6) {
+        operationalDate.setDate(operationalDate.getDate() - 1);
+      }
+    }
+
+    const startTimeLocal = new Date(operationalDate);
+    startTimeLocal.setHours(6, 0, 0, 0);
+    const startTimeMs = startTimeLocal.getTime();
+    const isToday = operationalDate.toDateString() === new Date().toDateString();
     const endMs = isToday
       ? (() => {
           const d = new Date();
           d.setSeconds(0, 0);
-          return d.getTime();
+          // Don't show more than 24h from start
+          return Math.min(d.getTime(), startTimeMs + 24 * 3600 * 1000);
         })()
-      : (() => {
-          const d = new Date(base);
-          d.setHours(23, 59, 0, 0);
-          return d.getTime();
-        })();
-    const startTs = midnightMs;
+      : startTimeMs + 24 * 3600 * 1000 - 60_000;
+
+    const startTs = startTimeMs;
     const endTs = endMs + 60_000; // +1 min so last segment fills to right edge
 
     return {
@@ -259,7 +268,15 @@ export const MachineStatusChart = ({
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Total
+            Total Stops
+          </span>
+          <span className="text-[11px] font-mono font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200 tabular-nums">
+            {summary.totalStops}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Total Time
           </span>
           <span className="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 tabular-nums">
             {summary.activeMinutes +

@@ -35,17 +35,29 @@ export const LoomCumulativeChart = ({
   // Axis bounds: midnight → end of the viewed day (now if today, 23:59 if historical)
   const [axisMin, axisMax] = useMemo(() => {
     const base = targetDate ?? new Date();
-    const midnight = new Date(base);
-    midnight.setHours(0, 0, 0, 0);
-    const isToday = base.toDateString() === new Date().toDateString();
+    const operationalDate = new Date(base);
+    // If we're looking at "today" (no specific targetDate or targetDate is today)
+    // and it's before 6 AM, then the operational day is yesterday.
+    if (!targetDate || targetDate.toDateString() === new Date().toDateString()) {
+      const now = new Date();
+      if (now.getHours() < 6) {
+        operationalDate.setDate(operationalDate.getDate() - 1);
+      }
+    }
+
+    const startTimeLocal = new Date(operationalDate);
+    startTimeLocal.setHours(6, 0, 0, 0);
+    const startMs = startTimeLocal.getTime();
+    const isToday = operationalDate.toDateString() === new Date().toDateString();
+
     if (isToday) {
       const now = new Date();
       now.setSeconds(0, 0);
-      return [midnight.getTime(), now.getTime()];
+      // Ensure we don't go past the 24h window
+      const currentMax = Math.min(now.getTime(), startMs + 24 * 3600 * 1000);
+      return [startMs, currentMax];
     }
-    const endOfDay = new Date(base);
-    endOfDay.setHours(23, 59, 0, 0);
-    return [midnight.getTime(), endOfDay.getTime()];
+    return [startMs, startMs + 24 * 3600 * 1000 - 60_000];
   }, [targetDate]);
 
   const options = useMemo(
@@ -54,14 +66,19 @@ export const LoomCumulativeChart = ({
         trigger: 'axis' as const,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         formatter: (params: any) => {
-          const p = params[0];
-          if (!p) return '';
-          const val = Array.isArray(p.value) ? p.value[1] : p.value;
-          const timeStr = new Date(p.axisValue).toLocaleTimeString([], {
+          const timeStr = new Date(params[0].axisValue).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
           });
-          return `<b>${timeStr}</b><br/>Cumulative: <b>${val.toLocaleString()}</b> m`;
+          let content = `<b>${timeStr}</b>`;
+          // Use a more specific type to avoid lint errors
+          (params as { marker: string; seriesName: string; value: number | [number, number] }[]).forEach(
+            (p) => {
+              const val = Array.isArray(p.value) ? p.value[1] : p.value;
+              content += `<br/>${p.marker} ${p.seriesName}: <b>${val.toFixed(1)}</b> m`;
+            }
+          );
+          return content;
         },
         axisPointer: { type: 'line' as const },
       },
