@@ -161,7 +161,7 @@ export const getPressureOptions = (data: {
       tooltip: {
         valueFormatter: (value: unknown) => `${value} Pa`,
       },
-      markLine: getMarkLine(data.thresholds?.min, data.thresholds?.max),
+      markLine: getMarkLine(undefined, data.thresholds?.max),
     },
   ],
 });
