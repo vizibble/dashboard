@@ -15,10 +15,10 @@ emailRouter.get("/email-preview", async (req, res) => {
     }
     
     const hydratedReport = await buildReportData(report);
-    res.json(hydratedReport)
-    // const html = await renderReportEmail(hydratedReport);
+    //res.json(hydratedReport)
+    const html = await renderReportEmail(hydratedReport);
 
-    // res.send(html);
+    res.send(html);
 });
 
 

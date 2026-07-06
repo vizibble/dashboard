@@ -10,6 +10,8 @@ import { DndContext } from "@dnd-kit/core";
 import { createButton, createDate, createDivider, createHeading, createImage, createSection, createSpacer, createText } from "./factories/blockFactory";
 import { createChart } from "./factories/chartFactory";
 import type { ChartType } from "./types/chart";
+import type { Block } from "./types/blocks";
+import type { Device } from "./types/chart";
 import { useTree } from "./hooks/useTree";
 import { useEditor } from "./hooks/useEditor";
 import { createColumn, createRowWithColumns } from "./factories/layoutFactory";
@@ -20,7 +22,7 @@ import { createMetric } from "./factories/metricfactory";
 
 function App(){
 
-  const [blocks, setBlocks] = useState<any[]>(() => {
+  const [blocks, setBlocks] = useState<Block[]>(() => {
   const savedBlocks =
       localStorage.getItem("blocks");
 
@@ -45,7 +47,7 @@ function App(){
   const selectedBlock =findNodeById(blocks, selectedBlockId);
   const selectedNodeWithMeta = findNodeMetaById(blocks, selectedBlockId);
 
-  const [devices, setDevices] = useState<any[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   useEffect(() => {getDevices().then(setDevices);}, []);
 
   const {handleTempSave,handleTempLoad,} = useTemplateStorage(blocks,setBlocks);  
@@ -82,7 +84,7 @@ function App(){
     );
   };
 
-  const addBlock = (block: any) => {
+  const addBlock = (block: Block) => {
     addNodeToContainer(block);
     
   };

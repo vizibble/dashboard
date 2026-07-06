@@ -1,9 +1,9 @@
 import type { Block } from "../types/blocks";
 
-export const findNodeById:any|null = (
-  nodes: any[],
-  targetId: number|null
-) => {
+export const findNodeById = (
+  nodes: Block[],
+  targetId: number | null
+): Block | null => {
       for (const node of nodes){
         if (node.id === targetId) {
             return {...node};
@@ -16,11 +16,11 @@ export const findNodeById:any|null = (
       return null;
 };
 
-export const findNodeMetaById:any|null = (
-  nodes: any[],
-  targetId: number| null,
+export const findNodeMetaById = (
+  nodes: Block[],
+  targetId: number | null,
   parentContainerId: number | null = null
-) => {
+): (Block & { parentContainerId: number | null; index: number }) | null => {
   for(const [index, node] of nodes.entries()){
     if(node.id === targetId){
       return {...node, parentContainerId, index}
@@ -34,10 +34,10 @@ export const findNodeMetaById:any|null = (
 }
 
 export const insertNodeIntoContainer = (
-  nodes: any[],
-  containerId: number|null,
-  newNode:any
-):Block[] => {
+  nodes: Block[],
+  containerId: number | null,
+  newNode: Block
+): Block[] => {
   const updatedNodes = nodes.map((node) => {
     if(node.id === containerId){
       return {...node, children:[...node.children, newNode]}
@@ -53,9 +53,9 @@ export const insertNodeIntoContainer = (
 }
 
 export const deleteNodeById = (
-  nodes: any[],
+  nodes: Block[],
   targetId: number
-):Block[] => {
+): Block[] =>  {
   const updatedNodes = nodes.map((node) => {
     if(node.id === targetId){
       return null;
@@ -71,8 +71,8 @@ export const deleteNodeById = (
 }
 
 export const removeEmptyRows = (
-  nodes: any[],
-):Block[] => {
+  nodes: Block[]
+): Block[] =>{
   const updatedNodes = nodes.map((node) => {
     if(node.type === "row" && node.children.length == 0){
       return null;
@@ -87,7 +87,12 @@ export const removeEmptyRows = (
   return updatedNodes
 }
 
-export const updateNodePropById = (nodes: any[], targetId: number, prop:string, value:string|number):Block[] => {
+export const updateNodePropById = (
+  nodes: Block[],
+  targetId: number,
+  prop: string,
+  value: string | number
+): Block[] => {
     const updatedNodes = nodes.map((node) => {
       if(node.id === targetId){
         return {...node, props:{...node.props, [prop]:value}}

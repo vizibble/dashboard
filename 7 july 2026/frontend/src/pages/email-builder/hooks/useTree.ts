@@ -1,14 +1,15 @@
 import { deleteNodeById, findNodeById, insertNodeIntoContainer, moveNodeWithinContainer, moveSectionInBlock, removeEmptyRows } from "../utils/tree";
 import { createSection } from "../factories/blockFactory";
+import type { Block } from "../types/blocks";
 
 export function useTree(
-  blocks: any[],
+  blocks: Block[],
   setBlocks: React.Dispatch<React.SetStateAction<any[]>>,
   selectedContainerId: number | null,
   setSelectedContainerId: (id: number | null) => void,
   selectedBlockId:number|null,
   setSelectedBlockId: (id: number | null) => void,
-  selectedContainer: any
+  selectedContainer: Block|null,
 ) {
 
     const allowedChildren = {

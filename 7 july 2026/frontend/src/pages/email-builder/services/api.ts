@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  "http://localhost:8080/api";
+  "http://localhost:8080/api/sensorData";
 
 const getJson = async (
   url: string

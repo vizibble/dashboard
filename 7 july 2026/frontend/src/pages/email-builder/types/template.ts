@@ -1,3 +1,5 @@
+import type { Block } from "./blocks";
+
 export interface Template {
   id: string;
 
@@ -12,5 +14,5 @@ export interface Template {
 
   version: number;
 
-  blocks: any[];
+  blocks: Block[];
 }

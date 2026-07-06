@@ -1,7 +1,7 @@
 import type { Template } from "../types/template";
 
 const API_BASE_URL =
-  "http://localhost:8080/api";
+  "http://localhost:8080/api/sensorData";
 
 export const getTemplate = async ():any => {
   const result = await fetch(`${API_BASE_URL}/template`);

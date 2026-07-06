@@ -1,7 +1,8 @@
+import type { Block } from "../../types/blocks";
 import BlockRenderer from "./BlockRenderer";
 
 interface SectionBlockProps{
-    block: any;
+    block: Block;
 
     selectedContainerId: null|number;
 
@@ -54,9 +55,8 @@ function SectionBlock({block, updateNodeProp,selectedContainerId, setSelectedCon
         border:"1px solid lightgray"        
       }}
     >
-      {block.children.map((child: any, index:number) => (
+      {block.children.map((child: Block, index:number) => (
         <BlockRenderer
-        key={block.id}
             block={child}
             index = {index}
             selectedContainerId={selectedContainerId}

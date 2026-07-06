@@ -1,16 +1,16 @@
 
-import type { ChartPoint, ChartProps } from "../types/chart.ts";
-import { formatMetricName } from "./chartFrmatting.ts";
-import { formatXAxisLabel } from "./formatXAxisLabel.ts";
-import { buildTimelineOption } from "./buildTimelineOption.ts";
-import { buildProductionOption } from "./buildProductionOptions.ts";
+import type { ChartPoint, ChartProps } from "../types/chart";
+import { formatMetricName } from "./chartFrmatting";
+import { formatXAxisLabel } from "./formatXAxisLabel";
+import { buildTimelineOption } from "./buildTimelineOption";
+import { buildProductionOption } from "./buildProductionOptions";
 
 export const buildChartOption = (
   chartProps: ChartProps,
   chartData: ChartPoint[]
 ) => {
 
-      if (
+    if (
         !Array.isArray(chartData) ||
         chartData.length === 0
     ) {
@@ -23,21 +23,31 @@ export const buildChartOption = (
         !chartProps.chartType
     ) {
         return {};
-    }  
+    }    
 
     if (chartProps.chartType === "timeline") {
 
-      return buildTimelineOption(chartData.segments);
+      return buildTimelineOption(chartData);
     }  
 
 
-    else if (chartProps.chartType == "productionChart"){
+    if (chartProps.chartType == "productionChart"){
 
       return buildProductionOption(chartProps, chartData);
-    }  
+    }
+
+    const validChartData = chartData.filter(
+        (item) =>
+            item &&
+            item.time != null &&
+            item.value != null
+    );
+    if (validChartData.length === 0) {
+        return {};
+    }
 
 
-  const xAxisData = chartData.map((item: ChartPoint) => 
+  const xAxisData = validChartData.map((item: ChartPoint) => 
     formatXAxisLabel(
         new Date(item.time),
         chartProps.config.range,
@@ -45,7 +55,7 @@ export const buildChartOption = (
         chartProps.config.timeBucket
   ));
   const title = (chartProps.config.secondaryMetric === "none")?chartProps.config.deviceName+" - "+formatMetricName(chartProps.config.metric):chartProps.config.deviceName+" - "+formatMetricName(chartProps.config.metric)+" vs "+formatMetricName(chartProps.config.secondaryMetric);
-  const primaryMetricData = chartData.map((item: ChartPoint) =>{
+  const primaryMetricData = validChartData.map((item: ChartPoint) =>{
     const value = Number(item.value);
     const point = {value,};
     if (chartProps.config.maxThreshold !== null && value > chartProps.config.maxThreshold) {
@@ -64,7 +74,7 @@ export const buildChartOption = (
   })
   let secondaryMetricData:any[] =[];
   if(chartProps.config.secondaryMetric !== 'none'){
-    secondaryMetricData = chartData.map((item: ChartPoint) => {const value = Number(item.secondaryvalue!);
+    secondaryMetricData = validChartData.map((item: ChartPoint) => {const value = Number(item.secondaryvalue!);
     const point = {value,};
     if (chartProps.config.maxThreshold !== null && value > chartProps.config.maxThreshold) {
             point.itemStyle = {
@@ -112,7 +122,21 @@ export const buildChartOption = (
       tooltip: {trigger: "axis", axisPointer:{type:"cross"}, valueFormatter:(value:unknown)=>{const num = Number(value); if(!Number.isNaN(num)){return num.toFixed(2)} return String(value)}}, 
       grid: {left: 60,right: 20,top: 50,bottom: 70},
       legend:{show:true,bottom:0, left:"center", icon: "roundRect"},
-  
+      // visualMap: chartProps.config.maxThreshold !== null
+      //     ? {
+      //         show: false,
+      //         dimension: 1,
+      //         pieces: [
+      //             {
+      //                 gt: chartProps.config.maxThreshold,
+      //                 color: "#e74c3c",
+      //             },
+      //             {
+      //                 lte: chartProps.config.maxThreshold,
+      //             },
+      //         ],
+      //     }
+      //     : undefined,      
     }; 
 
   if(chartProps.chartType === "line"){
@@ -129,7 +153,7 @@ export const buildChartOption = (
       return {...baseConfig, series:seriesData}
   }
 
-  else if(chartProps.chartType === "area"){
+  if(chartProps.chartType === "area"){
       const seriesData = [{
         data: primaryMetricData, type:"line", smooth:true, areaStyle:{}, name:formatMetricName(chartProps.config.metric), markLine: {silent: true, data: thresholdLines, symbol:"none", label:{show:true}, lineStyle:{type:"dashed", width:2}},
       }]
@@ -143,7 +167,7 @@ export const buildChartOption = (
     return {...baseConfig, series:seriesData}
   }
 
-  else if(chartProps.chartType === "bar"){
+  if(chartProps.chartType === "bar"){
       const seriesData = [{
         data: primaryMetricData, type:"bar", smooth:false, name:formatMetricName(chartProps.config.metric), markLine: {silent: true, data: thresholdLines, symbol:"none", label:{show:true}, lineStyle:{type:"dashed", width:2}},
       }]

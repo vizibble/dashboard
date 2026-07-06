@@ -10,11 +10,11 @@ import ChartBlock from "./ChartBlock";
 import MetricBlock from "./MetricBlock";
 import ResizableBlock from "./ResizableBlock";
 import DateTimeBlock from "./DateTimeBlock";
-
+import type { Block } from "../../types/blocks";
 
 
 interface BlockRendererProps{
-  block: any;
+  block: Block;
 
   index:number;
 

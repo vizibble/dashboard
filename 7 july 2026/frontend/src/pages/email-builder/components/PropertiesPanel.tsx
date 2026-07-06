@@ -9,12 +9,14 @@ import ButtonProperties from "./properties/ButtonProperties";
 import TextHeadingProperties from "./properties/TextHeadingProperties";
 import SectionProperties from "./properties/SectionProperties";
 import DateTimeProperties from "./properties/DateTimeProperties";
+import type { Block, BlockMeta } from "../types/blocks";
+
 interface PropertiesPanelProps{
-    selectedBlock:any;
+    selectedBlock:Block;
 
-    selectedNodeWithMeta: any;
+    selectedNodeWithMeta: BlockMeta|null;
 
-    findParent: (parentId:number) => any;
+    findParent: (parentId:number) => Block|null;
 
     updateNodeProp:(
         id: number,

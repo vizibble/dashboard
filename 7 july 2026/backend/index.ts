@@ -39,8 +39,8 @@ app.use('/api/sensor', sensorRouter);
 app.use('/api/alert', alertRouter);
 app.use('/api/user', userRouter);
 
-app.use("/api", sensorRoutes);
-app.use(emailRouter);
+app.use("/api/sensorData", sensorRoutes);
+app.use("/api/emailReport",emailRouter);
 
 app.use(globalErrorHandler);
 

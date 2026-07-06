@@ -1,8 +1,9 @@
 import { getTemplate, saveTemplate } from "../services/templateApi";
+import type { Block } from "../types/blocks";
 
 export function useTemplateStorage(
-  blocks: any[],
-  setBlocks: (blocks: any[]) => void,
+  blocks: Block[],
+  setBlocks: React.Dispatch<React.SetStateAction<Block[]>>
 ) {
 
   const handleTempSave = async () => {

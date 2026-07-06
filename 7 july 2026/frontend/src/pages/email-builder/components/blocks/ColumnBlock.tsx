@@ -2,6 +2,7 @@ import BlockRenderer from "./BlockRenderer";
 import { useDroppable, useDraggable } from "@dnd-kit/core";
 import { GripVertical, Trash2 } from "lucide-react";
 import { useState } from "react";
+import type { Block } from "../../types/blocks";
 
 interface ColumnBlockProps{
     block: any;
@@ -66,9 +67,8 @@ function ColumnBlock({block, index, selectedContainerId, setSelectedContainerId,
   onMouseLeave={()=>{setIsHovered(false)}}
 
     >
-      {block.children.map((child: any, index:number) => (
+      {block.children.map((child: Block, index:number) => (
         <BlockRenderer
-        key={block.id}
             block={child}
             index = {index}
             selectedContainerId={selectedContainerId}

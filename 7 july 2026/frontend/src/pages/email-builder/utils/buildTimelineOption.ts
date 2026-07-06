@@ -223,7 +223,7 @@ graphic: [
                                     style: {
                                         text: api.value(4),
 
-                                        fill: "#ffffff",
+                                        fill: state === "stopped" ? "#333333" : "#ffffff",
 
                                         fontSize: 11,
                                         fontWeight: "bold",

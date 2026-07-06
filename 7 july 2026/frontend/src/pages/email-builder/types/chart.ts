@@ -1,3 +1,12 @@
+export interface Device {
+  device_id: string;
+  name: string;
+  type?: string;
+  location?: string;
+  user_id?: string;
+  created_at?: string;
+}
+
 export interface ChartDataPoint {
   [key: string]: string | number;
 }

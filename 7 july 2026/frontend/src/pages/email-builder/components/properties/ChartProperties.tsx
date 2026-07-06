@@ -6,10 +6,11 @@ import TimeSection from "./chart/TimeSection";
 import FilterSection from "./chart/FilterSection";
 import AppearanceSection from "./AppearenceSection";
 import PropertySection from "./propertiesSection";
-
+import type { Block } from "../../types/blocks";
+import type { Device } from "../../types/chart";
 
 interface ChartPropertiesProps{
-    selectedBlock:any;
+    selectedBlock:Block;
     
     updateNodeStyle:(
         id: number,
@@ -45,9 +46,11 @@ interface ChartPropertiesProps{
 function ChartProperties({selectedBlock, updateConfig, updateDevice, updateNodeStyle,deleteNode, moveNode, parentId, index, isFirst, isLast}:ChartPropertiesProps){
 
     const [availableMetrics, setAvailableMetrics] = useState<string[]>([]);
-    const [devices, setDevices] = useState<any[]>([]);
+    const [devices, setDevices] = useState<Device[]>([]);
+
     const isProduction = selectedBlock.props.chartType == "productionChart"?true:false
     const isTimeline = selectedBlock.props.chartType == "timeline"?true:false
+    
     const [availableProductTypes, setAvailableProductTypes] = useState<string[]>([]);  
 
     useEffect(() => {

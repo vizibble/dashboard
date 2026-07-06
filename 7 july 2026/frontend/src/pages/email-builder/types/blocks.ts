@@ -4,6 +4,13 @@ export interface BaseBlock {
   id: number;
   type: string;
 }
+export interface BlockMeta extends BaseBlock {
+  props: any;
+  children?: Block[];
+  parentContainerId: number | null;
+  index: number;
+}
+
 
 export interface TextBlock extends BaseBlock {
   type: "text";

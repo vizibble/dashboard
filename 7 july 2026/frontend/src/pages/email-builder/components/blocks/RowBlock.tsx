@@ -2,9 +2,10 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { GripVertical, Trash2 } from "lucide-react";
 import BlockRenderer from "./BlockRenderer";
 import { useState } from "react";
+import type { Block } from "../../types/blocks";
 
 interface RowBlockProps{
-    block: any;
+    block: Block;
 
     index: number;
 
@@ -64,9 +65,8 @@ function RowBlock({block, index, selectedContainerId, setSelectedContainerId, se
           border:"1px solid lightgray"             
     }}
       >
-        {block.children.map((child: any, index:number) => (
+        {block.children.map((child: Block, index:number) => (
           <BlockRenderer
-            key={block.id}
               block={child}
               index={index}
               selectedContainerId={selectedContainerId}
