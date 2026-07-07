@@ -150,7 +150,7 @@ export const buildChartOption = (
         })
       }
 
-      return {...baseConfig, series:seriesData}
+      return {...baseConfig, series:seriesData, animation:false}
   }
 
   if(chartProps.chartType === "area"){
@@ -164,7 +164,7 @@ export const buildChartOption = (
         })
       }
 
-    return {...baseConfig, series:seriesData}
+    return {...baseConfig, series:seriesData, animation:false}
   }
 
   if(chartProps.chartType === "bar"){
@@ -178,7 +178,7 @@ export const buildChartOption = (
         })
       }
           
-    return {...baseConfig, series:seriesData}
+    return {...baseConfig, series:seriesData, animation:false}
   }
 
 console.warn(

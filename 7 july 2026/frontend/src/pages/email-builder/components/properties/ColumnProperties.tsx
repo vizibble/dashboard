@@ -31,9 +31,6 @@ return(
 
         <aside className="properties w-80 bg-white border-l border-slate-200 shadow-sm overflow-y-auto flex flex-col gap-[5px]">
         <PropertySection title="Coulmn Properties">
-            <PropertySection title="Appearance">
-            <AppearanceSection selectedBlock={selectedBlock} updateNodeStyle={updateNodeStyle} heightChangeAllowed={true} typographyAvailable={false} marginAvailable={true}/>
-            </PropertySection>
             <div className="flex flex-col gap-[4px] w-full items-center">
             <SidebarButton onClick={() => moveNode(parentId, index, index-1)} isFirst icon={MoveLeft}>
               Move Left
@@ -45,6 +42,9 @@ return(
 
             <SidebarButton onClick={() => {deleteNode(selectedBlock.id)}} icon={Trash2}>Delete Item</SidebarButton>              
             </div>
+            <PropertySection title="Appearance">
+            <AppearanceSection selectedBlock={selectedBlock} updateNodeStyle={updateNodeStyle} heightChangeAllowed={true} typographyAvailable={false} marginAvailable={true}/>
+            </PropertySection>
         </PropertySection>
 
           </aside>        

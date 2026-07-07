@@ -190,5 +190,7 @@ export function buildProductionOption(chartProps:any,chartData:any){
             ],
     
               series,
+
+              animation:false
           };
 }

@@ -33,7 +33,7 @@ export function createNode<
 export  const createSection = (child:Block|undefined):SectionBlock => ({
     id: generateId(),
     type: "section",
-    props: {style:{...style, height:"100%"}},
+    props: {style:{...style, minHeight:"120px"}},
     children: child?[child]:[]
   });
 

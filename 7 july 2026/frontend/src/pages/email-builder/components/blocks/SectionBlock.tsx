@@ -37,13 +37,12 @@ function SectionBlock({block, updateNodeProp,selectedContainerId, setSelectedCon
       onClick={(e) => {e.stopPropagation(); setSelectedBlockId(block.id); setSelectedContainerId(block.id); 
       }}
       style={{
-        minHeight: "120px",
+        minHeight: block.props.style.minHeight,
         display: "flex",
         flexDirection:"column",
         alignItems:"center",
         gap:"2px",
         width:block.props.style.width,
-        height:block.props.style.height,
         padding: block.props.style.padding,
         marginBottom:block.props.style.marginBottom,
         marginTop:block.props.style.marginTop,        

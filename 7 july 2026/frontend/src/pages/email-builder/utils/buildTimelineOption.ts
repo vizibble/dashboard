@@ -246,5 +246,7 @@ graphic: [
                 },
             },
         ],
+
+        animation:false
     };
 }

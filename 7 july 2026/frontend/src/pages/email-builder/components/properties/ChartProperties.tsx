@@ -91,6 +91,7 @@ function ChartProperties({selectedBlock, updateConfig, updateDevice, updateNodeS
     return (
         <aside className="properties w-80 bg-white border-l border-slate-200 shadow-sm overflow-y-auto flex flex-col gap-[5px]">
         <PropertySection title="ChartProperties">
+        <BlockActions selectedBlock={selectedBlock} moveNode={moveNode} deleteNode={deleteNode} parentId={parentId} index={index} isFirst={isFirst} isLast={isLast} />
         <DataSection availableProductTypes={availableProductTypes} isTimeline={isTimeline} showMetric={!isProduction && !isTimeline} selectedBlock={selectedBlock} devices={devices} availableMetrics={availableMetrics} updateConfig={updateConfig} updateDevice={updateDevice} showSecondaryMetric={true} showThreshold={!(isProduction || isTimeline)}/>        
 
         <TimeSection secondsMinutes = {!isProduction} showMetric={!isProduction} selectedBlock={selectedBlock} updateConfig={updateConfig} timeBuckedAvailable={!isTimeline} aggregationAvailable={!isTimeline}/>        
@@ -105,7 +106,6 @@ function ChartProperties({selectedBlock, updateConfig, updateDevice, updateNodeS
         </PropertySection>
 
 
-        <BlockActions selectedBlock={selectedBlock} moveNode={moveNode} deleteNode={deleteNode} parentId={parentId} index={index} isFirst={isFirst} isLast={isLast} />
         </aside>
     );
 }

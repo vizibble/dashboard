@@ -37,6 +37,7 @@ return(
 
           <aside className="properties w-80 bg-white border-l border-slate-200 shadow-sm overflow-y-auto flex flex-col gap-[5px]">
             <PropertySection title="Text Properties">
+                <BlockActions selectedBlock={selectedBlock} moveNode={moveNode} deleteNode={deleteNode} parentId={parentId} index={index} isFirst={isFirst} isLast={isLast} />
             <PropertyField label="Text">
             <TextInput
                 value={selectedBlock.props.text}
@@ -56,7 +57,6 @@ return(
             <AppearanceSection selectedBlock={selectedBlock} updateNodeStyle={updateNodeStyle} marginAvailable={true} heightChangeAllowed={false} typographyAvailable={true}/>
             </PropertySection>
                     
-            <BlockActions selectedBlock={selectedBlock} moveNode={moveNode} deleteNode={deleteNode} parentId={parentId} index={index} isFirst={isFirst} isLast={isLast} />
             </PropertySection>
 
           </aside>        

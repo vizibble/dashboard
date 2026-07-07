@@ -29,11 +29,6 @@ function SectionProperties({selectedBlock,moveSection,deleteNode, index, isFirst
 
 
 <PropertySection title="Section Properties">
-            <PropertySection title="Appearance">
-
-            <AppearanceSection selectedBlock={selectedBlock} updateNodeStyle={updateNodeStyle} heightChangeAllowed={true} typographyAvailable={false} marginAvailable={true}/>
-            </PropertySection>
-
             <div className="flex flex-col gap-[4px] w-full items-center">
 
             <SidebarButton onClick={() => moveSection(index, index-1)} isFirst={isFirst} icon={MoveUp}>
@@ -46,6 +41,11 @@ function SectionProperties({selectedBlock,moveSection,deleteNode, index, isFirst
 
             <SidebarButton onClick={() => {deleteNode(selectedBlock.id)}} icon={Trash2}>Delete Item</SidebarButton>
             </div>
+            <PropertySection title="Appearance">
+
+            <AppearanceSection selectedBlock={selectedBlock} updateNodeStyle={updateNodeStyle} heightChangeAllowed={true} typographyAvailable={false} marginAvailable={true}/>
+            </PropertySection>
+
 </PropertySection>
           </aside>            
 
