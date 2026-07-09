@@ -410,13 +410,14 @@ async function main() {
         const overallSum = allVals.reduce((a, b) => a + b, 0);
         const overallCount = allVals.length;
         const overallAvg = overallCount > 0 ? (overallSum / overallCount).toFixed(2) : '0.00';
-        const overallMin = overallCount > 0 ? Math.min(...allVals).toFixed(2) : '0.00';
-        const overallMax = overallCount > 0 ? Math.max(...allVals).toFixed(2) : '0.00';
+        const hourlyAverages = Object.values(paramData).map((stats) => stats.mean);
+        const overallMin = hourlyAverages.length > 0 ? Math.min(...hourlyAverages).toFixed(2) : '0.00';
+        const overallMax = hourlyAverages.length > 0 ? Math.max(...hourlyAverages).toFixed(2) : '0.00';
         const unit = getUnit(paramKey);
         const specs = getSpecifications(rules);
 
-        // Generate SVG Chart
-        const svgChart = generateSVGChart(
+        // Generate QuickChart URL
+        const chartUrl = generateQuickChartUrl(
           paramKey,
           hourlyMeans,
           rules
@@ -432,14 +433,9 @@ async function main() {
               <strong>Specifications:</strong> ${specs}${unit}
             </div>
 
-            <!--[if !mso]><!-->
             <div class="chart-container">
-              ${svgChart}
+              <img src="${chartUrl}" width="600" style="display: block; width: 100%; height: auto; max-width: 600px; border: 0;" alt="${paramLabel} Chart" />
             </div>
-            <!--<![endif]-->
-            <!--[if mso]>
-            <p class="no-data">Chart view is not supported in this email client &mdash; see hourly data below.</p>
-            <![endif]-->
           </div>
         `;
       }
@@ -478,144 +474,92 @@ async function main() {
   }
 }
 
-function generateSVGChart(
+function generateQuickChartUrl(
   parameterName: string,
   hourlyMeans: { [hour: number]: number },
   rules: AlertRule[]
 ): string {
-  const width = 600;
-  const height = 180;
-  const paddingLeft = 50;
-  const paddingRight = 20;
-  const paddingTop = 25;
-  const paddingBottom = 30;
+  const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
 
-  const points: { hour: number; val: number; hasData: boolean }[] = [];
-  for (let h = 0; h < 24; h++) {
+  const data = Array.from({ length: 24 }, (_, h) => {
     const val = hourlyMeans[h];
-    if (val !== undefined) {
-      points.push({ hour: h, val, hasData: true });
-    } else {
-      points.push({ hour: h, val: 0, hasData: false });
-    }
-  }
+    return val !== undefined ? val : null;
+  });
 
-  const dataVals = points.filter((p) => p.hasData).map((p) => p.val);
-  for (const r of rules) {
-    dataVals.push(r.threshold);
-  }
+  const datasets: any[] = [
+    {
+      label: formatParamLabel(parameterName),
+      data: data,
+      borderColor: '#1e40af',
+      backgroundColor: 'rgba(30, 64, 175, 0.12)',
+      fill: true,
+      borderWidth: 2,
+      pointRadius: 2.5,
+      pointBackgroundColor: '#1e40af',
+      pointBorderColor: '#ffffff',
+      spanGaps: true,
+    },
+  ];
 
-  let minVal = dataVals.length > 0 ? Math.min(...dataVals) : 0;
-  let maxVal = dataVals.length > 0 ? Math.max(...dataVals) : 100;
-
-  const valRange = maxVal - minVal;
-  if (valRange === 0) {
-    minVal -= 10;
-    maxVal += 10;
-  } else {
-    minVal -= valRange * 0.15;
-    maxVal += valRange * 0.15;
-  }
-
-  const getX = (hour: number) => {
-    return paddingLeft + (hour / 23) * (width - paddingLeft - paddingRight);
-  };
-
-  const getY = (val: number) => {
-    return (
-      height -
-      paddingBottom -
-      ((val - minVal) / (maxVal - minVal)) * (height - paddingTop - paddingBottom)
-    );
-  };
-
-  let pathD = '';
-  let areaD = '';
-  const activePoints = points.filter((p) => p.hasData);
-
-  if (activePoints.length > 0) {
-    activePoints.forEach((p, idx) => {
-      const x = getX(p.hour);
-      const y = getY(p.val);
-      if (idx === 0) {
-        pathD += `M ${x} ${y}`;
-      } else {
-        pathD += ` L ${x} ${y}`;
-      }
-    });
-
-    const firstX = getX(activePoints[0]!.hour);
-    const lastX = getX(activePoints[activePoints.length - 1]!.hour);
-    const zeroY = getY(minVal);
-    areaD = `${pathD} L ${lastX} ${zeroY} L ${firstX} ${zeroY} Z`;
-  }
-
-  const gridLinesCount = 3;
-  let yGridLines = '';
-  for (let i = 0; i <= gridLinesCount; i++) {
-    const v = minVal + (i / gridLinesCount) * (maxVal - minVal);
-    const y = getY(v);
-    yGridLines += `
-      <line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="#e8edf3" stroke-width="1"/>
-      <text x="${paddingLeft - 8}" y="${y + 3}" fill="#94a3b8" font-size="9" font-family="sans-serif" text-anchor="end">${v.toFixed(1)}</text>
-    `;
-  }
-
-  let xLabels = '';
-  for (let h = 0; h < 24; h += 4) {
-    const x = getX(h);
-    const label = `${String(h).padStart(2, '0')}:00`;
-    xLabels += `
-      <text x="${x}" y="${height - paddingBottom + 16}" fill="#94a3b8" font-size="9" font-family="sans-serif" text-anchor="middle">${label}</text>
-    `;
-  }
-
-  let thresholdLines = '';
   for (const rule of rules) {
-    const thresholdY = getY(rule.threshold);
     const conditionText = rule.condition ? ` (${rule.condition.toUpperCase()})` : '';
-    thresholdLines += `
-      <line x1="${paddingLeft}" y1="${thresholdY}" x2="${width - paddingRight}" y2="${thresholdY}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4"/>
-      <text x="${width - paddingRight}" y="${thresholdY - 5}" fill="#b91c1c" font-size="8" font-family="sans-serif" font-weight="bold" text-anchor="end">Limit: ${rule.threshold}${conditionText}</text>
-    `;
+    datasets.push({
+      label: `Limit: ${rule.threshold}${conditionText}`,
+      data: Array(24).fill(rule.threshold),
+      borderColor: '#dc2626',
+      borderWidth: 1.5,
+      borderDash: [4, 4],
+      fill: false,
+      pointRadius: 0,
+      pointHitRadius: 0,
+    });
   }
 
-  let dataPointsCircles = '';
-  if (activePoints.length > 0) {
-    dataPointsCircles = activePoints
-      .map((p) => {
-        const x = getX(p.hour);
-        const y = getY(p.val);
-        return `<circle cx="${x}" cy="${y}" r="2.5" fill="#1e40af" stroke="#ffffff" stroke-width="1"/>`;
-      })
-      .join('\n');
-  }
+  const chartConfig = {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: datasets,
+    },
+    options: {
+      legend: {
+        display: rules.length > 0,
+        position: 'top',
+        labels: {
+          fontSize: 10,
+          boxWidth: 20,
+        },
+      },
+      scales: {
+        xAxes: [
+          {
+            gridLines: {
+              color: '#e8edf3',
+            },
+            ticks: {
+              fontSize: 9,
+              fontColor: '#94a3b8',
+              maxTicksLimit: 6,
+            },
+          },
+        ],
+        yAxes: [
+          {
+            gridLines: {
+              color: '#e8edf3',
+            },
+            ticks: {
+              fontSize: 9,
+              fontColor: '#94a3b8',
+            },
+          },
+        ],
+      },
+    },
+  };
 
-  // Sanitize the parameter key into a safe SVG id: strip anything that
-  // isn't alphanumeric/hyphen and guarantee it starts with a letter, since
-  // gradient ids can otherwise end up empty or numeric-leading (invalid).
-  const safeIdPart = parameterName.replace(/[^a-zA-Z0-9]/g, '-').replace(/^-+|-+$/g, '') || 'param';
-  const chartId = `chart-grad-${/^[a-zA-Z]/.test(safeIdPart) ? safeIdPart : `p-${safeIdPart}`}`;
-
-  return `
-    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;background:#ffffff;">
-      <defs>
-        <linearGradient id="${chartId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#1e40af" stop-opacity="0.16"/>
-          <stop offset="100%" stop-color="#1e40af" stop-opacity="0.0"/>
-        </linearGradient>
-      </defs>
-      
-      ${yGridLines}
-      ${xLabels}
-      ${areaD ? `<path d="${areaD}" fill="url(#${chartId})"/>` : ''}
-      ${pathD ? `<path d="${pathD}" fill="none" stroke="#1e40af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
-      ${thresholdLines}
-      ${dataPointsCircles}
-      <line x1="${paddingLeft}" y1="${height - paddingBottom}" x2="${width - paddingRight}" y2="${height - paddingBottom}" stroke="#cbd5e1" stroke-width="1"/>
-      <line x1="${paddingLeft}" y1="${paddingTop}" x2="${paddingLeft}" y2="${height - paddingBottom}" stroke="#cbd5e1" stroke-width="1"/>
-    </svg>
-  `;
+  const encodedConfig = encodeURIComponent(JSON.stringify(chartConfig));
+  return `https://quickchart.io/chart?w=600&h=180&c=${encodedConfig}`;
 }
 
 main();
