@@ -1,0 +1,35 @@
+name: Send Daily Performance Email
+
+on:
+  schedule:
+    # 8:00 AM IST is 2:30 AM UTC
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          bun install
+
+      - name: Run Daily Report Script
+        run: |
+          cd backend
+          bun run scripts/sendDailyReport.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          NODE_ENV: production
