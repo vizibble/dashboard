@@ -23,12 +23,22 @@ export async function handleSensorData(
       return;
     }
 
-    const sensorPayload: Record<string, number> = {};
+    const sensorPayload: Record<string, number | string> = {};
+
     for (const [key, val] of Object.entries(rest)) {
-      const num = Number(val);
-      if (isNaN(num)) continue;
-      sensorPayload[key] = num;
+      if (typeof val === "string") {
+        const trimmed = val.trim();
+
+        if (trimmed !== "" && !Number.isNaN(Number(trimmed))) {
+          sensorPayload[key] = Number(trimmed);
+        } else {
+          sensorPayload[key] = val;
+        }
+      } else {
+        sensorPayload[key] = val as number;
+      }
     }
+
     if (Object.keys(sensorPayload).length === 0) {
       ApiResponse.fail(res, ErrorCodes.VALIDATION_ERROR, 400);
       return;
