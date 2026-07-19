@@ -13,11 +13,38 @@ import { useMemo } from 'react';
  *   missing     → OFFLINE (machine was off, no record)
  */
 export const useLoomTimeSeries = (
-  propTimes: string[],
-  propValues: number[],
-  targetDate: Date = new Date()
+  history: Record<string, any>,
+  targetDate: Date = new Date(),
+  isCount: boolean = false
 ) => {
   return useMemo(() => {
+    const conversionFactor = isCount ? 1.0 : 0.10781818;
+    const valueKey = isCount ? 'count' : 'length';
+
+    const propTimes = history[valueKey]?.rawTimes ?? [];
+    const propValues = (history[valueKey]?.values as number[]) ?? [];
+
+    // Build lookup maps for text fields by timestamp
+    const operatorMap = new Map<number, string>();
+    const productMap = new Map<number, string>();
+    const reasonMap = new Map<number, string>();
+
+    (history['operator']?.rawTimes ?? []).forEach((t: string, i: number) => {
+      const d = new Date(t);
+      d.setSeconds(0, 0);
+      operatorMap.set(d.getTime(), String(history['operator']?.values[i] ?? ''));
+    });
+    (history['product']?.rawTimes ?? []).forEach((t: string, i: number) => {
+      const d = new Date(t);
+      d.setSeconds(0, 0);
+      productMap.set(d.getTime(), String(history['product']?.values[i] ?? ''));
+    });
+    (history['idle_reason']?.rawTimes ?? []).forEach((t: string, i: number) => {
+      const d = new Date(t);
+      d.setSeconds(0, 0);
+      reasonMap.set(d.getTime(), String(history['idle_reason']?.values[i] ?? ''));
+    });
+
     // Build a fast lookup: timestamp (ms, seconds zeroed) → value
     const dataMap = new Map<number, number>();
     for (let i = 0; i < propTimes.length; i++) {
@@ -33,23 +60,30 @@ export const useLoomTimeSeries = (
         }
       }
       d.setSeconds(0, 0);
-      const CONVERSION_FACTOR = 0.10781818;
-      dataMap.set(d.getTime(), propValues[i] * CONVERSION_FACTOR);
+      dataMap.set(d.getTime(), propValues[i] * conversionFactor);
     }
 
     // PRODUCTION DAY LOGIC:
-    // If it's before 6 AM today, the "current" production day started at 6 AM yesterday.
     const operationalDate = new Date(targetDate);
     if (targetDate.toDateString() === new Date().toDateString()) {
       const now = new Date();
-      if (now.getHours() < 6) {
-        operationalDate.setDate(operationalDate.getDate() - 1);
+      if (isCount) {
+        if (now.getHours() < 8 || (now.getHours() === 8 && now.getMinutes() < 30)) {
+          operationalDate.setDate(operationalDate.getDate() - 1);
+        }
+      } else {
+        if (now.getHours() < 6) {
+          operationalDate.setDate(operationalDate.getDate() - 1);
+        }
       }
     }
 
-    const dayStartHour = 6;
     const startTimeLocal = new Date(operationalDate);
-    startTimeLocal.setHours(dayStartHour, 0, 0, 0);
+    if (isCount) {
+      startTimeLocal.setHours(8, 30, 0, 0);
+    } else {
+      startTimeLocal.setHours(6, 0, 0, 0);
+    }
     const startTime = startTimeLocal.getTime();
 
     const isToday = operationalDate.toDateString() === new Date().toDateString();
@@ -59,18 +93,25 @@ export const useLoomTimeSeries = (
     if (isCurrentlyToday) {
       const now = new Date();
       now.setSeconds(0, 0);
-      // Ensure we don't go past the 24h window even if it's currently > 6am tomorrow
+      // Ensure we don't go past the 24h window
       endTime = Math.min(now.getTime(), startTime + 24 * 3600 * 1000);
     } else {
       endTime = startTime + 24 * 3600 * 1000 - 60_000;
     }
 
-    // Shift definitions: 06-14, 14-22, 22-06
-    const SHIFTS = [
-      { name: 'Shift A', start: 6, end: 14 },
-      { name: 'Shift B', start: 14, end: 22 },
-      { name: 'Shift C', start: 22, end: 6 },
-    ];
+    // Shift definitions:
+    // count: Day Shift (08:30 - 20:30), Night Shift (20:30 - 08:30 next day)
+    // production_count: Shift A (6-14), Shift B (14-22), Shift C (22-6)
+    const SHIFTS = isCount
+      ? [
+          { name: 'Day Shift', start: 8.5, end: 20.5 },
+          { name: 'Night Shift', start: 20.5, end: 8.5 },
+        ]
+      : [
+          { name: 'Shift A', start: 6, end: 14 },
+          { name: 'Shift B', start: 14, end: 22 },
+          { name: 'Shift C', start: 22, end: 6 },
+        ];
 
     const now = new Date();
 
@@ -87,9 +128,14 @@ export const useLoomTimeSeries = (
     }));
 
     // Output arrays
-    const times: string[] = []; // ISO string for every minute (active + idle only — used by cumulative chart)
-    const cumulativeValues: number[] = []; // running total of production (metres)
-    const statusData: [string, number, number][] = []; // [isoStr, 1, statusCode] — all minutes including offline
+    const times: string[] = []; // ISO string for every minute
+    const cumulativeValues: number[] = []; // running total of production
+    const products: string[] = []; // running product names
+    const statusData: [string, number, number, string?, string?, string?][] = []; // [isoStr, 1, statusCode, reason, operator, product]
+
+    // Find first non-empty operator and product from the entire day
+    let lastOperator = Array.from(operatorMap.values()).find((v) => v && v !== 'Unknown') || '';
+    let lastProduct = Array.from(productMap.values()).find((v) => v && v !== 'Unknown') || '';
 
     let cumulativeSum = 0;
     let activeMinutes = 0;
@@ -101,16 +147,31 @@ export const useLoomTimeSeries = (
     for (let t = startTime; t <= endTime; t += 60_000) {
       const dateAtT = new Date(t);
       const isoStr = dateAtT.toISOString();
-      const h = dateAtT.getHours();
+      const h = dateAtT.getHours() + dateAtT.getMinutes() / 60;
 
-      // Which shift does this minute belong to?
-      // Shift A: 06-14, Shift B: 14-22, Shift C: 22-06
-      let shiftIndex = -1;
-      if (h >= 6 && h < 14) shiftIndex = 0;
-      else if (h >= 14 && h < 22) shiftIndex = 1;
-      else shiftIndex = 2; // (h >= 22 || h < 6)
+      let shiftIndex = 0;
+      if (isCount) {
+        if (h >= 8.5 && h < 20.5) {
+          shiftIndex = 0;
+        } else {
+          shiftIndex = 1;
+        }
+      } else {
+        if (h >= 6 && h < 14) shiftIndex = 0;
+        else if (h >= 14 && h < 22) shiftIndex = 1;
+        else shiftIndex = 2; // (h >= 22 || h < 6)
+      }
 
       const ss = shiftStats[shiftIndex];
+
+      const rawOp = operatorMap.get(t);
+      const rawProd = productMap.get(t);
+      if (rawOp && rawOp !== 'Unknown') lastOperator = rawOp;
+      if (rawProd && rawProd !== 'Unknown') lastProduct = rawProd;
+
+      const op = lastOperator;
+      const prod = lastProduct;
+      const rsn = reasonMap.get(t) ?? '';
 
       if (dataMap.has(t)) {
         const val = dataMap.get(t)!;
@@ -119,19 +180,19 @@ export const useLoomTimeSeries = (
           // ACTIVE — loom running, fabric produced
           cumulativeSum += val;
           activeMinutes++;
-          statusData.push([isoStr, 1, 1]);
+          statusData.push([isoStr, 1, 1, rsn, op, prod]);
           ss.production += val;
           ss.activeMin++;
         } else {
           // IDLE — minute exists but no production
           idleMinutes++;
-          statusData.push([isoStr, 1, 0]);
+          statusData.push([isoStr, 1, 0, rsn, op, prod]);
           ss.idleMin++;
         }
       } else {
         // OFFLINE — minute missing from data
         offlineMinutes++;
-        statusData.push([isoStr, 1, -1]);
+        statusData.push([isoStr, 1, -1, rsn, op, prod]);
         ss.offlineMin++;
       }
 
@@ -144,10 +205,11 @@ export const useLoomTimeSeries = (
 
       // Always emit a cumulative point
       times.push(isoStr);
-      cumulativeValues.push(parseFloat(cumulativeSum.toFixed(1)));
+      cumulativeValues.push(isCount ? Math.round(cumulativeSum) : parseFloat(cumulativeSum.toFixed(1)));
+      products.push(prod || 'Unknown');
     }
 
-    const totalProduction = parseFloat(cumulativeSum.toFixed(1));
+    const totalProduction = isCount ? Math.round(cumulativeSum) : parseFloat(cumulativeSum.toFixed(1));
     const totalMinutes = activeMinutes + idleMinutes + offlineMinutes;
     const utilization =
       totalMinutes > 0 ? Math.round((activeMinutes / totalMinutes) * 100) : 0;
@@ -161,7 +223,7 @@ export const useLoomTimeSeries = (
       const shiftTotalMinutes = ss.activeMin + ss.idleMin + ss.offlineMin;
       return {
         name: ss.name,
-        production: parseFloat(ss.production.toFixed(1)),
+        production: isCount ? Math.round(ss.production) : parseFloat(ss.production.toFixed(1)),
         utilization:
           shiftTotalMinutes > 0
             ? Math.round((ss.activeMin / shiftTotalMinutes) * 100)
@@ -177,17 +239,24 @@ export const useLoomTimeSeries = (
     // Determine currently active shift (if today)
     let currentShiftIndex = 0;
     if (isCurrentlyToday) {
-    if (isCurrentlyToday) {
-      const h = now.getHours();
-      if (h >= 6 && h < 14) currentShiftIndex = 0;
-      else if (h >= 14 && h < 22) currentShiftIndex = 1;
-      else currentShiftIndex = 2; // (h >= 22 || h < 6)
-    }
+      const h = now.getHours() + now.getMinutes() / 60;
+      if (isCount) {
+        if (h >= 8.5 && h < 20.5) {
+          currentShiftIndex = 0;
+        } else {
+          currentShiftIndex = 1;
+        }
+      } else {
+        if (h >= 6 && h < 14) currentShiftIndex = 0;
+        else if (h >= 14 && h < 22) currentShiftIndex = 1;
+        else currentShiftIndex = 2; // (h >= 22 || h < 6)
+      }
     }
 
     return {
       times,
       cumulativeValues,
+      products,
       statusData,
       summary: {
         totalProduction,
@@ -200,7 +269,9 @@ export const useLoomTimeSeries = (
         // Detailed shifts
         shifts: shiftSummaries,
         currentShiftIndex,
+        latestOperator: lastOperator || 'None',
+        latestProduct: lastProduct || 'None',
       },
     };
-  }, [propTimes, propValues, targetDate]);
+  }, [history, targetDate, isCount]);
 };

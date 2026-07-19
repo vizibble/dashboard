@@ -23,8 +23,11 @@ interface LoomStatsProps {
     offlineMinutes: number;
     shifts: ShiftSummary[];
     currentShiftIndex: number;
+    latestOperator?: string;
+    latestProduct?: string;
   };
   isHistory?: boolean;
+  unit?: string;
 }
 
 /* ─────────────────────────────────────────────
@@ -124,6 +127,7 @@ interface CardBodyProps {
   idleMinutes: number;
   offlineMinutes: number;
   compact?: boolean;
+  unit?: string;
 }
 
 const CardBody = ({
@@ -135,6 +139,7 @@ const CardBody = ({
   idleMinutes,
   offlineMinutes,
   compact = false,
+  unit = 'm',
 }: CardBodyProps) => {
   const pct = Math.min(100, Math.round((production / target) * 100));
   const barColor = pct >= 80 ? '#43a047' : pct >= 50 ? '#fb8c00' : '#e53935';
@@ -158,7 +163,7 @@ const CardBody = ({
             <span className="text-3xl font-bold tabular-nums leading-none text-[#1c2b4b]">
               {production.toLocaleString()}
             </span>
-            <span className="text-xs font-semibold text-[#90a0b7]">/ {target} m</span>
+            <span className="text-xs font-semibold text-[#90a0b7]">/ {target}{unit ? ' ' + unit : ''}</span>
           </div>
           <div className="mt-3">
             <Bar pct={pct} color={barColor} label="Target" />
@@ -208,7 +213,7 @@ const CardBody = ({
           <span className="text-4xl sm:text-5xl font-bold tabular-nums leading-none text-[#1c2b4b]">
             {production.toLocaleString()}
           </span>
-          <span className="text-sm font-semibold text-[#90a0b7]">/ {target} m</span>
+          <span className="text-sm font-semibold text-[#90a0b7]">/ {target}{unit ? ' ' + unit : ''}</span>
         </div>
         <div className="mt-3">
           <Bar pct={pct} color={barColor} label="Target" />
@@ -269,28 +274,34 @@ const SectionHeader = ({
 /* ─────────────────────────────────────────────
    Context Row
 ───────────────────────────────────────────── */
-const ContextRow = () => (
+const ContextRow = ({ product, operator }: { product?: string; operator?: string }) => (
   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2 bg-white border border-[#e8edf2] rounded text-[11px]">
     <span className="text-[#90a0b7] font-semibold uppercase tracking-[0.12em]">Product</span>
-    <span className="font-bold text-[#1c2b4b]">125 mm</span>
+    <span className="font-bold text-[#1c2b4b]">{product || 'None'}</span>
     <div className="hidden sm:block w-px h-3 bg-[#e8edf2]" />
     <span className="text-[#90a0b7] font-semibold uppercase tracking-[0.12em]">Operator</span>
-    <span className="font-bold text-[#1c2b4b]">Santosh</span>
+    <span className="font-bold text-[#1c2b4b]">{operator || 'None'}</span>
   </div>
 );
 
 /* ─────────────────────────────────────────────
    Main Export
 ───────────────────────────────────────────── */
-export const LoomStats = ({ summary, isHistory }: LoomStatsProps) => {
-  const target = 90;
+
+
+
+/* ─────────────────────────────────────────────
+   Main Export
+   ───────────────────────────────────────────── */
+export const LoomStats = ({ summary, isHistory, unit = 'm' }: LoomStatsProps) => {
+  const target = unit === 'pcs' ? 35000 : 90;
   const activeShift = summary.shifts[summary.currentShiftIndex];
 
   /* ── Historical layout ── */
   if (isHistory) {
     return (
       <div className="space-y-3">
-        <ContextRow />
+        <ContextRow product={summary.latestProduct} operator={summary.latestOperator} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {summary.shifts.map((s, i) => (
             <div key={i} className="bg-white border border-[#e8edf2] rounded overflow-hidden">
@@ -304,6 +315,7 @@ export const LoomStats = ({ summary, isHistory }: LoomStatsProps) => {
                 idleMinutes={s.idleMinutes}
                 offlineMinutes={s.offlineMinutes}
                 compact
+                unit={unit}
               />
             </div>
           ))}
@@ -316,7 +328,7 @@ export const LoomStats = ({ summary, isHistory }: LoomStatsProps) => {
   return (
     <div className="space-y-3">
 
-      <ContextRow />
+      <ContextRow product={summary.latestProduct} operator={summary.latestOperator} />
 
       {/* Daily Overview */}
       <div className="bg-white border border-[#e8edf2] rounded overflow-hidden">
@@ -324,11 +336,12 @@ export const LoomStats = ({ summary, isHistory }: LoomStatsProps) => {
         <CardBody
           productionLabel="Output"
           production={summary.totalProduction}
-          target={target * 3}
+          target={target * summary.shifts.length}
           oee={summary.utilization}
           activeMinutes={summary.activeMinutes}
           idleMinutes={summary.idleMinutes}
           offlineMinutes={summary.offlineMinutes}
+          unit={unit}
         />
       </div>
 
@@ -346,6 +359,7 @@ export const LoomStats = ({ summary, isHistory }: LoomStatsProps) => {
           activeMinutes={activeShift.activeMinutes}
           idleMinutes={activeShift.idleMinutes}
           offlineMinutes={activeShift.offlineMinutes}
+          unit={unit}
         />
       </div>
 

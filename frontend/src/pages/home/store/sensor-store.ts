@@ -35,7 +35,7 @@ export const useSensorStore = create<SensorStore>((set) => ({
         const label = formatTimeLabel(date, mode);
 
         for (const [field, val] of Object.entries(payload)) {
-          if (typeof val !== 'number') continue;
+          if (typeof val !== 'number' && typeof val !== 'string') continue;
           if (!history[field]) history[field] = { times: [], values: [], rawTimes: [] };
           history[field]!.times.push(label);
           history[field]!.values.push(val);

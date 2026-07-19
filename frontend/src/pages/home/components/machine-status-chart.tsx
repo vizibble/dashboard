@@ -22,7 +22,7 @@ const STATE_LABELS = {
 };
 
 interface MachineStatusChartProps {
-  statusData: [string, number, number][];
+  statusData: [string, number, number, string?, string?, string?][];
   summary: {
     activeMinutes: number;
     idleMinutes: number;
@@ -31,16 +31,20 @@ interface MachineStatusChartProps {
   };
   /** The date being viewed — defaults to today */
   targetDate?: Date;
+  isCount?: boolean;
 }
 
 /** Convert statusData into contiguous segments for the custom series */
-function buildSegments(statusData: [string, number, number][]) {
+function buildSegments(statusData: [string, number, number, string?, string?, string?][]) {
   if (statusData.length === 0) return [];
 
   type Segment = {
     start: number;
     end: number;
     state: 'active' | 'idle' | 'offline';
+    reason: string;
+    operator: string;
+    product: string;
   };
   const segments: Segment[] = [];
 
@@ -49,20 +53,44 @@ function buildSegments(statusData: [string, number, number][]) {
 
   let segStart = new Date(statusData[0][0]).getTime();
   let segState = stateOf(statusData[0][2]);
+  let segReason = statusData[0][3] || '';
+  let segOperator = statusData[0][4] || '';
+  let segProduct = statusData[0][5] || '';
 
   for (let i = 1; i < statusData.length; i++) {
     const t = new Date(statusData[i][0]).getTime();
     const s = stateOf(statusData[i][2]);
-    if (s !== segState) {
-      segments.push({ start: segStart, end: t, state: segState });
+    const r = statusData[i][3] || '';
+    const op = statusData[i][4] || '';
+    const prod = statusData[i][5] || '';
+
+    if (s !== segState || r !== segReason || op !== segOperator || prod !== segProduct) {
+      segments.push({
+        start: segStart,
+        end: t,
+        state: segState,
+        reason: segReason,
+        operator: segOperator,
+        product: segProduct,
+      });
       segStart = t;
       segState = s;
+      segReason = r;
+      segOperator = op;
+      segProduct = prod;
     }
   }
   // push last segment up to one-minute past the last timestamp
   const lastT =
     new Date(statusData[statusData.length - 1][0]).getTime() + 60_000;
-  segments.push({ start: segStart, end: lastT, state: segState });
+  segments.push({
+    start: segStart,
+    end: lastT,
+    state: segState,
+    reason: segReason,
+    operator: segOperator,
+    product: segProduct,
+  });
 
   return segments;
 }
@@ -71,6 +99,7 @@ export const MachineStatusChart = ({
   statusData,
   summary,
   targetDate,
+  isCount = false,
 }: MachineStatusChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
   const { isFullscreen, toggle } = useFullscreen();
@@ -79,20 +108,29 @@ export const MachineStatusChart = ({
   const segments = useMemo(() => buildSegments(statusData), [statusData]);
 
   const options = useMemo(() => {
-    // Span the correct day: midnight → now (today) or midnight → 23:59 (historical)
     const base = targetDate ?? new Date();
     const operationalDate = new Date(base);
     // If we're looking at "today" (no specific targetDate or targetDate is today)
-    // and it's before 6 AM, then the operational day is yesterday.
+    // and it's before the start time, then the operational day is yesterday.
     if (!targetDate || targetDate.toDateString() === new Date().toDateString()) {
       const now = new Date();
-      if (now.getHours() < 6) {
-        operationalDate.setDate(operationalDate.getDate() - 1);
+      if (isCount) {
+        if (now.getHours() < 8 || (now.getHours() === 8 && now.getMinutes() < 30)) {
+          operationalDate.setDate(operationalDate.getDate() - 1);
+        }
+      } else {
+        if (now.getHours() < 6) {
+          operationalDate.setDate(operationalDate.getDate() - 1);
+        }
       }
     }
 
     const startTimeLocal = new Date(operationalDate);
-    startTimeLocal.setHours(6, 0, 0, 0);
+    if (isCount) {
+      startTimeLocal.setHours(8, 30, 0, 0);
+    } else {
+      startTimeLocal.setHours(6, 0, 0, 0);
+    }
     const startTimeMs = startTimeLocal.getTime();
     const isToday = operationalDate.toDateString() === new Date().toDateString();
     const endMs = isToday
@@ -112,7 +150,7 @@ export const MachineStatusChart = ({
         trigger: 'item' as const,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         formatter: (params: any) => {
-          const { start, end, state } = params.data;
+          const { start, end, state, reason } = params.data;
           const fmt = (ts: number) =>
             new Date(ts).toLocaleTimeString([], {
               hour: '2-digit',
@@ -121,7 +159,12 @@ export const MachineStatusChart = ({
           const durationMin = Math.round((end - start) / 60_000);
           const dot =
             state === 'active' ? '🟢' : state === 'idle' ? '🟡' : '🔴';
-          return `<b>${fmt(start)} – ${fmt(end)}</b><br/>${dot} ${STATE_LABELS[state as keyof typeof STATE_LABELS]} (${durationMin} min)`;
+          
+          let content = `<b>${fmt(start)} – ${fmt(end)}</b><br/>${dot} ${STATE_LABELS[state as keyof typeof STATE_LABELS]} (${durationMin} min)`;
+          if (state === 'idle' && reason) {
+            content += `<br/>⚠️ Reason: <b>${reason}</b>`;
+          }
+          return content;
         },
       },
       animation: false,
@@ -195,6 +238,9 @@ export const MachineStatusChart = ({
             start: seg.start,
             end: seg.end,
             state: seg.state,
+            reason: seg.reason,
+            operator: seg.operator,
+            product: seg.product,
           })),
           encode: { x: 0, y: 1 },
           z: 2,

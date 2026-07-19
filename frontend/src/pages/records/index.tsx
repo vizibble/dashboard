@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { Chart } from '@/pages/home/components/chart';
 import { LoomCumulativeChart } from '@/pages/home/components/loom-cumulative-chart';
+import { LoomCumulativeBarChart } from '@/pages/home/components/loom-cumulative-bar-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
 import { MachineStatusChart } from '@/pages/home/components/machine-status-chart';
 import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
@@ -48,11 +49,13 @@ export const RecordsPage = () => {
   const isTempHumidity = selectedDeviceType === 'temp_humidity';
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
+  const isCount = selectedDeviceType === 'count';
+  const isLoomStyle = isLengthCount || isCount;
 
   const { dates: availableDates, isLoading: loadingDates } =
     useAvailableDates(selectedDeviceId);
 
-  const resolution = isLengthCount ? 'minute' : 'hour';
+  const resolution = isLoomStyle ? 'minute' : 'hour';
   const nextDate = date ? new Date(date) : undefined;
   if (nextDate) nextDate.setDate(nextDate.getDate() + 1);
 
@@ -66,22 +69,21 @@ export const RecordsPage = () => {
     selectedDeviceId,
     formatDateForApi(nextDate),
     resolution,
-    isLengthCount
+    isLoomStyle
   );
 
-  const isLoading = loadingDates || loadingRecords1 || (isLengthCount && loadingRecords2);
+  const isLoading = loadingDates || loadingRecords1 || (isLoomStyle && loadingRecords2);
 
   // Process data for charts
   const history1 = data1?.rows ?? [];
   const history2 = data2?.rows ?? [];
-  const history = isLengthCount ? [...history1, ...history2] : history1;
+  const history = isLoomStyle ? [...history1, ...history2] : history1;
   const times: string[] = [];
   const temperatureData: number[] = [];
   const humidityData: number[] = [];
   const pressureData: number[] = [];
 
-  const loomTimesApi: string[] = [];
-  const loomValuesApi: number[] = [];
+  const loomHistory: Record<string, any> = {};
 
   history.forEach((row) => {
     const d = new Date(row.recorded_at);
@@ -97,16 +99,22 @@ export const RecordsPage = () => {
     if (row.payload['differential_pressure'] !== undefined) {
       pressureData.push(row.payload['differential_pressure']);
     }
-    if (row.payload['length'] !== undefined) {
-      loomTimesApi.push(row.recorded_at);
-      loomValuesApi.push(row.payload['length']);
+    
+    // Populate loomHistory with all payload fields
+    for (const [key, val] of Object.entries(row.payload)) {
+      if (!loomHistory[key]) {
+        loomHistory[key] = { times: [], values: [], rawTimes: [] };
+      }
+      loomHistory[key].times.push(row.recorded_at);
+      loomHistory[key].values.push(val);
+      loomHistory[key].rawTimes.push(row.recorded_at);
     }
   });
 
   const loomMetrics = useLoomTimeSeries(
-    loomTimesApi,
-    loomValuesApi,
-    date || new Date()
+    loomHistory,
+    date || new Date(),
+    isCount
   );
 
   const temperatureOptions = getTemperatureOptions({
@@ -242,21 +250,32 @@ export const RecordsPage = () => {
                 </div>
               )}
             </div>
-            {isLengthCount && (
+            {isLoomStyle && (
               <>
-                <LoomStats isHistory={true} summary={loomMetrics.summary} />
+                <LoomStats isHistory={true} summary={loomMetrics.summary} unit={isCount ? 'pcs' : 'm'} />
                 <MachineStatusChart
                   key={`loomstat-${date.toISOString()}`}
                   statusData={loomMetrics.statusData}
                   summary={loomMetrics.summary}
                   targetDate={date}
+                  isCount={isCount}
                 />
-                <LoomCumulativeChart
-                  key={`loomcum-${date.toISOString()}`}
-                  times={loomMetrics.times}
-                  targetDate={date}
-                  values={loomMetrics.cumulativeValues}
-                />
+                {isLengthCount ? (
+                  <LoomCumulativeChart
+                    key={`loomcum-${date.toISOString()}`}
+                    times={loomMetrics.times}
+                    targetDate={date}
+                    values={loomMetrics.cumulativeValues}
+                  />
+                ) : (
+                  <LoomCumulativeBarChart
+                    key={`loomcum-${date.toISOString()}`}
+                    times={loomMetrics.times}
+                    targetDate={date}
+                    values={loomMetrics.cumulativeValues}
+                    products={loomMetrics.products}
+                  />
+                )}
               </>
             )}
           </div>

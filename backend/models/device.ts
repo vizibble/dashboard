@@ -37,7 +37,7 @@ export async function getDeviceHistory(
   } else {
     truncation = mode === 'daily' ? 'hour' : 'minute';
     startTimeExpr =
-      type === 'production_count'
+      type === 'production_count' || type === 'count'
         ? `NOW() - INTERVAL '30 hours'`
         : `date_trunc('day', NOW(), $3)`;
   }
@@ -48,7 +48,11 @@ export async function getDeviceHistory(
       SELECT
         date_trunc($2, recorded_at, CAST($3 AS text)) AS trunc_time,
         key,
-        AVG(value::numeric)                           AS avg_value
+        CASE
+          WHEN key IN ('count', 'length') THEN (SUM(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
+          WHEN bool_and(value ~ '^-?[0-9]+(\\.[0-9]+)?$') THEN (AVG(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
+          ELSE MAX(value)
+        END AS val
       FROM sensor_readings
       CROSS JOIN jsonb_each_text(payload)
       WHERE device_id = $1
@@ -57,12 +61,17 @@ export async function getDeviceHistory(
       GROUP BY trunc_time, key
     )
     SELECT
-      jsonb_object_agg(key, ROUND(avg_value, 2)) AS payload,
+      jsonb_object_agg(key, 
+        CASE 
+          WHEN val ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN to_jsonb(ROUND(val::numeric, 2)) 
+          ELSE to_jsonb(val) 
+        END
+      ) AS payload,
       trunc_time                                 AS recorded_at
     FROM aggregated_data
     GROUP BY trunc_time
     ORDER BY trunc_time ASC
-    LIMIT 31
+    LIMIT ${mode === 'monthly' ? 31 : 2000}
     `,
     [deviceId, truncation, timezone]
   );
@@ -89,7 +98,11 @@ export async function getDeviceRecordsByDate(
         SELECT
           date_trunc($4, recorded_at, CAST($3 AS text)) AS trunc_time,
           key,
-          AVG(value::numeric)                           AS avg_value
+          CASE
+            WHEN key IN ('count', 'length') THEN (SUM(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
+            WHEN bool_and(value ~ '^-?[0-9]+(\\.[0-9]+)?$') THEN (AVG(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
+            ELSE MAX(value)
+          END AS val
         FROM sensor_readings, bounds
         CROSS JOIN jsonb_each_text(payload)
         WHERE device_id = $1
@@ -98,7 +111,12 @@ export async function getDeviceRecordsByDate(
         GROUP BY trunc_time, key
       )
     SELECT
-      jsonb_object_agg(key, ROUND(avg_value, 2)) AS payload,
+      jsonb_object_agg(key, 
+        CASE 
+          WHEN val ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN to_jsonb(ROUND(val::numeric, 2)) 
+          ELSE to_jsonb(val) 
+        END
+      ) AS payload,
       trunc_time                                 AS recorded_at
     FROM aggregated_data
     GROUP BY trunc_time

@@ -7,6 +7,11 @@ export function useDailyAverage(key: string): number | null {
     return null;
   }
 
-  const sum = history.values.reduce((acc, val) => acc + val, 0);
-  return Number((sum / history.values.length).toFixed(1));
+  const numValues = history.values.map(Number).filter((v) => !isNaN(v));
+  if (numValues.length === 0) {
+    return null;
+  }
+
+  const sum = numValues.reduce((acc, val) => acc + val, 0);
+  return Number((sum / numValues.length).toFixed(1));
 }

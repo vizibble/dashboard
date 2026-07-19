@@ -21,6 +21,7 @@ import {
 } from '@/pages/home/utils/chart-options';
 
 import { LoomCumulativeChart } from '@/pages/home/components/loom-cumulative-chart';
+import { LoomCumulativeBarChart } from '@/pages/home/components/loom-cumulative-bar-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
 import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
 
@@ -34,24 +35,23 @@ export const HomePage = () => {
   const isTempHumidity = selectedDeviceType === 'temp_humidity';
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
+  const isCount = selectedDeviceType === 'count';
 
-  const loomTimes = history['length']?.rawTimes ?? [];
-  const loomValues = history['length']?.values ?? [];
-  const loomMetrics = useLoomTimeSeries(loomTimes, loomValues);
+  const loomMetrics = useLoomTimeSeries(history, undefined, isCount);
 
   const temperatureOptions = getTemperatureOptions({
     times: history['temperature']?.times ?? [],
-    temperatureData: history['temperature']?.values ?? [],
+    temperatureData: (history['temperature']?.values as number[]) ?? [],
     thresholds: DEFAULT_TEMPERATURE_THRESHOLDS,
   });
   const humidityOptions = getHumidityOptions({
     times: history['humidity']?.times ?? [],
-    humidityData: history['humidity']?.values ?? [],
+    humidityData: (history['humidity']?.values as number[]) ?? [],
     thresholds: DEFAULT_HUMIDITY_THRESHOLDS,
   });
   const pressureOptions = getPressureOptions({
     times: history['differential_pressure']?.times ?? [],
-    differentialPressureData: history['differential_pressure']?.values ?? [],
+    differentialPressureData: (history['differential_pressure']?.values as number[]) ?? [],
     thresholds: DEFAULT_PRESSURE_THRESHOLDS,
   });
 
@@ -111,22 +111,29 @@ export const HomePage = () => {
           </>
         )}
         {/* Fabric Production — Weaving Loom */}
-        {selectedDeviceId && !historyLoading && isLengthCount && (
+        {selectedDeviceId && !historyLoading && (isLengthCount || isCount) && (
           <>
-            {/* Row 1: Stats */}
-            <LoomStats summary={loomMetrics.summary} />
-
-            {/* Row 2: Active / Idle / Offline timeline */}
+            {/* Stats */}
+            <LoomStats summary={loomMetrics.summary} unit={isCount ? 'pcs' : 'm'} />
+            {/* Active / Idle / Offline timeline */}
             <MachineStatusChart
               statusData={loomMetrics.statusData}
               summary={loomMetrics.summary}
+              isCount={isCount}
             />
-
-            {/* Row 3: Cumulative Area Chart */}
-            <LoomCumulativeChart
-              times={loomMetrics.times}
-              values={loomMetrics.cumulativeValues}
-            />
+            {/* Cumulative Chart */}
+            {isLengthCount ? (
+              <LoomCumulativeChart
+                times={loomMetrics.times}
+                values={loomMetrics.cumulativeValues}
+              />
+            ) : (
+              <LoomCumulativeBarChart
+                times={loomMetrics.times}
+                values={loomMetrics.cumulativeValues}
+                products={loomMetrics.products}
+              />
+            )}
           </>
         )}
       </div>
