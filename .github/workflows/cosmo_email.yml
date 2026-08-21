@@ -1,9 +1,9 @@
-name: Send Daily Performance Email
+name: Send Cosmo Daily Performance Email
 
 on:
   schedule:
-    # 8:00 AM IST is 2:30 AM UTC
-    - cron: '30 2 * * *'
+    # 8:45 AM IST is 3:15 AM UTC
+    - cron: '15 3 * * *'
   workflow_dispatch:
 
 jobs:
@@ -24,13 +24,13 @@ jobs:
           cd backend
           bun install
 
-      - name: Run Daily Report Script
+      - name: Run Cosmo Daily Report Script
         run: |
           cd backend
-          bun run scripts/sendDailyReport.ts
+          bun run scripts/sendCosmoDailyReport.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
-          TARGET_USER_ID: ${{ secrets.TARGET_USER_ID }}
+          COSMO_DEVICE_ID: ${{ secrets.COSMO_DEVICE_ID }}
           NODE_ENV: production

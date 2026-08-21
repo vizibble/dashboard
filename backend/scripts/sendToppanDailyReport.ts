@@ -75,10 +75,14 @@ function getUnit(key: string): string {
 
 function getSpecifications(rules: AlertRule[]): string {
   if (rules.length === 0) return 'No limit';
-  
-  const lowRule = rules.find((r) => r.condition === 'lt' || r.condition === 'lte');
-  const highRule = rules.find((r) => r.condition === 'gt' || r.condition === 'gte');
-  
+
+  const lowRule = rules.find(
+    (r) => r.condition === 'lt' || r.condition === 'lte'
+  );
+  const highRule = rules.find(
+    (r) => r.condition === 'gt' || r.condition === 'gte'
+  );
+
   if (lowRule && highRule) {
     return `${lowRule.threshold} - ${highRule.threshold}`;
   } else if (lowRule) {
@@ -88,9 +92,10 @@ function getSpecifications(rules: AlertRule[]): string {
     const symbol = highRule.condition === 'gt' ? '<' : '<=';
     return `${symbol}${highRule.threshold}`;
   }
-  
+
   const r = rules[0]!;
-  const sym = r.condition === 'gt' ? '<' : r.condition === 'lt' ? '>' : r.condition;
+  const sym =
+    r.condition === 'gt' ? '<' : r.condition === 'lt' ? '>' : r.condition;
   return `${sym}${r.threshold}`;
 }
 
@@ -98,23 +103,30 @@ function parametersMatch(param1: string, param2: string): boolean {
   const p1 = param1.toLowerCase().replace(/[\s_-]+/g, '');
   const p2 = param2.toLowerCase().replace(/[\s_-]+/g, '');
   if (p1 === p2) return true;
-  
+
   const aliases: Record<string, string[]> = {
     temperature: ['temp', 't'],
     humidity: ['humid', 'rh', 'h'],
-    differentialpressure: ['dp', 'diffpress', 'differential_pressure', 'diff_press'],
+    differentialpressure: [
+      'dp',
+      'diffpress',
+      'differential_pressure',
+      'diff_press',
+    ],
   };
-  
+
   for (const [key, list] of Object.entries(aliases)) {
     if (p1 === key && list.includes(p2)) return true;
     if (p2 === key && list.includes(p1)) return true;
   }
-  
+
   return false;
 }
 
 async function main() {
-  console.log(`[Daily Report] Starting daily report for user: ${TARGET_USER_ID}`);
+  console.log(
+    `[Daily Report] Starting daily report for user: ${TARGET_USER_ID}`
+  );
 
   try {
     // 1. Fetch user emails
@@ -125,7 +137,9 @@ async function main() {
     const recipientEmails = emailResult.rows.map((r) => r.email);
 
     if (recipientEmails.length === 0) {
-      console.log(`[Daily Report] No alert emails registered for user ${TARGET_USER_ID}. Exiting.`);
+      console.log(
+        `[Daily Report] No alert emails registered for user ${TARGET_USER_ID}. Exiting.`
+      );
       return;
     }
     console.log(`[Daily Report] Recipients: ${recipientEmails.join(', ')}`);
@@ -137,7 +151,9 @@ async function main() {
     );
     const devices = deviceResult.rows;
     if (devices.length === 0) {
-      console.log(`[Daily Report] No devices found for user ${TARGET_USER_ID}. Exiting.`);
+      console.log(
+        `[Daily Report] No devices found for user ${TARGET_USER_ID}. Exiting.`
+      );
       return;
     }
     console.log(`[Daily Report] Found ${devices.length} devices.`);
@@ -170,11 +186,16 @@ async function main() {
       [TARGET_USER_ID]
     );
     const readings = readingsResult.rows;
-    console.log(`[Daily Report] Fetched ${readings.length} readings for the previous day.`);
+    console.log(
+      `[Daily Report] Fetched ${readings.length} readings for the previous day.`
+    );
 
     // 5. Aggregate stats in TypeScript
     // Structure: deviceId -> parameterName -> hour (0-23) -> values[]
-    const groupedData: Record<string, Record<string, Record<number, number[]>>> = {};
+    const groupedData: Record<
+      string,
+      Record<string, Record<number, number[]>>
+    > = {};
 
     for (const r of readings) {
       const devGroup = (groupedData[r.device_id] ??= {});
@@ -190,7 +211,10 @@ async function main() {
 
     // Now calculate hourly mean, min, max
     // Structure: deviceId -> parameterName -> hour (0-23) -> AggregatedStats
-    const statsData: Record<string, Record<string, Record<number, AggregatedStats>>> = {};
+    const statsData: Record<
+      string,
+      Record<string, Record<number, AggregatedStats>>
+    > = {};
 
     for (const [deviceId, devData] of Object.entries(groupedData)) {
       const devStats = (statsData[deviceId] ??= {});
@@ -406,22 +430,29 @@ async function main() {
         const paramLabel = escapeHtml(formatParamLabel(paramKey));
 
         // Calculate Overall daily statistics
-        const allVals = Object.values(groupedData[device.device_id]?.[paramKey] || {}).flat();
+        const allVals = Object.values(
+          groupedData[device.device_id]?.[paramKey] || {}
+        ).flat();
         const overallSum = allVals.reduce((a, b) => a + b, 0);
         const overallCount = allVals.length;
-        const overallAvg = overallCount > 0 ? (overallSum / overallCount).toFixed(2) : '0.00';
-        const hourlyAverages = Object.values(paramData).map((stats) => stats.mean);
-        const overallMin = hourlyAverages.length > 0 ? Math.min(...hourlyAverages).toFixed(2) : '0.00';
-        const overallMax = hourlyAverages.length > 0 ? Math.max(...hourlyAverages).toFixed(2) : '0.00';
+        const overallAvg =
+          overallCount > 0 ? (overallSum / overallCount).toFixed(2) : '0.00';
+        const hourlyAverages = Object.values(paramData).map(
+          (stats) => stats.mean
+        );
+        const overallMin =
+          hourlyAverages.length > 0
+            ? Math.min(...hourlyAverages).toFixed(2)
+            : '0.00';
+        const overallMax =
+          hourlyAverages.length > 0
+            ? Math.max(...hourlyAverages).toFixed(2)
+            : '0.00';
         const unit = getUnit(paramKey);
         const specs = getSpecifications(rules);
 
         // Generate QuickChart URL
-        const chartUrl = generateQuickChartUrl(
-          paramKey,
-          hourlyMeans,
-          rules
-        );
+        const chartUrl = generateQuickChartUrl(paramKey, hourlyMeans, rules);
 
         emailHtml += `
           <div class="sensor-section">
@@ -453,18 +484,27 @@ async function main() {
 
     // 7. Save preview file locally
     await Bun.write('test_report_preview.html', emailHtml);
-    console.log('[Daily Report] HTML preview saved to backend/test_report_preview.html');
+    console.log(
+      '[Daily Report] HTML preview saved to backend/test_report_preview.html'
+    );
 
-    if (process.env['SEND_EMAIL'] === 'true' || process.env['NODE_ENV'] === 'production') {
+    if (
+      process.env['SEND_EMAIL'] === 'true' ||
+      process.env['NODE_ENV'] === 'production'
+    ) {
       await transporter.sendMail({
         from: `"Vizibble Daily Reports" <${process.env['SMTP_USER'] || process.env['GMAIL_USER']}>`,
         to: recipientEmails.join(', '),
         subject: `Daily Performance Report - ${yesterdayDateStr}`,
         html: emailHtml,
       });
-      console.log(`[Daily Report] Daily report successfully emailed to ${recipientEmails.length} recipients.`);
+      console.log(
+        `[Daily Report] Daily report successfully emailed to ${recipientEmails.length} recipients.`
+      );
     } else {
-      console.log('[Daily Report] Local environment detected: skipping email sending. Set SEND_EMAIL=true in .env to force send.');
+      console.log(
+        '[Daily Report] Local environment detected: skipping email sending. Set SEND_EMAIL=true in .env to force send.'
+      );
     }
   } catch (error) {
     console.error('[Daily Report] Error executing daily report script:', error);
@@ -479,7 +519,10 @@ function generateQuickChartUrl(
   hourlyMeans: { [hour: number]: number },
   rules: AlertRule[]
 ): string {
-  const labels = Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, '0')}:00`);
+  const labels = Array.from(
+    { length: 24 },
+    (_, h) => `${String(h).padStart(2, '0')}:00`
+  );
 
   const data = Array.from({ length: 24 }, (_, h) => {
     const val = hourlyMeans[h];
@@ -502,7 +545,9 @@ function generateQuickChartUrl(
   ];
 
   for (const rule of rules) {
-    const conditionText = rule.condition ? ` (${rule.condition.toUpperCase()})` : '';
+    const conditionText = rule.condition
+      ? ` (${rule.condition.toUpperCase()})`
+      : '';
     datasets.push({
       label: `Limit: ${rule.threshold}${conditionText}`,
       data: Array(24).fill(rule.threshold),

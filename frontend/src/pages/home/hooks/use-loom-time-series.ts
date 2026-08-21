@@ -12,13 +12,19 @@ import { useMemo } from 'react';
  *   value === 0 → IDLE   (minute present but no production)
  *   missing     → OFFLINE (machine was off, no record)
  */
+export interface SensorHistoryData {
+  rawTimes?: string[];
+  times?: string[];
+  values?: (number | string)[];
+}
+
 export const useLoomTimeSeries = (
-  history: Record<string, any>,
+  history: Record<string, SensorHistoryData | undefined>,
   targetDate: Date = new Date(),
   isCount: boolean = false
 ) => {
   return useMemo(() => {
-    const conversionFactor = isCount ? 1.0 : 0.10781818;
+    const conversionFactor = isCount ? 1.0 : 0.015272727272727;
     const valueKey = isCount ? 'count' : 'length';
 
     const propTimes = history[valueKey]?.rawTimes ?? [];
@@ -32,17 +38,17 @@ export const useLoomTimeSeries = (
     (history['operator']?.rawTimes ?? []).forEach((t: string, i: number) => {
       const d = new Date(t);
       d.setSeconds(0, 0);
-      operatorMap.set(d.getTime(), String(history['operator']?.values[i] ?? ''));
+      operatorMap.set(d.getTime(), String(history['operator']?.values?.[i] ?? ''));
     });
     (history['product']?.rawTimes ?? []).forEach((t: string, i: number) => {
       const d = new Date(t);
       d.setSeconds(0, 0);
-      productMap.set(d.getTime(), String(history['product']?.values[i] ?? ''));
+      productMap.set(d.getTime(), String(history['product']?.values?.[i] ?? ''));
     });
     (history['idle_reason']?.rawTimes ?? []).forEach((t: string, i: number) => {
       const d = new Date(t);
       d.setSeconds(0, 0);
-      reasonMap.set(d.getTime(), String(history['idle_reason']?.values[i] ?? ''));
+      reasonMap.set(d.getTime(), String(history['idle_reason']?.values?.[i] ?? ''));
     });
 
     // Build a fast lookup: timestamp (ms, seconds zeroed) → value

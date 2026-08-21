@@ -8,6 +8,7 @@ interface Thresholds {
 export const DEFAULT_TEMPERATURE_THRESHOLDS: Thresholds = { min: 21, max: 25 };
 export const DEFAULT_HUMIDITY_THRESHOLDS: Thresholds = { min: 40, max: 60 };
 export const DEFAULT_PRESSURE_THRESHOLDS: Thresholds = { min: -1, max: 5 };
+export const DEFAULT_RPM_THRESHOLDS: Thresholds = { min: 10, max: 30 };
 
 export const getTemperatureOptions = (data: {
   times: string[];
@@ -162,6 +163,35 @@ export const getPressureOptions = (data: {
         valueFormatter: (value: unknown) => `${value} Pa`,
       },
       markLine: getMarkLine(undefined, data.thresholds?.max),
+    },
+  ],
+});
+
+export const getRpmOptions = (data: {
+  times: string[];
+  rpmData: number[];
+  thresholds?: Thresholds;
+}): EChartsOption => ({
+  xAxis: {
+    data: data.times,
+  },
+  yAxis: {
+    min: 0,
+  },
+  visualMap: getVisualMap(data.thresholds?.min, data.thresholds?.max),
+  series: [
+    {
+      name: 'RPM',
+      data: data.rpmData,
+      type: 'line',
+      areaStyle: {
+        opacity: 0.1,
+      },
+      tooltip: {
+        valueFormatter: (value: unknown) => `${value} RPM`,
+      },
+      color: '#8b5cf6', // A purple color to distinguish it
+      markLine: getMarkLine(data.thresholds?.min, data.thresholds?.max),
     },
   ],
 });

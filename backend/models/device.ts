@@ -169,9 +169,9 @@ export async function getAvailableDates(
   );
   return result.rows.map((r) => {
     const d = new Date(r.date);
-    const year  = d.getUTCFullYear();
+    const year = d.getUTCFullYear();
     const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day   = String(d.getUTCDate()).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   });
 }

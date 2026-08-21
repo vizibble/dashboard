@@ -26,10 +26,10 @@ export async function handleSensorData(
     const sensorPayload: Record<string, number | string> = {};
 
     for (const [key, val] of Object.entries(rest)) {
-      if (typeof val === "string") {
+      if (typeof val === 'string') {
         const trimmed = val.trim();
 
-        if (trimmed !== "" && !Number.isNaN(Number(trimmed))) {
+        if (trimmed !== '' && !Number.isNaN(Number(trimmed))) {
           sensorPayload[key] = Number(trimmed);
         } else {
           sensorPayload[key] = val;

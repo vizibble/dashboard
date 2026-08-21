@@ -75,7 +75,7 @@ export const LoomCumulativeChart = ({
           (params as { marker: string; seriesName: string; value: number | [number, number] }[]).forEach(
             (p) => {
               const val = Array.isArray(p.value) ? p.value[1] : p.value;
-              content += `<br/>${p.marker} ${p.seriesName}: <b>${val.toFixed(1)}</b> m`;
+              content += `<br/>${p.marker} ${p.seriesName}: <b>${val.toFixed(1)}</b> kg`;
             }
           );
           return content;

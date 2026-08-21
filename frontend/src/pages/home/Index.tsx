@@ -15,12 +15,14 @@ import {
   DEFAULT_HUMIDITY_THRESHOLDS,
   DEFAULT_PRESSURE_THRESHOLDS,
   DEFAULT_TEMPERATURE_THRESHOLDS,
+  DEFAULT_RPM_THRESHOLDS,
   getHumidityOptions,
   getPressureOptions,
   getTemperatureOptions,
+  getRpmOptions,
 } from '@/pages/home/utils/chart-options';
 
-import { LoomCumulativeChart } from '@/pages/home/components/loom-cumulative-chart';
+
 import { LoomCumulativeBarChart } from '@/pages/home/components/loom-cumulative-bar-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
 import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
@@ -53,6 +55,11 @@ export const HomePage = () => {
     times: history['differential_pressure']?.times ?? [],
     differentialPressureData: (history['differential_pressure']?.values as number[]) ?? [],
     thresholds: DEFAULT_PRESSURE_THRESHOLDS,
+  });
+  const rpmOptions = getRpmOptions({
+    times: history['rpm']?.times ?? [],
+    rpmData: (history['rpm']?.values as number[]) ?? [],
+    thresholds: DEFAULT_RPM_THRESHOLDS,
   });
 
   return (
@@ -114,7 +121,7 @@ export const HomePage = () => {
         {selectedDeviceId && !historyLoading && (isLengthCount || isCount) && (
           <>
             {/* Stats */}
-            <LoomStats summary={loomMetrics.summary} unit={isCount ? 'pcs' : 'm'} />
+            <LoomStats summary={loomMetrics.summary} unit={isCount ? 'pcs' : 'kg'} />
             {/* Active / Idle / Offline timeline */}
             <MachineStatusChart
               statusData={loomMetrics.statusData}
@@ -122,18 +129,14 @@ export const HomePage = () => {
               isCount={isCount}
             />
             {/* Cumulative Chart */}
-            {isLengthCount ? (
-              <LoomCumulativeChart
-                times={loomMetrics.times}
-                values={loomMetrics.cumulativeValues}
-              />
-            ) : (
-              <LoomCumulativeBarChart
-                times={loomMetrics.times}
-                values={loomMetrics.cumulativeValues}
-                products={loomMetrics.products}
-              />
-            )}
+            <LoomCumulativeBarChart
+              times={loomMetrics.times}
+              values={loomMetrics.cumulativeValues}
+              products={loomMetrics.products}
+              isCount={isCount}
+            />
+            {/* RPM Line Chart */}
+            <Chart title="RPM" options={rpmOptions} />
           </>
         )}
       </div>

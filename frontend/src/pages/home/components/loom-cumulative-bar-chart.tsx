@@ -18,6 +18,8 @@ interface LoomCumulativeBarChartProps {
   products?: string[];
   /** The date being viewed — defaults to today */
   targetDate?: Date;
+  /** Whether the values are discrete counts or continuous length */
+  isCount?: boolean;
 }
 
 export const LoomCumulativeBarChart = ({
@@ -25,6 +27,7 @@ export const LoomCumulativeBarChart = ({
   values,
   products = [],
   targetDate,
+  isCount = true,
 }: LoomCumulativeBarChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
   const { isFullscreen, toggle } = useFullscreen();
@@ -104,25 +107,30 @@ export const LoomCumulativeBarChart = ({
     () => ({
       tooltip: {
         trigger: 'axis' as const,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        formatter: (params: any) => {
-          const timeStr = new Date(params[0].axisValue).toLocaleTimeString([], {
+        formatter: (params: unknown) => {
+          const pArr = params as {
+            axisValue: number | string;
+            marker: string;
+            seriesName: string;
+            value: number | [number, number];
+          }[];
+          if (!pArr || pArr.length === 0) return '';
+          
+          const timeStr = new Date(pArr[0].axisValue).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
           });
           let content = `<b>${timeStr}</b>`;
           let total = 0;
-          (params as { marker: string; seriesName: string; value: number | [number, number] }[]).forEach(
-            (p) => {
-              const val = Array.isArray(p.value) ? p.value[1] : p.value;
-              if (val > 0) {
-                content += `<br/>${p.marker} ${p.seriesName}: <b>${val.toFixed(0)}</b>`;
-                total += val;
-              }
+          pArr.forEach((p) => {
+            const val = Array.isArray(p.value) ? p.value[1] : p.value as number;
+            if (val > 0) {
+              content += `<br/>${p.marker} ${p.seriesName}: <b>${isCount ? val.toFixed(0) : val.toFixed(1)}</b>`;
+              total += val;
             }
-          );
-          if (params.length > 1) {
-            content += `<br/>📊 Total: <b>${total.toFixed(0)}</b>`;
+          });
+          if (pArr.length > 1) {
+            content += `<br/>📊 Total: <b>${isCount ? total.toFixed(0) : total.toFixed(1)}</b>`;
           }
           return content;
         },
@@ -181,16 +189,18 @@ export const LoomCumulativeBarChart = ({
         };
       }),
     }),
-    [seriesDataMap, axisMin, axisMax]
+    [seriesDataMap, axisMin, axisMax, isCount]
   );
+
+  const chartTitle = isCount ? 'Hourly Count' : 'Hourly Production';
 
   return (
     <ChartContainer isFullscreen={isFullscreen}>
       <ChartHeader
-        title="Hourly Count"
+        title={chartTitle}
         isFullscreen={isFullscreen}
         onDownload={() =>
-          chartRef.current && downloadChart(chartRef, 'Hourly Count')
+          chartRef.current && downloadChart(chartRef, chartTitle)
         }
         onToggleFullscreen={toggle}
       />
