@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { CalendarIcon } from 'lucide-react';
 
@@ -13,7 +13,6 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { Chart } from '@/pages/home/components/chart';
-import { LoomCumulativeChart } from '@/pages/home/components/loom-cumulative-chart';
 import { LoomCumulativeBarChart } from '@/pages/home/components/loom-cumulative-bar-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
 import { MachineStatusChart } from '@/pages/home/components/machine-status-chart';
@@ -22,14 +21,18 @@ import {
   DEFAULT_HUMIDITY_THRESHOLDS,
   DEFAULT_PRESSURE_THRESHOLDS,
   DEFAULT_TEMPERATURE_THRESHOLDS,
+  DEFAULT_RPM_THRESHOLDS,
   getHumidityOptions,
   getPressureOptions,
   getTemperatureOptions,
+  getRpmOptions,
 } from '@/pages/home/utils/chart-options';
 import { formatTimeLabel } from '@/pages/home/utils/format-time';
 import { useAvailableDates } from '@/pages/records/hooks/use-available-dates';
 import { useDeviceRecords } from '@/pages/records/hooks/use-device-records';
 import { cn } from '@/utils/cn';
+import { useFetchDevices } from '@/hooks/fetch-devices';
+import { useSearchParams } from 'react-router-dom';
 
 // Helper to format Date state to YYYY-MM-DD
 const formatDateForApi = (date?: Date) => {
@@ -41,10 +44,41 @@ const formatDateForApi = (date?: Date) => {
 };
 
 export const RecordsPage = () => {
-  const [date, setDate] = useState<Date | undefined>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { devices } = useFetchDevices();
+
+  // Initialise from query params if present
+  const paramDevice = searchParams.get('device');
+  const paramDate = searchParams.get('date');
+
+  const [date, setDate] = useState<Date | undefined>(() => {
+    if (!paramDate) return undefined;
+    // Parse YYYY-MM-DD as local date to avoid timezone offset shifting the day
+    const [y, m, d] = paramDate.split('-').map(Number);
+    if (!y || !m || !d) return undefined;
+    const parsed = new Date(y, m - 1, d);
+    return isNaN(parsed.getTime()) ? undefined : parsed;
+  });
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(
+    paramDevice ?? null
+  );
   const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
+
+  // Once devices load, resolve the type for a device that came from query params
+  useEffect(() => {
+    if (!selectedDeviceId || selectedDeviceType) return;
+    const device = devices.find((d) => d.device_id === selectedDeviceId);
+    if (device) setSelectedDeviceType(device.type ?? '');
+  }, [devices, selectedDeviceId, selectedDeviceType]);
+
+  // Keep URL in sync with current selections
+  const syncParams = (deviceId: string | null, selectedDate: Date | undefined) => {
+    const params: Record<string, string> = {};
+    if (deviceId) params['device'] = deviceId;
+    if (selectedDate) params['date'] = formatDateForApi(selectedDate) ?? '';
+    setSearchParams(params, { replace: true });
+  };
 
   const isTempHumidity = selectedDeviceType === 'temp_humidity';
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
@@ -69,19 +103,33 @@ export const RecordsPage = () => {
     selectedDeviceId,
     formatDateForApi(nextDate),
     resolution,
-    isLoomStyle
+    true
   );
 
-  const isLoading = loadingDates || loadingRecords1 || (isLoomStyle && loadingRecords2);
+  const isLoading = loadingDates || loadingRecords1 || loadingRecords2;
 
   // Process data for charts
   const history1 = data1?.rows ?? [];
   const history2 = data2?.rows ?? [];
-  const history = isLoomStyle ? [...history1, ...history2] : history1;
+  const historyRaw = [...history1, ...history2];
+  
+  const shiftStartHour = 8;
+  const shiftStartMinute = isCount ? 30 : 0;
+  
+  const startTimeObj = date ? new Date(date) : new Date();
+  startTimeObj.setHours(shiftStartHour, shiftStartMinute, 0, 0);
+  const startTimeMs = startTimeObj.getTime();
+  const endTimeMs = startTimeMs + 24 * 3600 * 1000 - 60_000;
+
+  const history = historyRaw.filter((row) => {
+    const t = new Date(row.recorded_at).getTime();
+    return t >= startTimeMs && t <= endTimeMs;
+  });
   const times: string[] = [];
   const temperatureData: number[] = [];
   const humidityData: number[] = [];
   const pressureData: number[] = [];
+  const rpmData: number[] = [];
 
   const loomHistory: Record<string, any> = {};
 
@@ -98,6 +146,9 @@ export const RecordsPage = () => {
     }
     if (row.payload['differential_pressure'] !== undefined) {
       pressureData.push(row.payload['differential_pressure']);
+    }
+    if (row.payload['rpm'] !== undefined) {
+      rpmData.push(row.payload['rpm']);
     }
     
     // Populate loomHistory with all payload fields
@@ -132,6 +183,13 @@ export const RecordsPage = () => {
     differentialPressureData: pressureData,
     thresholds: DEFAULT_PRESSURE_THRESHOLDS,
   });
+  const rpmOptions = getRpmOptions({
+    times: isLoomStyle 
+      ? loomMetrics.times.map(t => new Date(t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })) 
+      : times,
+    rpmData: isLoomStyle ? (loomMetrics.rpmValues as number[]) : rpmData,
+    thresholds: DEFAULT_RPM_THRESHOLDS,
+  });
 
   return (
     <main className="flex flex-col w-full min-h-0 bg-slate-50 min-h-screen">
@@ -146,9 +204,9 @@ export const RecordsPage = () => {
               onSelectDevice={(id, type) => {
                 setSelectedDeviceId(id);
                 setSelectedDeviceType(type || '');
-                // Reset date when device changes if desired, or keep it.
-                // Keeping it is fine, but we might want to reset if the new device has no data for that date.
+                // Reset date when the device changes
                 setDate(undefined);
+                syncParams(id, undefined);
               }}
               selectedDevice={selectedDeviceId}
             />
@@ -195,6 +253,7 @@ export const RecordsPage = () => {
                   onSelect={(d) => {
                     setDate(d);
                     setCalendarOpen(false);
+                    syncParams(selectedDeviceId, d);
                   }}
                 />
               </PopoverContent>
@@ -252,7 +311,7 @@ export const RecordsPage = () => {
             </div>
             {isLoomStyle && (
               <>
-                <LoomStats isHistory={true} summary={loomMetrics.summary} unit={isCount ? 'pcs' : 'm'} />
+                <LoomStats isHistory={true} summary={loomMetrics.summary} unit={isCount ? 'pcs' : 'kg'} />
                 <MachineStatusChart
                   key={`loomstat-${date.toISOString()}`}
                   statusData={loomMetrics.statusData}
@@ -260,22 +319,19 @@ export const RecordsPage = () => {
                   targetDate={date}
                   isCount={isCount}
                 />
-                {isLengthCount ? (
-                  <LoomCumulativeChart
-                    key={`loomcum-${date.toISOString()}`}
-                    times={loomMetrics.times}
-                    targetDate={date}
-                    values={loomMetrics.cumulativeValues}
-                  />
-                ) : (
-                  <LoomCumulativeBarChart
-                    key={`loomcum-${date.toISOString()}`}
-                    times={loomMetrics.times}
-                    targetDate={date}
-                    values={loomMetrics.cumulativeValues}
-                    products={loomMetrics.products}
-                  />
-                )}
+                <LoomCumulativeBarChart
+                  key={`loomcum-${date.toISOString()}`}
+                  times={loomMetrics.times}
+                  targetDate={date}
+                  values={loomMetrics.cumulativeValues}
+                  products={loomMetrics.products}
+                  isCount={isCount}
+                />
+                <Chart
+                  key={`rpm-${date.toISOString()}`}
+                  title="RPM"
+                  options={rpmOptions}
+                />
               </>
             )}
           </div>

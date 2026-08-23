@@ -1,0 +1,37 @@
+name: Send Production Count Daily Performance Email
+
+on:
+  schedule:
+    # 8:15 AM IST is 2:45 AM UTC
+    - cron: '45 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          bun install
+
+      - name: Run Satyam Daily Report Script
+        run: |
+          cd backend
+          bun run scripts/sendSatyamDailyReport.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          SATYAM_DEVICE_ID: ${{ secrets.SATYAM_DEVICE_ID }}
+          WEBSITE_URL: ${{ secrets.WEBSITE_URL }}
+          NODE_ENV: production

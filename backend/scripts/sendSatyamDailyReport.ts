@@ -2,6 +2,9 @@ import 'dotenv/config';
 import pool from '../service/dbConnection.js';
 import transporter from '../service/nodemailer.js';
 
+// Conversion factor: raw length units → kilograms
+const LENGTH_TO_KG = 0.015272727272727;
+
 interface SensorReadingRow {
   payload: Record<string, unknown>;
   recorded_at: Date;
@@ -9,7 +12,7 @@ interface SensorReadingRow {
 
 interface ShiftStats {
   name: string;
-  production: number;
+  production: number; // kg
   activeMin: number;
   idleMin: number;
   offlineMin: number;
@@ -36,7 +39,7 @@ function escapeHtml(value: unknown): string {
 }
 
 /**
- * Returns the reporting window: Previous 08:30 IST -> Current 08:30 IST
+ * Returns the reporting window: Previous 08:00 IST → Current 08:00 IST
  * The returned Date objects represent UTC timestamps.
  */
 function getISTBoundaryTimestamps(): {
@@ -76,8 +79,9 @@ function getISTBoundaryTimestamps(): {
   const currentActualUTC = new Date(
     Date.UTC(year, month - 1, day, hour, minute, second) - IST_OFFSET_MS
   );
+  // Boundary is 08:00 IST (production_count, not 08:30 like count devices)
   let endTime = new Date(
-    Date.UTC(year, month - 1, day, 8, 30, 0, 0) - IST_OFFSET_MS
+    Date.UTC(year, month - 1, day, 8, 0, 0, 0) - IST_OFFSET_MS
   );
   if (currentActualUTC.getTime() < endTime.getTime()) {
     endTime = new Date(endTime.getTime() - DAY_MS);
@@ -138,9 +142,11 @@ function formatReportTime(date: Date): string {
 async function main(): Promise<void> {
   try {
     // Get device ID
-    let deviceId = process.env.COSMO_DEVICE_ID;
+    const deviceId = process.env.SATYAM_DEVICE_ID;
     if (!deviceId) {
-      throw new Error('No production device found in database.');
+      throw new Error(
+        'No satyam_count device found. SetSATYAM_DEVICE_ID.'
+      );
     }
     console.log(`[Daily Report] Device: ${deviceId}`);
 
@@ -180,11 +186,25 @@ async function main(): Promise<void> {
       return;
     }
 
-    // Get reporting window
+    // Get reporting window (08:00 IST boundary)
     const { startTime, endTime } = getISTBoundaryTimestamps();
     const reportDateStr = formatReportDate(startTime);
     const startTimeStr = formatReportTime(startTime);
     const endTimeStr = formatReportTime(endTime);
+
+    // Build deep-link to the records page for this device + date
+    const frontendUrl = (process.env.WEBSITE_URL ?? 'http://localhost:5173').replace(/\/$/, '');
+    const reportDateYmd = (() => {
+      const d = startTime;
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+      return formatter.format(d); // returns YYYY-MM-DD
+    })();
+    const recordsUrl = `${frontendUrl}/records?device=${encodeURIComponent(deviceId)}&date=${reportDateYmd}`;
 
     // Fetch readings
     const readingsResult = await pool.query<SensorReadingRow>(
@@ -199,6 +219,7 @@ async function main(): Promise<void> {
     console.log(`[Daily Report] Found ${readings.length} readings.`);
 
     // Build data maps
+    // `length` is the raw payload key; multiplied by LENGTH_TO_KG to get kg
     const dataMap = new Map<number, number>();
     const operatorMap = new Map<number, string>();
     const productMap = new Map<number, string>();
@@ -208,11 +229,12 @@ async function main(): Promise<void> {
       if (Number.isNaN(timestamp.getTime())) continue;
       timestamp.setSeconds(0, 0);
       const timestampMs = timestamp.getTime();
-      const { count, operator, product } = reading.payload ?? {};
+      const { length, operator, product } = reading.payload ?? {};
 
-      if (count != null) {
-        const value = Number(count);
-        if (Number.isFinite(value)) dataMap.set(timestampMs, value);
+      if (length != null) {
+        const raw = Number(length);
+        if (Number.isFinite(raw))
+          dataMap.set(timestampMs, raw * LENGTH_TO_KG);
       }
       if (operator != null) operatorMap.set(timestampMs, String(operator));
       if (product != null) productMap.set(timestampMs, String(product));
@@ -223,7 +245,7 @@ async function main(): Promise<void> {
       Array.from(map.values()).find((v) => v && v !== 'Unknown') ?? 'None';
     let lastOperator = findFirstValid(operatorMap);
     let lastProduct = findFirstValid(productMap);
-    let cumulativeProduction = 0;
+    let cumulativeProduction = 0; // kg
     let activeMinutes = 0;
     let idleMinutes = 0;
     let offlineMinutes = 0;
@@ -241,6 +263,7 @@ async function main(): Promise<void> {
       product: string;
     }[] = [];
 
+    // Day Shift: 08:00–20:00 IST | Night Shift: 20:00–08:00 IST
     const shiftStats: ShiftStats[] = [
       {
         name: 'Day Shift',
@@ -273,9 +296,9 @@ async function main(): Promise<void> {
       const { hour: istHour, minute: istMinute } = getISTTime(dateAtTimestamp);
       const decimalHour = istHour + istMinute / 60;
 
-      // Day Shift: 08:30-20:30; Night Shift: 20:30-08:30
+      // Day Shift: 08:00–20:00; Night Shift: 20:00–08:00
       const shift =
-        shiftStats[decimalHour >= 8.5 && decimalHour < 20.5 ? 0 : 1];
+        shiftStats[decimalHour >= 8.0 && decimalHour < 20.0 ? 0 : 1];
       if (!shift) continue;
 
       // Update latest operator/product
@@ -312,7 +335,7 @@ async function main(): Promise<void> {
       lastStatus = currentStatus;
 
       times.push(dateAtTimestamp.toISOString());
-      cumulativeValues.push(Math.round(cumulativeProduction));
+      cumulativeValues.push(parseFloat(cumulativeProduction.toFixed(1)));
       products.push(lastProduct);
       statusData.push({
         time: dateAtTimestamp,
@@ -323,7 +346,7 @@ async function main(): Promise<void> {
     }
 
     // Calculate summary metrics
-    const totalProduction = Math.round(cumulativeProduction);
+    const totalProduction = parseFloat(cumulativeProduction.toFixed(1));
     const totalMinutes = activeMinutes + idleMinutes + offlineMinutes;
     const utilization =
       totalMinutes > 0 ? Math.round((activeMinutes / totalMinutes) * 100) : 0;
@@ -390,7 +413,7 @@ async function main(): Promise<void> {
       options: {
         title: {
           display: true,
-          text: 'Hourly Production',
+          text: 'Hourly Production (kg)',
           fontSize: 14,
           fontColor: '#0f172a',
         },
@@ -438,8 +461,7 @@ async function main(): Promise<void> {
       .map((seg) => {
         const widthPercent = (seg.count / totalTimelineMinutes) * 100;
         let color = '#dc2626'; // offline
-        if (seg.status === 1)
-          color = '#059669'; // active
+        if (seg.status === 1) color = '#059669'; // active
         else if (seg.status === 0) color = '#d97706'; // idle
         return `<td style="width:${widthPercent}%;background-color:${color};height:24px;padding:0;"></td>`;
       })
@@ -447,7 +469,7 @@ async function main(): Promise<void> {
 
     const axisHtml = hourLabels
       .map((label, idx) => {
-        const showLabel = idx % 2 === 0; // Show label every 2 hours
+        const showLabel = idx % 2 === 0;
         return `<td style="width:${100 / 24}%;text-align:left;font-size:9px;color:#64748b;padding-top:6px;">${showLabel ? label : ''}</td>`;
       })
       .join('');
@@ -484,7 +506,8 @@ async function main(): Promise<void> {
         const totalTime = s.activeMin + s.idleMin + s.offlineMin;
         const activePct = totalTime > 0 ? (s.activeMin / totalTime) * 100 : 0;
         const idlePct = totalTime > 0 ? (s.idleMin / totalTime) * 100 : 0;
-        const offlinePct = totalTime > 0 ? (s.offlineMin / totalTime) * 100 : 0;
+        const offlinePct =
+          totalTime > 0 ? (s.offlineMin / totalTime) * 100 : 0;
         return `
       <td width="50%" valign="top" style="padding:0 6px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
@@ -529,8 +552,8 @@ async function main(): Promise<void> {
                       Production
                     </div>
                     <div style="margin-top:2px;font-size:19px;line-height:22px;font-weight:800;color:#0f172a;overflow-wrap:anywhere;word-break:break-word;">
-                      ${s.production.toLocaleString()}
-                      <span style="font-size:10px;font-weight:500;color:#64748b;">pcs</span>
+                      ${s.production.toFixed(1)}
+                      <span style="font-size:10px;font-weight:500;color:#64748b;">kg</span>
                     </div>
                   </td>
                 </tr>
@@ -641,7 +664,7 @@ async function main(): Promise<void> {
                         <div style="margin-top:7px;font-size:25px;line-height:30px;font-weight:700;color:#0f172a;">
                           ${totalProduction.toLocaleString()}
                         </div>
-                        <div style="margin-top:3px;font-size:11px;color:#94a3b8;">pieces produced</div>
+                        <div style="margin-top:3px;font-size:11px;color:#94a3b8;">kg produced</div>
                       </td>
                     </tr>
                   </table>
@@ -671,7 +694,7 @@ async function main(): Promise<void> {
                         <div style="margin-top:7px;font-size:25px;line-height:30px;font-weight:700;color:#0f172a;">
                           ${averageSpeed.toLocaleString()}
                         </div>
-                        <div style="margin-top:3px;font-size:11px;color:#94a3b8;">pcs/hr during active time</div>
+                        <div style="margin-top:3px;font-size:11px;color:#94a3b8;">kg/hr during active time</div>
                       </td>
                     </tr>
                   </table>
@@ -709,7 +732,7 @@ async function main(): Promise<void> {
         <!-- CHARTS -->
         <tr>
           <td style="padding:0 28px 28px 28px;">
-            <div style="margin-bottom:14px;font-size:15px;font-weight:700;color:#0f172a;">Production & Utilisation Trends</div>
+            <div style="margin-bottom:14px;font-size:15px;font-weight:700;color:#0f172a;">Production &amp; Utilisation Trends</div>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e2e8f0;background:#ffffff;border-radius:6px;margin-bottom:14px;">
               <tr>
                 <td style="padding:12px;">
@@ -726,6 +749,16 @@ async function main(): Promise<void> {
             </table>
           </td>
         </tr>
+
+        <!-- VIEW RECORDS LINK -->
+        <tr>
+          <td style="padding:0 28px 32px 28px;">
+            <div style="font-size:12px;color:#64748b;">
+              View full records:
+              <a href="${recordsUrl}" target="_blank" style="color:#2563eb;text-decoration:underline;">${recordsUrl}</a>
+            </div>
+          </td>
+        </tr>
       </table>
     </td>
   </tr>
@@ -734,9 +767,9 @@ async function main(): Promise<void> {
 </html>`;
 
     // Save preview
-    await Bun.write('test_cosmo_report_preview.html', emailHtml);
+    await Bun.write('test_production_count_report_preview.html', emailHtml);
     console.log(
-      '[Daily Report] Preview saved to test_cosmo_report_preview.html'
+      '[Daily Report] Preview saved to test_production_count_report_preview.html'
     );
 
     // Send email
@@ -767,7 +800,7 @@ async function main(): Promise<void> {
     }
 
     console.log(
-      `[Daily Report] Complete. Production: ${totalProduction} pcs, ` +
+      `[Daily Report] Complete. Production: ${totalProduction} kg, ` +
       `Utilisation: ${utilization}%, Active: ${formatDuration(activeMinutes)}, ` +
       `Idle: ${formatDuration(idleMinutes)}, Offline: ${formatDuration(offlineMinutes)}, ` +
       `Stops: ${totalStops}.`

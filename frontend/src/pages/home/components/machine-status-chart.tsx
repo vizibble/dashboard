@@ -119,7 +119,7 @@ export const MachineStatusChart = ({
           operationalDate.setDate(operationalDate.getDate() - 1);
         }
       } else {
-        if (now.getHours() < 6) {
+        if (now.getHours() < 8) {
           operationalDate.setDate(operationalDate.getDate() - 1);
         }
       }
@@ -129,7 +129,7 @@ export const MachineStatusChart = ({
     if (isCount) {
       startTimeLocal.setHours(8, 30, 0, 0);
     } else {
-      startTimeLocal.setHours(6, 0, 0, 0);
+      startTimeLocal.setHours(8, 0, 0, 0);
     }
     const startTimeMs = startTimeLocal.getTime();
     const isToday = operationalDate.toDateString() === new Date().toDateString();
@@ -247,7 +247,7 @@ export const MachineStatusChart = ({
         },
       ],
     };
-  }, [segments, targetDate]);
+  }, [segments, targetDate, isCount]);
 
   return (
     <ChartContainer className="mt-3" isFullscreen={isFullscreen}>

@@ -57,8 +57,8 @@ export const HomePage = () => {
     thresholds: DEFAULT_PRESSURE_THRESHOLDS,
   });
   const rpmOptions = getRpmOptions({
-    times: history['rpm']?.times ?? [],
-    rpmData: (history['rpm']?.values as number[]) ?? [],
+    times: loomMetrics.times.map(t => new Date(t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })),
+    rpmData: loomMetrics.rpmValues as number[],
     thresholds: DEFAULT_RPM_THRESHOLDS,
   });
 
@@ -136,7 +136,7 @@ export const HomePage = () => {
               isCount={isCount}
             />
             {/* RPM Line Chart */}
-            <Chart title="RPM" options={rpmOptions} />
+            {!isCount && <Chart title="RPM" options={rpmOptions} />}
           </>
         )}
       </div>

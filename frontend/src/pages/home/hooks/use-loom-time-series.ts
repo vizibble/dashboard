@@ -51,6 +51,24 @@ export const useLoomTimeSeries = (
       reasonMap.set(d.getTime(), String(history['idle_reason']?.values?.[i] ?? ''));
     });
 
+    const rpmMap = new Map<number, number>();
+    const rpmRawTimes = history['rpm']?.rawTimes ?? [];
+    const rpmRawValues = (history['rpm']?.values as number[]) ?? [];
+    for (let i = 0; i < rpmRawTimes.length; i++) {
+      let d = new Date(rpmRawTimes[i]);
+      if (isNaN(d.getTime())) {
+        const parts = rpmRawTimes[i].split(':').map(Number);
+        if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          d = new Date(targetDate);
+          d.setHours(parts[0], parts[1], 0, 0);
+        } else {
+          continue;
+        }
+      }
+      d.setSeconds(0, 0);
+      rpmMap.set(d.getTime(), rpmRawValues[i]);
+    }
+
     // Build a fast lookup: timestamp (ms, seconds zeroed) → value
     const dataMap = new Map<number, number>();
     for (let i = 0; i < propTimes.length; i++) {
@@ -78,7 +96,7 @@ export const useLoomTimeSeries = (
           operationalDate.setDate(operationalDate.getDate() - 1);
         }
       } else {
-        if (now.getHours() < 6) {
+        if (now.getHours() < 8) {
           operationalDate.setDate(operationalDate.getDate() - 1);
         }
       }
@@ -88,7 +106,7 @@ export const useLoomTimeSeries = (
     if (isCount) {
       startTimeLocal.setHours(8, 30, 0, 0);
     } else {
-      startTimeLocal.setHours(6, 0, 0, 0);
+      startTimeLocal.setHours(8, 0, 0, 0);
     }
     const startTime = startTimeLocal.getTime();
 
@@ -107,16 +125,15 @@ export const useLoomTimeSeries = (
 
     // Shift definitions:
     // count: Day Shift (08:30 - 20:30), Night Shift (20:30 - 08:30 next day)
-    // production_count: Shift A (6-14), Shift B (14-22), Shift C (22-6)
+    // production_count: Day Shift (08:00 - 20:00), Night Shift (20:00 - 08:00 next day)
     const SHIFTS = isCount
       ? [
           { name: 'Day Shift', start: 8.5, end: 20.5 },
           { name: 'Night Shift', start: 20.5, end: 8.5 },
         ]
       : [
-          { name: 'Shift A', start: 6, end: 14 },
-          { name: 'Shift B', start: 14, end: 22 },
-          { name: 'Shift C', start: 22, end: 6 },
+          { name: 'Day Shift', start: 8, end: 20 },
+          { name: 'Night Shift', start: 20, end: 8 },
         ];
 
     const now = new Date();
@@ -138,6 +155,7 @@ export const useLoomTimeSeries = (
     const cumulativeValues: number[] = []; // running total of production
     const products: string[] = []; // running product names
     const statusData: [string, number, number, string?, string?, string?][] = []; // [isoStr, 1, statusCode, reason, operator, product]
+    const rpmValues: (number | null)[] = [];
 
     // Find first non-empty operator and product from the entire day
     let lastOperator = Array.from(operatorMap.values()).find((v) => v && v !== 'Unknown') || '';
@@ -163,9 +181,8 @@ export const useLoomTimeSeries = (
           shiftIndex = 1;
         }
       } else {
-        if (h >= 6 && h < 14) shiftIndex = 0;
-        else if (h >= 14 && h < 22) shiftIndex = 1;
-        else shiftIndex = 2; // (h >= 22 || h < 6)
+        if (h >= 8 && h < 20) shiftIndex = 0;
+        else shiftIndex = 1;
       }
 
       const ss = shiftStats[shiftIndex];
@@ -213,6 +230,7 @@ export const useLoomTimeSeries = (
       times.push(isoStr);
       cumulativeValues.push(isCount ? Math.round(cumulativeSum) : parseFloat(cumulativeSum.toFixed(1)));
       products.push(prod || 'Unknown');
+      rpmValues.push(rpmMap.has(t) ? rpmMap.get(t)! : 0);
     }
 
     const totalProduction = isCount ? Math.round(cumulativeSum) : parseFloat(cumulativeSum.toFixed(1));
@@ -253,9 +271,8 @@ export const useLoomTimeSeries = (
           currentShiftIndex = 1;
         }
       } else {
-        if (h >= 6 && h < 14) currentShiftIndex = 0;
-        else if (h >= 14 && h < 22) currentShiftIndex = 1;
-        else currentShiftIndex = 2; // (h >= 22 || h < 6)
+        if (h >= 8 && h < 20) currentShiftIndex = 0;
+        else currentShiftIndex = 1;
       }
     }
 
@@ -264,6 +281,7 @@ export const useLoomTimeSeries = (
       cumulativeValues,
       products,
       statusData,
+      rpmValues,
       summary: {
         totalProduction,
         avgSpeed,
