@@ -144,9 +144,7 @@ async function main(): Promise<void> {
     // Get device ID
     const deviceId = process.env.SATYAM_DEVICE_ID;
     if (!deviceId) {
-      throw new Error(
-        'No satyam_count device found. SetSATYAM_DEVICE_ID.'
-      );
+      throw new Error('No satyam_count device found. SetSATYAM_DEVICE_ID.');
     }
     console.log(`[Daily Report] Device: ${deviceId}`);
 
@@ -193,7 +191,9 @@ async function main(): Promise<void> {
     const endTimeStr = formatReportTime(endTime);
 
     // Build deep-link to the records page for this device + date
-    const frontendUrl = (process.env.WEBSITE_URL ?? 'http://localhost:5173').replace(/\/$/, '');
+    const frontendUrl = (
+      process.env.WEBSITE_URL ?? 'http://localhost:5173'
+    ).replace(/\/$/, '');
     const reportDateYmd = (() => {
       const d = startTime;
       const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -204,7 +204,7 @@ async function main(): Promise<void> {
       });
       return formatter.format(d); // returns YYYY-MM-DD
     })();
-    const recordsUrl = `${frontendUrl}/records?device=${encodeURIComponent(deviceId)}&date=${reportDateYmd}`;
+    const recordsUrl = `${frontendUrl}/#/records?device=${encodeURIComponent(deviceId)}&date=${reportDateYmd}`;
 
     // Fetch readings
     const readingsResult = await pool.query<SensorReadingRow>(
@@ -233,8 +233,7 @@ async function main(): Promise<void> {
 
       if (length != null) {
         const raw = Number(length);
-        if (Number.isFinite(raw))
-          dataMap.set(timestampMs, raw * LENGTH_TO_KG);
+        if (Number.isFinite(raw)) dataMap.set(timestampMs, raw * LENGTH_TO_KG);
       }
       if (operator != null) operatorMap.set(timestampMs, String(operator));
       if (product != null) productMap.set(timestampMs, String(product));
@@ -461,7 +460,8 @@ async function main(): Promise<void> {
       .map((seg) => {
         const widthPercent = (seg.count / totalTimelineMinutes) * 100;
         let color = '#dc2626'; // offline
-        if (seg.status === 1) color = '#059669'; // active
+        if (seg.status === 1)
+          color = '#059669'; // active
         else if (seg.status === 0) color = '#d97706'; // idle
         return `<td style="width:${widthPercent}%;background-color:${color};height:24px;padding:0;"></td>`;
       })
@@ -506,8 +506,7 @@ async function main(): Promise<void> {
         const totalTime = s.activeMin + s.idleMin + s.offlineMin;
         const activePct = totalTime > 0 ? (s.activeMin / totalTime) * 100 : 0;
         const idlePct = totalTime > 0 ? (s.idleMin / totalTime) * 100 : 0;
-        const offlinePct =
-          totalTime > 0 ? (s.offlineMin / totalTime) * 100 : 0;
+        const offlinePct = totalTime > 0 ? (s.offlineMin / totalTime) * 100 : 0;
         return `
       <td width="50%" valign="top" style="padding:0 6px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
@@ -565,18 +564,21 @@ async function main(): Promise<void> {
               <!-- TIME BAR -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="height:8px;">
                 <tr>
-                  ${activePct > 0
-            ? `<td width="${activePct}%" style="height:8px;background:#10b981;border-radius:4px 0 0 4px;font-size:0;line-height:0;">&nbsp;</td>`
-            : ''
-          }
-                  ${idlePct > 0
-            ? `<td width="${idlePct}%" style="height:8px;background:#f59e0b;font-size:0;line-height:0;">&nbsp;</td>`
-            : ''
-          }
-                  ${offlinePct > 0
-            ? `<td width="${offlinePct}%" style="height:8px;background:#94a3b8;border-radius:0 4px 4px 0;font-size:0;line-height:0;">&nbsp;</td>`
-            : ''
-          }
+                  ${
+                    activePct > 0
+                      ? `<td width="${activePct}%" style="height:8px;background:#10b981;border-radius:4px 0 0 4px;font-size:0;line-height:0;">&nbsp;</td>`
+                      : ''
+                  }
+                  ${
+                    idlePct > 0
+                      ? `<td width="${idlePct}%" style="height:8px;background:#f59e0b;font-size:0;line-height:0;">&nbsp;</td>`
+                      : ''
+                  }
+                  ${
+                    offlinePct > 0
+                      ? `<td width="${offlinePct}%" style="height:8px;background:#94a3b8;border-radius:0 4px 4px 0;font-size:0;line-height:0;">&nbsp;</td>`
+                      : ''
+                  }
                 </tr>
               </table>
               <!-- TIME LEGEND -->
@@ -801,9 +803,9 @@ async function main(): Promise<void> {
 
     console.log(
       `[Daily Report] Complete. Production: ${totalProduction} kg, ` +
-      `Utilisation: ${utilization}%, Active: ${formatDuration(activeMinutes)}, ` +
-      `Idle: ${formatDuration(idleMinutes)}, Offline: ${formatDuration(offlineMinutes)}, ` +
-      `Stops: ${totalStops}.`
+        `Utilisation: ${utilization}%, Active: ${formatDuration(activeMinutes)}, ` +
+        `Idle: ${formatDuration(idleMinutes)}, Offline: ${formatDuration(offlineMinutes)}, ` +
+        `Stops: ${totalStops}.`
     );
   } catch (error) {
     console.error('[Daily Report] Error:', error);

@@ -188,7 +188,6 @@ export const RecordsPage = () => {
       ? loomMetrics.times.map(t => new Date(t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })) 
       : times,
     rpmData: isLoomStyle ? (loomMetrics.rpmValues as number[]) : rpmData,
-    thresholds: DEFAULT_RPM_THRESHOLDS,
   });
 
   return (
@@ -331,6 +330,7 @@ export const RecordsPage = () => {
                   key={`rpm-${date.toISOString()}`}
                   title="RPM"
                   options={rpmOptions}
+                  hideStats
                 />
               </>
             )}

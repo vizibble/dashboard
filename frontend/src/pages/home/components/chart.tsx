@@ -18,6 +18,8 @@ export type ChartProps = {
   options: EChartsOption;
   height?: string;
   className?: string;
+  hideFooter?: boolean;
+  hideStats?: boolean;
 };
 
 export const Chart = ({
@@ -25,6 +27,8 @@ export const Chart = ({
   options,
   height = '280px',
   className,
+  hideFooter = false,
+  hideStats = false,
 }: ChartProps) => {
   const chartRef = useRef<ReactECharts>(null);
   const { isFullscreen, toggle } = useFullscreen();
@@ -52,7 +56,7 @@ export const Chart = ({
         />
       </div>
 
-      <ChartFooter options={options} stats={stats} />
+      {!hideFooter && <ChartFooter options={options} stats={stats} hideStats={hideStats} />}
     </ChartContainer>
   );
 };

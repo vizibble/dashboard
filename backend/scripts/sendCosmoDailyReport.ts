@@ -542,18 +542,21 @@ async function main(): Promise<void> {
               <!-- TIME BAR -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="height:8px;">
                 <tr>
-                  ${activePct > 0
-            ? `<td width="${activePct}%" style="height:8px;background:#10b981;border-radius:4px 0 0 4px;font-size:0;line-height:0;">&nbsp;</td>`
-            : ''
-          }
-                  ${idlePct > 0
-            ? `<td width="${idlePct}%" style="height:8px;background:#f59e0b;font-size:0;line-height:0;">&nbsp;</td>`
-            : ''
-          }
-                  ${offlinePct > 0
-            ? `<td width="${offlinePct}%" style="height:8px;background:#94a3b8;border-radius:0 4px 4px 0;font-size:0;line-height:0;">&nbsp;</td>`
-            : ''
-          }
+                  ${
+                    activePct > 0
+                      ? `<td width="${activePct}%" style="height:8px;background:#10b981;border-radius:4px 0 0 4px;font-size:0;line-height:0;">&nbsp;</td>`
+                      : ''
+                  }
+                  ${
+                    idlePct > 0
+                      ? `<td width="${idlePct}%" style="height:8px;background:#f59e0b;font-size:0;line-height:0;">&nbsp;</td>`
+                      : ''
+                  }
+                  ${
+                    offlinePct > 0
+                      ? `<td width="${offlinePct}%" style="height:8px;background:#94a3b8;border-radius:0 4px 4px 0;font-size:0;line-height:0;">&nbsp;</td>`
+                      : ''
+                  }
                 </tr>
               </table>
               <!-- TIME LEGEND -->
@@ -768,9 +771,9 @@ async function main(): Promise<void> {
 
     console.log(
       `[Daily Report] Complete. Production: ${totalProduction} pcs, ` +
-      `Utilisation: ${utilization}%, Active: ${formatDuration(activeMinutes)}, ` +
-      `Idle: ${formatDuration(idleMinutes)}, Offline: ${formatDuration(offlineMinutes)}, ` +
-      `Stops: ${totalStops}.`
+        `Utilisation: ${utilization}%, Active: ${formatDuration(activeMinutes)}, ` +
+        `Idle: ${formatDuration(idleMinutes)}, Offline: ${formatDuration(offlineMinutes)}, ` +
+        `Stops: ${totalStops}.`
     );
   } catch (error) {
     console.error('[Daily Report] Error:', error);

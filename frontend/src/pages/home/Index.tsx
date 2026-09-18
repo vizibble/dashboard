@@ -59,7 +59,6 @@ export const HomePage = () => {
   const rpmOptions = getRpmOptions({
     times: loomMetrics.times.map(t => new Date(t).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })),
     rpmData: loomMetrics.rpmValues as number[],
-    thresholds: DEFAULT_RPM_THRESHOLDS,
   });
 
   return (
@@ -136,7 +135,7 @@ export const HomePage = () => {
               isCount={isCount}
             />
             {/* RPM Line Chart */}
-            {!isCount && <Chart title="RPM" options={rpmOptions} />}
+            {!isCount && <Chart title="RPM" options={rpmOptions} hideStats />}
           </>
         )}
       </div>

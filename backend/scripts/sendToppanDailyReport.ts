@@ -245,161 +245,38 @@ async function main() {
     }).format(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
     // 6. Build the email HTML.
-    // Theme: flat, light, industrial. Solid colors instead of gradients and
-    // border/background fallbacks instead of box-shadow, since Outlook's
-    // desktop renderer (Word engine) drops gradients, shadows and
-    // border-radius entirely. role="presentation" + cellpadding/cellspacing
-    // on tables stop Outlook from injecting default table chrome, and the
-    // viewport meta + media query keep the 5-column data table usable on
-    // mobile mail clients.
-    let emailHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="x-apple-disable-message-reformatting">
-        <!--[if mso]>
-        <style>
-          table { border-collapse: collapse; }
-          .header { background-color: #1e293b !important; }
-        </style>
-        <![endif]-->
-        <style>
-          body {
-            font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #eef1f5;
-            color: #1e293b;
-            margin: 0;
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
-          }
-          .mono {
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-          }
-          .container {
-            max-width: 680px;
-            margin: 24px auto;
-            background-color: #ffffff;
-            border: 1px solid #d8dee7;
-          }
-          .header {
-            background-color: #1e293b;
-            padding: 22px 24px;
-            color: #ffffff;
-            text-align: left;
-            border-bottom: 3px solid #3b82f6;
-          }
-          .header h1 {
-            margin: 0;
-            font-size: 19px;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-          }
-          .header p {
-            margin: 6px 0 0 0;
-            font-size: 12px;
-            color: #cbd5e1;
-          }
-          .content {
-            padding: 20px 24px;
-          }
-          .device-section {
-            margin-bottom: 32px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #e2e8f0;
-          }
-          .device-section:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-          }
-          .device-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-          }
-          .device-subtitle {
-            font-size: 11px;
-            color: #64748b;
-            margin-bottom: 16px;
-          }
-          .sensor-section {
-            margin-bottom: 18px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 14px;
-          }
-          .sensor-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: #334155;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-          }
-          .chart-container {
-            margin-bottom: 14px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            padding: 6px;
-          }
-          .no-data {
-            font-size: 12px;
-            color: #94a3b8;
-            font-style: italic;
-            margin: 0;
-          }
-          table.data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-          }
-          table.data-table th {
-            background-color: #eef2f7;
-            color: #475569;
-            font-weight: 700;
-            text-align: left;
-            padding: 6px 10px;
-            border-bottom: 1px solid #d8dee7;
-            text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 0.03em;
-          }
-          table.data-table td {
-            padding: 6px 10px;
-            border-bottom: 1px solid #eef2f7;
-            color: #334155;
-          }
-          .footer {
-            background-color: #f4f6f9;
-            padding: 16px 24px;
-            text-align: left;
-            font-size: 10px;
-            color: #94a3b8;
-            border-top: 1px solid #e2e8f0;
-          }
-          @media only screen and (max-width: 480px) {
-            .container { margin: 0; border: none; }
-            .content { padding: 14px; }
-            table.data-table th, table.data-table td { padding: 5px 6px; font-size: 11px; }
-          }
-        </style>
-      </head>
-      <body>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td align="center">
-              <div class="container">
-                <div class="header">
-                  <h1>Daily Performance Report</h1>
-                  <p>${escapeHtml(yesterdayDateStr)}</p>
-                </div>
-                <div class="content">
-                  <p style="font-size: 14px; color: #1e293b; margin: 0 0 4px 0; font-weight: 500;">Hello Team,</p>
-                  <p style="font-size: 14px; color: #1e293b; margin: 0 0 24px 0;">Here is the daily report for ${escapeHtml(yesterdayDateStr)}</p>
+    // Theme: modern slate/dark header with blue accent bar matching Cosmo style
+    let emailHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Daily Performance Report</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;">
+  <tr>
+    <td align="center" style="padding:28px 12px;">
+      <table role="presentation" width="680" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:680px;background:#ffffff;border:1px solid #e2e8f0;">
+        <!-- HEADER -->
+        <tr>
+          <td style="background:#0f172a;padding:26px 28px;border-bottom:4px solid #2563eb;">
+            <div style="font-size:11px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#93c5fd;margin-bottom:8px;">
+              VIZIBBLE SYSTEMS
+            </div>
+            <div style="font-size:22px;line-height:30px;font-weight:700;color:#ffffff;">
+              Daily Performance Report
+            </div>
+            <div style="margin-top:14px;font-size:12px;line-height:18px;color:#94a3b8;">
+              ${escapeHtml(yesterdayDateStr)}
+            </div>
+          </td>
+        </tr>
+
+        <!-- CONTENT -->
+        <tr>
+          <td style="padding:24px 28px;">
     `;
     for (const device of devices) {
       const devStats = statsData[device.device_id];
@@ -409,7 +286,7 @@ async function main() {
       const deviceName = escapeHtml(device.name);
 
       emailHtml += `
-        <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 24px; margin-bottom: 12px; border-bottom: 2px solid #3b82f6; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em;">
+        <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 16px; margin-bottom: 16px; border-bottom: 2px solid #2563eb; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">
           ${deviceName}
         </div>
       `;
@@ -455,32 +332,49 @@ async function main() {
         const chartUrl = generateQuickChartUrl(paramKey, hourlyMeans, rules);
 
         emailHtml += `
-          <div class="sensor-section">
-            <div class="sensor-title">${paramLabel}</div>
+          <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px;">
+            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.02em;">
+              ${paramLabel}
+            </div>
             
-            <div style="font-size: 13px; line-height: 1.7; color: #1e293b; margin-bottom: 16px;">
-              <strong>Average :</strong> ${overallAvg}${unit}<br>
-              <strong>Min-Max:</strong> ${overallMin} - ${overallMax}${unit}<br>
-              <strong>Specifications:</strong> ${specs}${unit}
-            </div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px;">
+              <tr>
+                <td width="33%" style="padding: 10px 12px; border-right: 1px solid #e2e8f0;">
+                  <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Average</div>
+                  <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">${overallAvg}${unit}</div>
+                </td>
+                <td width="33%" style="padding: 10px 12px; border-right: 1px solid #e2e8f0;">
+                  <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Min - Max</div>
+                  <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">${overallMin} - ${overallMax}${unit}</div>
+                </td>
+                <td width="34%" style="padding: 10px 12px;">
+                  <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Specifications</div>
+                  <div style="font-size: 15px; font-weight: 700; color: #2563eb; margin-top: 2px;">${specs}${unit}</div>
+                </td>
+              </tr>
+            </table>
 
-            <div class="chart-container">
-              <img src="${chartUrl}" width="600" style="display: block; width: 100%; height: auto; max-width: 600px; border: 0;" alt="${paramLabel} Chart" />
-            </div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid #e2e8f0; background: #ffffff; border-radius: 6px;">
+              <tr>
+                <td style="padding: 12px;">
+                  <img src="${chartUrl}" width="600" style="display: block; width: 100%; height: auto; max-width: 600px; border: 0;" alt="${paramLabel} Chart" />
+                </td>
+              </tr>
+            </table>
           </div>
         `;
       }
     }
 
     emailHtml += `
-                </div>
-              </div>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
 
     // 7. Save preview file locally
     await Bun.write('test_report_preview.html', emailHtml);
@@ -488,14 +382,16 @@ async function main() {
       '[Daily Report] HTML preview saved to backend/test_report_preview.html'
     );
 
+    const smtpUser = process.env['SMTP_USER'] || process.env['GMAIL_USER'];
+
     if (
       process.env['SEND_EMAIL'] === 'true' ||
       process.env['NODE_ENV'] === 'production'
     ) {
       await transporter.sendMail({
-        from: `"Vizibble Daily Reports" <${process.env['SMTP_USER'] || process.env['GMAIL_USER']}>`,
+        from: `"Vizibble Reports" <${smtpUser}>`,
         to: recipientEmails.join(', '),
-        subject: `Daily Performance Report - ${yesterdayDateStr}`,
+        subject: `Daily Performance Report — ${yesterdayDateStr}`,
         html: emailHtml,
       });
       console.log(

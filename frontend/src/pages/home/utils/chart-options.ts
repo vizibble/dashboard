@@ -184,13 +184,14 @@ export const getRpmOptions = (data: {
       name: 'RPM',
       data: data.rpmData,
       type: 'line',
+      showSymbol: false,
       areaStyle: {
         opacity: 0.1,
       },
       tooltip: {
         valueFormatter: (value: unknown) => `${value} RPM`,
       },
-      color: '#8b5cf6', // A purple color to distinguish it
+      color: '#3b82f6',
       markLine: getMarkLine(data.thresholds?.min, data.thresholds?.max),
     },
   ],

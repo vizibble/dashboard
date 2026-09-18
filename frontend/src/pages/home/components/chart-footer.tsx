@@ -5,9 +5,10 @@ import type { SeriesStats } from '@/pages/home/utils/get-series-stats';
 type Props = {
   stats: SeriesStats;
   options: EChartsOption;
+  hideStats?: boolean;
 };
 
-export const ChartFooter = ({ stats, options }: Props) => {
+export const ChartFooter = ({ stats, options, hideStats = false }: Props) => {
   const rawSeries = options?.series;
 
   const series: SeriesOption | undefined = Array.isArray(rawSeries)
@@ -42,28 +43,30 @@ export const ChartFooter = ({ stats, options }: Props) => {
       </div>
 
       {/* Stats */}
-      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 text-[10px] sm:text-[11px] md:text-[12px] font-bold uppercase tracking-widest">
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <span className="text-slate-400">Min:</span>
-          <span className="text-red-500 bg-red-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-red-100 font-mono tabular-nums">
-            {stats.min.toFixed(2)}
-          </span>
-        </div>
+      {!hideStats && (
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 text-[10px] sm:text-[11px] md:text-[12px] font-bold uppercase tracking-widest">
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <span className="text-slate-400">Min:</span>
+            <span className="text-red-500 bg-red-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-red-100 font-mono tabular-nums">
+              {stats.min.toFixed(2)}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <span className="text-slate-400">Max:</span>
-          <span className="text-emerald-500 bg-emerald-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-emerald-100 font-mono tabular-nums">
-            {stats.max.toFixed(2)}
-          </span>
-        </div>
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <span className="text-slate-400">Max:</span>
+            <span className="text-emerald-500 bg-emerald-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-emerald-100 font-mono tabular-nums">
+              {stats.max.toFixed(2)}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <span className="text-slate-400">Avg:</span>
-          <span className="text-blue-500 bg-blue-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-blue-100 font-mono tabular-nums">
-            {stats.avg.toFixed(2)}
-          </span>
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <span className="text-slate-400">Avg:</span>
+            <span className="text-blue-500 bg-blue-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-blue-100 font-mono tabular-nums">
+              {stats.avg.toFixed(2)}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </footer>
   );
 };

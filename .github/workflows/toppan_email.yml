@@ -1,4 +1,4 @@
-name: Send Daily Performance Email
+name: Send Toppan Daily Performance Email
 
 on:
   schedule:
