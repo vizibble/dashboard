@@ -15,7 +15,6 @@ import {
   DEFAULT_HUMIDITY_THRESHOLDS,
   DEFAULT_PRESSURE_THRESHOLDS,
   DEFAULT_TEMPERATURE_THRESHOLDS,
-  DEFAULT_RPM_THRESHOLDS,
   getHumidityOptions,
   getPressureOptions,
   getTemperatureOptions,

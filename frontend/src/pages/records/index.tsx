@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { CalendarIcon } from 'lucide-react';
 
@@ -16,12 +16,11 @@ import { Chart } from '@/pages/home/components/chart';
 import { LoomCumulativeBarChart } from '@/pages/home/components/loom-cumulative-bar-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
 import { MachineStatusChart } from '@/pages/home/components/machine-status-chart';
-import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
+import { useLoomTimeSeries, type SensorHistoryData } from '@/pages/home/hooks/use-loom-time-series';
 import {
   DEFAULT_HUMIDITY_THRESHOLDS,
   DEFAULT_PRESSURE_THRESHOLDS,
   DEFAULT_TEMPERATURE_THRESHOLDS,
-  DEFAULT_RPM_THRESHOLDS,
   getHumidityOptions,
   getPressureOptions,
   getTemperatureOptions,
@@ -63,14 +62,10 @@ export const RecordsPage = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(
     paramDevice ?? null
   );
-  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
+  const [selectedDeviceTypeState, setSelectedDeviceType] = useState<string>('');
 
-  // Once devices load, resolve the type for a device that came from query params
-  useEffect(() => {
-    if (!selectedDeviceId || selectedDeviceType) return;
-    const device = devices.find((d) => d.device_id === selectedDeviceId);
-    if (device) setSelectedDeviceType(device.type ?? '');
-  }, [devices, selectedDeviceId, selectedDeviceType]);
+  const selectedDeviceType =
+    devices.find((d) => d.device_id === selectedDeviceId)?.type ?? selectedDeviceTypeState;
 
   // Keep URL in sync with current selections
   const syncParams = (deviceId: string | null, selectedDate: Date | undefined) => {
@@ -131,7 +126,7 @@ export const RecordsPage = () => {
   const pressureData: number[] = [];
   const rpmData: number[] = [];
 
-  const loomHistory: Record<string, any> = {};
+  const loomHistory: Record<string, SensorHistoryData> = {};
 
   history.forEach((row) => {
     const d = new Date(row.recorded_at);
@@ -156,9 +151,10 @@ export const RecordsPage = () => {
       if (!loomHistory[key]) {
         loomHistory[key] = { times: [], values: [], rawTimes: [] };
       }
-      loomHistory[key].times.push(row.recorded_at);
-      loomHistory[key].values.push(val);
-      loomHistory[key].rawTimes.push(row.recorded_at);
+      const entry = loomHistory[key]!;
+      entry.times?.push(row.recorded_at);
+      entry.values?.push(val);
+      entry.rawTimes?.push(row.recorded_at);
     }
   });
 
