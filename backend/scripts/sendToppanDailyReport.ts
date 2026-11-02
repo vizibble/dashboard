@@ -6,7 +6,6 @@ import { formatParamLabel } from '../utils/formatParam.js';
 interface Device {
   device_id: string;
   name: string;
-  type: string;
   location: string | null;
 }
 
@@ -203,12 +202,16 @@ function generateQuickChartUrl(
   rules: AlertRule[],
   unit: string
 ): string {
-  const labels = Array.from({ length: 24 }, (_, hour) =>
-    `${String(hour).padStart(2, '0')}:00`
+  const labels = Array.from(
+    { length: 24 },
+    (_, hour) => `${String(hour).padStart(2, '0')}:00`
   );
 
-  const values = Array.from({ length: 24 }, (_, hour) =>
-    hourlyMeans[hour] !== undefined ? hourlyMeans[hour] : null
+  const values = Array.from(
+    { length: 24 },
+    (_, hour) => hourlyMeans[hour] !== undefined
+      ? hourlyMeans[hour]
+      : null
   );
 
   const datasets: Array<Record<string, unknown>> = [
@@ -262,7 +265,10 @@ function generateQuickChartUrl(
       tooltips: { enabled: false },
       scales: {
         xAxes: [{
-          gridLines: { display: false, drawBorder: false },
+          gridLines: {
+            display: false,
+            drawBorder: false,
+          },
           ticks: {
             fontFamily: 'Arial',
             fontSize: 9,
@@ -324,7 +330,6 @@ function buildEmail(
   alertRules: AlertRule[],
   groupedData: Record<string, Record<string, Record<number, number[]>>>,
   statsData: Record<string, Record<string, Record<number, AggregatedStats>>>,
-  readingsCount: number,
   reportDate: Date
 ): string {
   const reportingDevices = devices.filter((device) =>
@@ -379,7 +384,6 @@ function buildEmail(
       const devStats = statsData[device.device_id]!;
       const deviceName = escapeHtml(device.name || 'Unnamed device');
       const location = escapeHtml(device.location || 'Location not set');
-      const deviceType = escapeHtml(device.type || 'Device');
 
       content += `
         <tr>
@@ -389,9 +393,6 @@ function buildEmail(
             </div>
             <div style="padding-top:5px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:${BRAND.muted};">
               ${location}
-            </div>
-            <div style="padding-top:3px;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:16px;letter-spacing:.3px;color:#8495A4;">
-              ${deviceType} &nbsp;·&nbsp; ${escapeHtml(device.device_id)}
             </div>
             <div style="height:1px;line-height:1px;background:${BRAND.border};margin-top:15px;">&nbsp;</div>
           </td>
@@ -413,6 +414,7 @@ function buildEmail(
         const average = sum / allValues.length;
         const minimum = Math.min(...allValues);
         const maximum = Math.max(...allValues);
+
         const breachCount = allValues.filter(
           (value) => isOutOfRange(value, rules)
         ).length;
@@ -421,6 +423,7 @@ function buildEmail(
         const statusColor = flagged ? BRAND.red : BRAND.green;
         const statusBg = flagged ? BRAND.redLight : BRAND.greenLight;
         const statusLabel = flagged ? 'LIMIT BREACH' : 'WITHIN LIMITS';
+
         const unit = getUnit(paramKey);
         const label = escapeHtml(formatParamLabel(paramKey));
         const spec = getSpecifications(rules);
@@ -474,11 +477,6 @@ function buildEmail(
                         ${buildMetric('Configured limits', spec, '', flagged ? BRAND.redLight : '#F5F8FA', flagged ? BRAND.red : BRAND.text)}
                       </tr>
                     </table>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:13px 16px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;color:${BRAND.muted};">
-                    ${allValues.length.toLocaleString('en-IN')} samples recorded
                   </td>
                 </tr>
                 <tr>
@@ -564,9 +562,6 @@ function buildEmail(
                   </td>
                 </tr>
               </table>
-              <div style="padding-top:9px;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:#8495A4;">
-                ${readingsCount.toLocaleString('en-IN')} sensor records received during the reporting period
-              </div>
             </td>
           </tr>
           <tr>
@@ -577,16 +572,6 @@ function buildEmail(
             </td>
           </tr>
           ${content}
-          <tr>
-            <td style="padding:20px 26px;background:#F5F8FA;border-top:1px solid ${BRAND.border};">
-              <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:17px;color:${BRAND.muted};">
-                This is an automated monitoring report from Vizibble Systems.
-              </div>
-              <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:#8A9AA8;">
-                Reporting timezone: Asia/Kolkata (IST)
-              </div>
-            </td>
-          </tr>
         </table>
       </td>
     </tr>
@@ -621,14 +606,10 @@ async function main(): Promise<void> {
     }
 
     const deviceResult = await pool.query<Device>(
-      `SELECT
-         d.device_id,
-         d.name,
-         d.type,
-         d.location
-       FROM devices d
-       WHERE d.user_id = $1
-       ORDER BY d.name`,
+      `SELECT device_id, name, location
+       FROM devices
+       WHERE user_id = $1
+       ORDER BY name`,
       [TARGET_USER_ID]
     );
 
@@ -687,7 +668,11 @@ async function main(): Promise<void> {
       const deviceGroup = (groupedData[reading.device_id] ??= {});
 
       for (const [key, rawValue] of Object.entries(reading.payload)) {
-        if (rawValue === null || rawValue === undefined || rawValue === '') {
+        if (
+          rawValue === null ||
+          rawValue === undefined ||
+          rawValue === ''
+        ) {
           continue;
         }
 
@@ -733,15 +718,11 @@ async function main(): Promise<void> {
       alertRules,
       groupedData,
       statsData,
-      readings.length,
       range.date
     );
 
     await Bun.write('test_report_preview.html', emailHtml);
-
-    console.log(
-      '[Daily Report] Preview saved to test_report_preview.html'
-    );
+    console.log('[Daily Report] Preview saved to test_report_preview.html');
 
     const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
 
