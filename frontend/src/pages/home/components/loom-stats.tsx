@@ -11,6 +11,8 @@ interface ShiftSummary {
   activeMinutes: number;
   idleMinutes: number;
   offlineMinutes: number;
+  stops?: number;
+  threadBreakSeconds?: number;
 }
 
 interface LoomStatsProps {
@@ -21,6 +23,8 @@ interface LoomStatsProps {
     activeMinutes: number;
     idleMinutes: number;
     offlineMinutes: number;
+    totalThreadBreakSeconds?: number;
+    isThreadBreakActive?: boolean;
     shifts: ShiftSummary[];
     currentShiftIndex: number;
     latestOperator?: string;
@@ -110,13 +114,16 @@ const Cell = ({
   </div>
 );
 
+const formatBreakDuration = (sec?: number) => {
+  if (sec === undefined || sec === 0) return '0s';
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+};
+
 /* ─────────────────────────────────────────────
    Shared card layout used by both Daily + Shift
-   ┌─────────────────┬──────────────┬─────────────────┐
-   │  Production     │  OEE donut   │  Active         │
-   │  + target bar   │              │  Idle           │
-   │                 │              │  Offline        │
-   └─────────────────┴──────────────┴─────────────────┘
 ───────────────────────────────────────────── */
 interface CardBodyProps {
   productionLabel: string;
@@ -128,6 +135,7 @@ interface CardBodyProps {
   offlineMinutes: number;
   compact?: boolean;
   unit?: string;
+  threadBreakSeconds?: number;
 }
 
 const CardBody = ({
@@ -140,6 +148,7 @@ const CardBody = ({
   offlineMinutes,
   compact = false,
   unit = 'm',
+  threadBreakSeconds,
 }: CardBodyProps) => {
   const pct = Math.min(100, Math.round((production / target) * 100));
   const barColor = pct >= 80 ? '#43a047' : pct >= 50 ? '#fb8c00' : '#e53935';
@@ -148,6 +157,7 @@ const CardBody = ({
     { label: 'Active Time',  value: activeMinutes,  unit: 'min', accent: '#43a047' },
     { label: 'Idle Time',    value: idleMinutes,    unit: 'min', accent: '#fb8c00' },
     { label: 'Offline Time', value: offlineMinutes, unit: 'min', accent: '#e53935' },
+    ...(threadBreakSeconds !== undefined ? [{ label: 'Thread Break', value: formatBreakDuration(threadBreakSeconds), unit: '', accent: '#f43f5e' }] : []),
   ];
 
   /* ── Compact: vertical stack (for narrow history cards) ── */
@@ -183,13 +193,13 @@ const CardBody = ({
             </div>
           </div>
           {/* Status cells */}
-          <div className="flex-1 grid grid-cols-3 divide-x divide-[#e8edf2]">
+          <div className={cn('flex-1 grid divide-x divide-[#e8edf2]', stats.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
             {stats.map(({ label, value, unit, accent }) => (
-              <div key={label} className="flex flex-col justify-between px-3 py-3">
+              <div key={label} className="flex flex-col justify-between px-2.5 py-3">
                 <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#90a0b7] leading-tight">{label}</span>
                 <div className="flex items-baseline gap-0.5 mt-1">
-                  <span className="text-base font-bold tabular-nums leading-none text-[#1c2b4b]">{value}</span>
-                  <span className="text-[10px] font-semibold text-[#90a0b7]">{unit}</span>
+                  <span className="text-sm sm:text-base font-bold tabular-nums leading-none text-[#1c2b4b]">{value}</span>
+                  {unit && <span className="text-[10px] font-semibold text-[#90a0b7]">{unit}</span>}
                 </div>
                 <div className="mt-1.5 h-[3px] w-6 rounded-full" style={{ backgroundColor: accent }} />
               </div>
@@ -231,8 +241,8 @@ const CardBody = ({
         </div>
       </div>
 
-      {/* Col 3 — Active / Idle / Offline */}
-      <div className="grid grid-cols-3 sm:grid-cols-1 sm:divide-y divide-x sm:divide-x-0 divide-[#e8edf2]">
+      {/* Col 3 — Active / Idle / Offline / Thread Break */}
+      <div className={cn('grid sm:grid-cols-1 sm:divide-y divide-x sm:divide-x-0 divide-[#e8edf2]', stats.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
         {stats.map(({ label, value, unit, accent }) => (
           <Cell key={label} label={label} value={value} unit={unit} accent={accent} />
         ))}
@@ -274,34 +284,39 @@ const SectionHeader = ({
 /* ─────────────────────────────────────────────
    Context Row
 ───────────────────────────────────────────── */
-const ContextRow = ({ product, operator }: { product?: string; operator?: string }) => (
-  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-2 bg-white border border-[#e8edf2] rounded text-[11px]">
-    <span className="text-[#90a0b7] font-semibold uppercase tracking-[0.12em]">Product</span>
-    <span className="font-bold text-[#1c2b4b]">{product || 'None'}</span>
-    <div className="hidden sm:block w-px h-3 bg-[#e8edf2]" />
-    <span className="text-[#90a0b7] font-semibold uppercase tracking-[0.12em]">Operator</span>
-    <span className="font-bold text-[#1c2b4b]">{operator || 'None'}</span>
+const ContextRow = ({
+  product,
+  operator,
+}: {
+  product?: string;
+  operator?: string;
+}) => (
+  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 bg-white border border-[#e8edf2] rounded text-[11px]">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <span className="text-[#90a0b7] font-semibold uppercase tracking-[0.12em]">Product</span>
+      <span className="font-bold text-[#1c2b4b]">{product || 'None'}</span>
+      <div className="hidden sm:block w-px h-3 bg-[#e8edf2]" />
+      <span className="text-[#90a0b7] font-semibold uppercase tracking-[0.12em]">Operator</span>
+      <span className="font-bold text-[#1c2b4b]">{operator || 'None'}</span>
+    </div>
   </div>
 );
 
 /* ─────────────────────────────────────────────
    Main Export
 ───────────────────────────────────────────── */
-
-
-
-/* ─────────────────────────────────────────────
-   Main Export
-   ───────────────────────────────────────────── */
 export const LoomStats = ({ summary, isHistory, unit = 'm' }: LoomStatsProps) => {
   const target = unit === 'pcs' ? 35000 : 90;
-  const activeShift = summary.shifts[summary.currentShiftIndex];
+  const activeShift = summary.shifts[summary.currentShiftIndex] || summary.shifts[0];
 
   /* ── Historical layout ── */
   if (isHistory) {
     return (
       <div className="space-y-3">
-        <ContextRow product={summary.latestProduct} operator={summary.latestOperator} />
+        <ContextRow
+          product={summary.latestProduct}
+          operator={summary.latestOperator}
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {summary.shifts.map((s, i) => (
             <div key={i} className="bg-white border border-[#e8edf2] rounded overflow-hidden">
@@ -314,6 +329,7 @@ export const LoomStats = ({ summary, isHistory, unit = 'm' }: LoomStatsProps) =>
                 activeMinutes={s.activeMinutes}
                 idleMinutes={s.idleMinutes}
                 offlineMinutes={s.offlineMinutes}
+                threadBreakSeconds={s.threadBreakSeconds}
                 compact
                 unit={unit}
               />
@@ -327,8 +343,10 @@ export const LoomStats = ({ summary, isHistory, unit = 'm' }: LoomStatsProps) =>
   /* ── Live dashboard layout ── */
   return (
     <div className="space-y-3">
-
-      <ContextRow product={summary.latestProduct} operator={summary.latestOperator} />
+      <ContextRow
+        product={summary.latestProduct}
+        operator={summary.latestOperator}
+      />
 
       {/* Daily Overview */}
       <div className="bg-white border border-[#e8edf2] rounded overflow-hidden">
@@ -336,33 +354,36 @@ export const LoomStats = ({ summary, isHistory, unit = 'm' }: LoomStatsProps) =>
         <CardBody
           productionLabel="Output"
           production={summary.totalProduction}
-          target={target * summary.shifts.length}
+          target={target * (summary.shifts.length || 1)}
           oee={summary.utilization}
           activeMinutes={summary.activeMinutes}
           idleMinutes={summary.idleMinutes}
           offlineMinutes={summary.offlineMinutes}
+          threadBreakSeconds={summary.totalThreadBreakSeconds}
           unit={unit}
         />
       </div>
 
       {/* Current Shift */}
-      <div className="bg-white border border-[#e8edf2] rounded overflow-hidden">
-        <SectionHeader
-          title={activeShift.name}
-          meta={`${activeShift.hours} hr`}
-        />
-        <CardBody
-          productionLabel="Output"
-          production={activeShift.production}
-          target={target}
-          oee={activeShift.utilization}
-          activeMinutes={activeShift.activeMinutes}
-          idleMinutes={activeShift.idleMinutes}
-          offlineMinutes={activeShift.offlineMinutes}
-          unit={unit}
-        />
-      </div>
-
+      {activeShift && (
+        <div className="bg-white border border-[#e8edf2] rounded overflow-hidden">
+          <SectionHeader
+            title={activeShift.name}
+            meta={`${activeShift.hours} hr`}
+          />
+          <CardBody
+            productionLabel="Output"
+            production={activeShift.production}
+            target={target}
+            oee={activeShift.utilization}
+            activeMinutes={activeShift.activeMinutes}
+            idleMinutes={activeShift.idleMinutes}
+            offlineMinutes={activeShift.offlineMinutes}
+            threadBreakSeconds={activeShift.threadBreakSeconds}
+            unit={unit}
+          />
+        </div>
+      )}
     </div>
   );
 };

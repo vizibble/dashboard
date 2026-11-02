@@ -35,7 +35,7 @@ export const useSensorStore = create<SensorStore>((set) => ({
         const label = formatTimeLabel(date, mode);
 
         for (const [field, val] of Object.entries(payload)) {
-          if (typeof val !== 'number' && typeof val !== 'string') continue;
+          if (typeof val !== 'number' && typeof val !== 'string' && typeof val !== 'boolean') continue;
           if (!history[field]) history[field] = { times: [], values: [], rawTimes: [] };
           history[field]!.times.push(label);
           history[field]!.values.push(val);
@@ -72,14 +72,14 @@ export const useSensorStore = create<SensorStore>((set) => ({
 
       for (const [key, val] of Object.entries(payload)) {
         if (key === 'connectionID' || key === 'timestamp') continue;
-        if (typeof val !== 'number') continue;
+        if (typeof val !== 'number' && typeof val !== 'string' && typeof val !== 'boolean') continue;
         incoming[key] = val;
 
         const prev = nextHistory[key] ?? { times: [], values: [], rawTimes: [] };
         nextHistory[key] = {
           times: [...prev.times, label],
           values: [...prev.values, val],
-          rawTimes: [...prev.rawTimes, payload['timestamp'] as string],
+          rawTimes: [...prev.rawTimes, (payload['timestamp'] as string) || new Date().toISOString()],
         };
       }
 

@@ -15,7 +15,7 @@ import { useMemo } from 'react';
 export interface SensorHistoryData {
   rawTimes?: string[];
   times?: string[];
-  values?: (number | string)[];
+  values?: (number | string | boolean)[];
 }
 
 export const useLoomTimeSeries = (
@@ -71,7 +71,7 @@ export const useLoomTimeSeries = (
 
     // Build a fast lookup: timestamp (ms, seconds zeroed) → value
     const dataMap = new Map<number, number>();
-     for (let i = 0; i < propTimes.length; i++) {
+    for (let i = 0; i < propTimes.length; i++) {
       let d = new Date(propTimes[i]);
       // If it's a formatted time string like "HH:mm" or "HH:mm:ss" (which sensor-store outputs), new Date() will fail.
       if (isNaN(d.getTime())) {

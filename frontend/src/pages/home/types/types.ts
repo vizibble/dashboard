@@ -8,11 +8,11 @@ export interface Device {
 }
 
 export interface SensorValues {
-  [field: string]: number | string;
+  [field: string]: number | string | boolean;
 }
 export interface FieldHistory {
   times: string[];
-  values: (number | string)[];
+  values: (number | string | boolean)[];
   rawTimes: string[];
 }
 
@@ -26,9 +26,9 @@ export interface SensorStore {
 
   setMode: (mode: string) => void;
   setDevice: (id: string, type: string) => void;
-  applyUpdate: (payload: Record<string, number | string>) => void;
+  applyUpdate: (payload: Record<string, number | string | boolean>) => void;
   loadHistory: (data: {
-    rows: Array<{ payload: Record<string, number | string>; recorded_at: string }>;
+    rows: Array<{ payload: Record<string, number | string | boolean>; recorded_at: string }>;
     mode: string;
   }) => void;
   clearDevice: () => void;

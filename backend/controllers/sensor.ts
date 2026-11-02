@@ -23,7 +23,7 @@ export async function handleSensorData(
       return;
     }
 
-    const sensorPayload: Record<string, number | string> = {};
+    const sensorPayload: Record<string, number | string | boolean> = {};
 
     for (const [key, val] of Object.entries(rest)) {
       if (typeof val === 'string') {
@@ -34,7 +34,9 @@ export async function handleSensorData(
         } else {
           sensorPayload[key] = val;
         }
-      } else {
+      } else if (typeof val === 'boolean') {
+        sensorPayload[key] = val;
+      } else if (val !== null && val !== undefined) {
         sensorPayload[key] = val as number;
       }
     }

@@ -24,7 +24,13 @@ import {
 
 import { LoomCumulativeBarChart } from '@/pages/home/components/loom-cumulative-bar-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
+import { NodeStats } from '@/pages/home/components/node-stats';
+import { NodeStatusChart } from '@/pages/home/components/node-status-chart';
+import { NodeCumulativeBarChart } from '@/pages/home/components/node-cumulative-bar-chart';
+import { ThreadBreakChart } from '@/pages/home/components/thread-break-chart';
+import { NodeAnalogCharts } from '@/pages/home/components/node-analog-charts';
 import { useLoomTimeSeries } from '@/pages/home/hooks/use-loom-time-series';
+import { useNodeTimeSeries } from '@/pages/home/hooks/use-node-time-series';
 
 export const HomePage = () => {
   useSocket();
@@ -37,8 +43,10 @@ export const HomePage = () => {
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
   const isCount = selectedDeviceType === 'count';
+  const isNode = selectedDeviceType?.toLowerCase() === 'node';
 
   const loomMetrics = useLoomTimeSeries(history, undefined, isCount);
+  const nodeMetrics = useNodeTimeSeries(history, undefined);
 
   const temperatureOptions = getTemperatureOptions({
     times: history['temperature']?.times ?? [],
@@ -136,6 +144,33 @@ export const HomePage = () => {
             {/* RPM Line Chart */}
             {!isCount && <Chart title="RPM" options={rpmOptions} hideStats />}
           </>
+        )}
+        {/* Node Device  */}
+        {selectedDeviceId && !historyLoading && isNode && (
+          <div className="space-y-5 md:space-y-6">
+            {/* Node Stats */}
+            <NodeStats summary={nodeMetrics.summary} unit="kg" />
+            {/* Active / Idle / Offline timeline */}
+            <NodeStatusChart
+              statusData={nodeMetrics.statusData}
+              summary={nodeMetrics.summary}
+            />
+            {/* Correlated Production Pulses & Thread Break Downtime Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-5">
+              <NodeCumulativeBarChart
+                times={nodeMetrics.times}
+                values={nodeMetrics.cumulativeValues}
+                unit="kg"
+              />
+              <ThreadBreakChart
+                hourlyData={nodeMetrics.threadBreak.hourly}
+                totalSeconds={nodeMetrics.threadBreak.totalSeconds}
+                values={nodeMetrics.threadBreak.values}
+              />
+            </div>
+            {/* Dynamic Analog Sensors */}
+            <NodeAnalogCharts sensors={nodeMetrics.analogSensors} />
+          </div>
         )}
       </div>
     </main>

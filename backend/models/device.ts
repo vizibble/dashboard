@@ -37,7 +37,7 @@ export async function getDeviceHistory(
   } else {
     truncation = mode === 'daily' ? 'hour' : 'minute';
     startTimeExpr =
-      type === 'production_count' || type === 'count'
+      type === 'production_count' || type === 'count' || type?.toLowerCase() === 'node'
         ? `NOW() - INTERVAL '30 hours'`
         : `date_trunc('day', NOW(), $3)`;
   }
@@ -49,7 +49,7 @@ export async function getDeviceHistory(
         date_trunc($2, recorded_at, CAST($3 AS text)) AS trunc_time,
         key,
         CASE
-          WHEN key IN ('count', 'length') THEN (SUM(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
+          WHEN key IN ('count', 'length', 'thread_break') THEN (SUM(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
           WHEN bool_and(value ~ '^-?[0-9]+(\\.[0-9]+)?$') THEN (AVG(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
           ELSE MAX(value)
         END AS val
@@ -93,13 +93,13 @@ export async function getDeviceRecordsByDate(
         SELECT
           ($2::date)::timestamp AT TIME ZONE $3                         AS day_start,
           ($2::date + INTERVAL '1 day')::timestamp AT TIME ZONE $3     AS day_end
-      ),
+        ),
       aggregated_data AS (
         SELECT
           date_trunc($4, recorded_at, CAST($3 AS text)) AS trunc_time,
           key,
           CASE
-            WHEN key IN ('count', 'length') THEN (SUM(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
+            WHEN key IN ('count', 'length', 'thread_break') THEN (SUM(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
             WHEN bool_and(value ~ '^-?[0-9]+(\\.[0-9]+)?$') THEN (AVG(value::numeric) FILTER (WHERE value ~ '^-?[0-9]+(\\.[0-9]+)?$'))::text
             ELSE MAX(value)
           END AS val

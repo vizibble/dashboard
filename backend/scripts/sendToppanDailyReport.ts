@@ -7,6 +7,7 @@ interface Device {
   device_id: string;
   name: string;
   type: string;
+  location: string | null;
 }
 
 interface AlertRule {
@@ -19,7 +20,7 @@ interface AlertRule {
 
 interface SensorReadingRow {
   device_id: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   hour: number;
   recorded_at: Date;
 }
@@ -31,476 +32,744 @@ interface AggregatedStats {
   count: number;
 }
 
-const TARGET_USER_ID = process.env.TARGET_USER_ID!;
+const TARGET_USER_ID = process.env.TARGET_USER_ID;
+const TIME_ZONE = 'Asia/Kolkata';
 
-function escapeHtml(value: unknown): string {
-  return String(value).replace(/[&<>"']/g, (char) => {
-    switch (char) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      case "'":
-        return '&#39;';
-      default:
-        return char;
-    }
-  });
-}
+const BRAND = {
+  navy: '#14243A',
+  blue: '#278FC1',
+  blueLight: '#EAF5FB',
+  page: '#F2F6F9',
+  surface: '#FFFFFF',
+  border: '#DCE5EC',
+  text: '#172B3A',
+  muted: '#647789',
+  green: '#16845B',
+  greenLight: '#EAF6F0',
+  red: '#C43D4B',
+  redLight: '#FCEEEF',
+};
 
 const PARAM_UNITS: Record<string, string> = {
   temperature: ' °C',
   temp: ' °C',
   humidity: ' %RH',
   humid: ' %RH',
-  differential_pressure: ' Pa',
+  differentialpressure: ' Pa',
   pressure: ' Pa',
-  flow_rate: ' L/min',
+  flowrate: ' L/min',
   flow: ' L/min',
 };
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[char] ?? char;
+  });
+}
+
+function normalizeParam(value: string): string {
+  return value.toLowerCase().replace(/[\s_-]+/g, '');
+}
+
 function getUnit(key: string): string {
-  const normalized = key.toLowerCase().replace(/[\s_-]+/g, '');
-  for (const [k, unit] of Object.entries(PARAM_UNITS)) {
-    if (normalized.includes(k.replace(/[\s_-]+/g, ''))) {
-      return unit;
-    }
+  const normalized = normalizeParam(key);
+
+  for (const [name, unit] of Object.entries(PARAM_UNITS)) {
+    if (normalized.includes(normalizeParam(name))) return unit;
   }
+
   return '';
 }
 
-function getSpecifications(rules: AlertRule[]): string {
-  if (rules.length === 0) return 'No limit';
-
-  const lowRule = rules.find(
-    (r) => r.condition === 'lt' || r.condition === 'lte'
-  );
-  const highRule = rules.find(
-    (r) => r.condition === 'gt' || r.condition === 'gte'
-  );
-
-  if (lowRule && highRule) {
-    return `${lowRule.threshold} - ${highRule.threshold}`;
-  } else if (lowRule) {
-    const symbol = lowRule.condition === 'lt' ? '>' : '>=';
-    return `${symbol}${lowRule.threshold}`;
-  } else if (highRule) {
-    const symbol = highRule.condition === 'gt' ? '<' : '<=';
-    return `${symbol}${highRule.threshold}`;
-  }
-
-  const r = rules[0]!;
-  const sym =
-    r.condition === 'gt' ? '<' : r.condition === 'lt' ? '>' : r.condition;
-  return `${sym}${r.threshold}`;
-}
-
 function parametersMatch(param1: string, param2: string): boolean {
-  const p1 = param1.toLowerCase().replace(/[\s_-]+/g, '');
-  const p2 = param2.toLowerCase().replace(/[\s_-]+/g, '');
+  const p1 = normalizeParam(param1);
+  const p2 = normalizeParam(param2);
+
   if (p1 === p2) return true;
 
   const aliases: Record<string, string[]> = {
     temperature: ['temp', 't'],
     humidity: ['humid', 'rh', 'h'],
-    differentialpressure: [
-      'dp',
-      'diffpress',
-      'differential_pressure',
-      'diff_press',
-    ],
+    differentialpressure: ['dp', 'diffpress', 'diffp'],
   };
 
-  for (const [key, list] of Object.entries(aliases)) {
-    if (p1 === key && list.includes(p2)) return true;
-    if (p2 === key && list.includes(p1)) return true;
+  for (const [canonical, names] of Object.entries(aliases)) {
+    const group = [canonical, ...names];
+    if (group.includes(p1) && group.includes(p2)) return true;
   }
 
   return false;
 }
 
-async function main() {
-  console.log(
-    `[Daily Report] Starting daily report for user: ${TARGET_USER_ID}`
+function isOutOfRange(value: number, rules: AlertRule[]): boolean {
+  return rules.some((rule) => {
+    switch (rule.condition) {
+      case 'lt': return value < rule.threshold;
+      case 'lte': return value <= rule.threshold;
+      case 'gt': return value > rule.threshold;
+      case 'gte': return value >= rule.threshold;
+      default: return false;
+    }
+  });
+}
+
+function getSpecifications(rules: AlertRule[]): string {
+  if (rules.length === 0) return 'No limits configured';
+
+  const lowRule = rules.find(
+    (rule) => rule.condition === 'lt' || rule.condition === 'lte'
   );
 
+  const highRule = rules.find(
+    (rule) => rule.condition === 'gt' || rule.condition === 'gte'
+  );
+
+  const low = lowRule
+    ? `${lowRule.condition === 'lt' ? '≥' : '>'} ${lowRule.threshold}`
+    : null;
+
+  const high = highRule
+    ? `${highRule.condition === 'gt' ? '≤' : '<'} ${highRule.threshold}`
+    : null;
+
+  if (low && high) return `${low} and ${high}`;
+  if (low) return low;
+  if (high) return high;
+
+  const rule = rules[0]!;
+
+  const symbol: Record<string, string> = {
+    lt: '≥',
+    lte: '>',
+    gt: '≤',
+    gte: '<',
+  };
+
+  return `${symbol[rule.condition] ?? ''} ${rule.threshold}`.trim();
+}
+
+function formatNumber(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2) : '—';
+}
+
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: TIME_ZONE,
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
+
+function getYesterdayRange(): {
+  start: string;
+  end: string;
+  date: Date;
+} {
+  const now = new Date();
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)?.value;
+
+  const today = `${part('year')}-${part('month')}-${part('day')}`;
+  const todayUtc = new Date(`${today}T00:00:00.000Z`);
+  const yesterdayUtc = new Date(todayUtc.getTime() - 86400000);
+  const yesterday = yesterdayUtc.toISOString().slice(0, 10);
+
+  return {
+    start: `${yesterday} 00:00:00`,
+    end: `${today} 00:00:00`,
+    date: new Date(`${yesterday}T12:00:00.000Z`),
+  };
+}
+
+function generateQuickChartUrl(
+  parameterName: string,
+  hourlyMeans: Record<number, number>,
+  rules: AlertRule[],
+  unit: string
+): string {
+  const labels = Array.from({ length: 24 }, (_, hour) =>
+    `${String(hour).padStart(2, '0')}:00`
+  );
+
+  const values = Array.from({ length: 24 }, (_, hour) =>
+    hourlyMeans[hour] !== undefined ? hourlyMeans[hour] : null
+  );
+
+  const datasets: Array<Record<string, unknown>> = [
+    {
+      label: formatParamLabel(parameterName),
+      data: values,
+      borderColor: BRAND.blue,
+      backgroundColor: 'rgba(39, 143, 193, 0.13)',
+      fill: true,
+      borderWidth: 2.5,
+      pointRadius: 2,
+      pointHoverRadius: 3,
+      pointBackgroundColor: BRAND.blue,
+      pointBorderColor: '#FFFFFF',
+      spanGaps: false,
+      lineTension: 0.25,
+    },
+  ];
+
+  for (const rule of rules) {
+    datasets.push({
+      label: `${rule.label || 'Limit'}: ${rule.threshold}${unit}`,
+      data: Array(24).fill(rule.threshold),
+      borderColor: BRAND.red,
+      borderWidth: 1.5,
+      borderDash: [5, 4],
+      fill: false,
+      pointRadius: 0,
+      pointHitRadius: 0,
+      lineTension: 0,
+    });
+  }
+
+  const config = {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      legend: {
+        display: rules.length > 0,
+        position: 'bottom',
+        labels: {
+          fontFamily: 'Arial',
+          fontSize: 10,
+          fontColor: '#526779',
+          boxWidth: 18,
+          padding: 14,
+        },
+      },
+      tooltips: { enabled: false },
+      scales: {
+        xAxes: [{
+          gridLines: { display: false, drawBorder: false },
+          ticks: {
+            fontFamily: 'Arial',
+            fontSize: 9,
+            fontColor: '#718496',
+            maxTicksLimit: 6,
+            maxRotation: 0,
+            minRotation: 0,
+          },
+        }],
+        yAxes: [{
+          gridLines: {
+            color: '#E8EEF3',
+            drawBorder: false,
+          },
+          ticks: {
+            fontFamily: 'Arial',
+            fontSize: 9,
+            fontColor: '#718496',
+            maxTicksLimit: 5,
+          },
+          scaleLabel: {
+            display: Boolean(unit),
+            labelString: unit.trim(),
+            fontFamily: 'Arial',
+            fontSize: 9,
+            fontColor: '#718496',
+          },
+        }],
+      },
+    },
+  };
+
+  const encoded = encodeURIComponent(JSON.stringify(config));
+
+  return `https://quickchart.io/chart?width=640&height=250&devicePixelRatio=2&format=png&backgroundColor=white&c=${encoded}`;
+}
+
+function buildMetric(
+  label: string,
+  value: string,
+  unit: string,
+  background: string,
+  valueColor = BRAND.text
+): string {
+  return `
+    <td class="metric-cell" width="33.33%" valign="top"
+      style="width:33.33%;padding:13px 12px;background:${background};border:1px solid ${BRAND.border};">
+      <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:${BRAND.muted};">
+        ${escapeHtml(label)}
+      </div>
+      <div style="padding-top:6px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:26px;font-weight:700;color:${valueColor};word-break:break-word;">
+        ${escapeHtml(value)}<span style="font-size:11px;line-height:16px;font-weight:600;color:${BRAND.muted};">${escapeHtml(unit)}</span>
+      </div>
+    </td>`;
+}
+
+function buildEmail(
+  devices: Device[],
+  alertRules: AlertRule[],
+  groupedData: Record<string, Record<string, Record<number, number[]>>>,
+  statsData: Record<string, Record<string, Record<number, AggregatedStats>>>,
+  readingsCount: number,
+  reportDate: Date
+): string {
+  const reportingDevices = devices.filter((device) =>
+    Boolean(
+      statsData[device.device_id] &&
+      Object.keys(statsData[device.device_id]!).length
+    )
+  );
+
+  let parameterCount = 0;
+  let breachedCount = 0;
+
+  for (const device of reportingDevices) {
+    for (const [paramKey] of Object.entries(statsData[device.device_id]!)) {
+      parameterCount++;
+
+      const rules = alertRules.filter((rule) =>
+        rule.device_id === device.device_id &&
+        parametersMatch(rule.parameter, paramKey)
+      );
+
+      const values = Object.values(
+        groupedData[device.device_id]?.[paramKey] ?? {}
+      ).flat();
+
+      if (values.some((value) => isOutOfRange(value, rules))) {
+        breachedCount++;
+      }
+    }
+  }
+
+  const normalCount = parameterCount - breachedCount;
+  const dateLabel = formatDate(reportDate);
+  const periodLabel = `${dateLabel} · 00:00–23:59 IST`;
+
+  let content = '';
+
+  if (reportingDevices.length === 0) {
+    content = `
+      <tr>
+        <td style="padding:30px 26px 34px;">
+          <div style="font-family:Arial,Helvetica,sans-serif;font-size:17px;line-height:24px;font-weight:700;color:${BRAND.text};">
+            No sensor data received
+          </div>
+          <div style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:21px;color:${BRAND.muted};">
+            No readings were recorded for the reporting period. Check device connectivity and data ingestion.
+          </div>
+        </td>
+      </tr>`;
+  } else {
+    for (const device of reportingDevices) {
+      const devStats = statsData[device.device_id]!;
+      const deviceName = escapeHtml(device.name || 'Unnamed device');
+      const location = escapeHtml(device.location || 'Location not set');
+      const deviceType = escapeHtml(device.type || 'Device');
+
+      content += `
+        <tr>
+          <td style="padding:26px 26px 10px;">
+            <div style="font-family:Arial,Helvetica,sans-serif;font-size:17px;line-height:23px;font-weight:700;color:${BRAND.text};">
+              ${deviceName}
+            </div>
+            <div style="padding-top:5px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:${BRAND.muted};">
+              ${location}
+            </div>
+            <div style="padding-top:3px;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:16px;letter-spacing:.3px;color:#8495A4;">
+              ${deviceType} &nbsp;·&nbsp; ${escapeHtml(device.device_id)}
+            </div>
+            <div style="height:1px;line-height:1px;background:${BRAND.border};margin-top:15px;">&nbsp;</div>
+          </td>
+        </tr>`;
+
+      for (const [paramKey, paramData] of Object.entries(devStats)) {
+        const rules = alertRules.filter((rule) =>
+          rule.device_id === device.device_id &&
+          parametersMatch(rule.parameter, paramKey)
+        );
+
+        const allValues = Object.values(
+          groupedData[device.device_id]?.[paramKey] ?? {}
+        ).flat();
+
+        if (allValues.length === 0) continue;
+
+        const sum = allValues.reduce((total, value) => total + value, 0);
+        const average = sum / allValues.length;
+        const minimum = Math.min(...allValues);
+        const maximum = Math.max(...allValues);
+        const breachCount = allValues.filter(
+          (value) => isOutOfRange(value, rules)
+        ).length;
+
+        const flagged = breachCount > 0;
+        const statusColor = flagged ? BRAND.red : BRAND.green;
+        const statusBg = flagged ? BRAND.redLight : BRAND.greenLight;
+        const statusLabel = flagged ? 'LIMIT BREACH' : 'WITHIN LIMITS';
+        const unit = getUnit(paramKey);
+        const label = escapeHtml(formatParamLabel(paramKey));
+        const spec = getSpecifications(rules);
+
+        const hourlyMeans: Record<number, number> = {};
+
+        for (const [hour, stats] of Object.entries(paramData)) {
+          hourlyMeans[Number(hour)] = stats.mean;
+        }
+
+        const chartUrl = generateQuickChartUrl(
+          paramKey,
+          hourlyMeans,
+          rules,
+          unit
+        );
+
+        const exceptionText = flagged
+          ? `<div style="margin-top:12px;padding:11px 13px;background:${BRAND.redLight};border-left:3px solid ${BRAND.red};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#842D37;">
+               <strong>${breachCount.toLocaleString('en-IN')} of ${allValues.length.toLocaleString('en-IN')} samples</strong> crossed the configured limit during this reporting period.
+             </div>`
+          : '';
+
+        content += `
+          <tr>
+            <td style="padding:8px 26px 16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="width:100%;border:1px solid ${BRAND.border};border-top:3px solid ${statusColor};background:${BRAND.surface};">
+                <tr>
+                  <td style="padding:15px 16px 13px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td valign="middle" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:20px;font-weight:700;letter-spacing:.2px;color:${BRAND.text};">
+                          ${label}
+                        </td>
+                        <td align="right" valign="middle" style="padding-left:8px;">
+                          <span style="display:inline-block;padding:5px 8px;background:${statusBg};font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:12px;font-weight:700;letter-spacing:.5px;color:${statusColor};">
+                            ${statusLabel}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 12px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="metrics">
+                      <tr>
+                        ${buildMetric('Average', formatNumber(average), unit, BRAND.blueLight)}
+                        ${buildMetric('Minimum – Maximum', `${formatNumber(minimum)} – ${formatNumber(maximum)}`, unit, '#F5F8FA')}
+                        ${buildMetric('Configured limits', spec, '', flagged ? BRAND.redLight : '#F5F8FA', flagged ? BRAND.red : BRAND.text)}
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:13px 16px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;color:${BRAND.muted};">
+                    ${allValues.length.toLocaleString('en-IN')} samples recorded
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 12px 4px;">
+                    <img src="${chartUrl}" width="640" height="250" alt="${label} hourly average chart. Blue line shows readings; red dashed lines show configured limits."
+                      style="display:block;width:100%;max-width:640px;height:auto;border:0;outline:none;text-decoration:none;" />
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 16px 15px;">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:#8495A4;">
+                      Hourly averages · Local time (IST)
+                    </div>
+                    ${exceptionText}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`;
+      }
+    }
+  }
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Daily Performance Report</title>
+  <style type="text/css">
+    body { margin:0 !important; padding:0 !important; width:100% !important; }
+    table { border-collapse:collapse; }
+    img { border:0; outline:none; text-decoration:none; }
+    @media only screen and (max-width:600px) {
+      .outer-pad { padding:12px 8px !important; }
+      .main-pad { padding-left:16px !important; padding-right:16px !important; }
+      .header-pad { padding:22px 18px !important; }
+      .metric-cell { display:block !important; width:auto !important; }
+      .metric-cell + .metric-cell { border-top:0 !important; }
+      .summary-cell { display:block !important; width:auto !important; border-right:0 !important; border-bottom:1px solid ${BRAND.border} !important; }
+      .summary-cell:last-child { border-bottom:0 !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:${BRAND.page};font-family:Arial,Helvetica,sans-serif;color:${BRAND.text};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BRAND.page}" style="width:100%;background:${BRAND.page};">
+    <tr>
+      <td align="center" class="outer-pad" style="padding:28px 12px;">
+        <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:640px;background:${BRAND.surface};border:1px solid ${BRAND.border};">
+          <tr>
+            <td class="header-pad" bgcolor="${BRAND.navy}" style="padding:25px 26px 22px;background:${BRAND.navy};border-bottom:4px solid ${BRAND.blue};">
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;font-weight:700;letter-spacing:1.5px;color:#9BD8F0;">
+                VIZIBBLE SYSTEMS
+              </div>
+              <div style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:23px;line-height:30px;font-weight:700;color:#FFFFFF;">
+                Daily Performance Report
+              </div>
+              <div style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#C5D2DE;">
+                ${escapeHtml(periodLabel)}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="main-pad" style="padding:20px 26px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border:1px solid ${BRAND.border};background:#F8FAFC;">
+                <tr>
+                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;border-right:1px solid ${BRAND.border};">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">REPORTING DEVICES</div>
+                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${BRAND.text};">${reportingDevices.length}</div>
+                  </td>
+                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;border-right:1px solid ${BRAND.border};">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">PARAMETERS</div>
+                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${BRAND.text};">${parameterCount}</div>
+                  </td>
+                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;border-right:1px solid ${BRAND.border};">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">WITHIN LIMITS</div>
+                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${BRAND.green};">${normalCount}</div>
+                  </td>
+                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">LIMIT BREACHES</div>
+                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${breachedCount ? BRAND.red : BRAND.green};">${breachedCount}</div>
+                  </td>
+                </tr>
+              </table>
+              <div style="padding-top:9px;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:#8495A4;">
+                ${readingsCount.toLocaleString('en-IN')} sensor records received during the reporting period
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="main-pad" style="padding:14px 26px 8px;">
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND.blue};">
+                Device performance
+              </div>
+            </td>
+          </tr>
+          ${content}
+          <tr>
+            <td style="padding:20px 26px;background:#F5F8FA;border-top:1px solid ${BRAND.border};">
+              <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:17px;color:${BRAND.muted};">
+                This is an automated monitoring report from Vizibble Systems.
+              </div>
+              <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:#8A9AA8;">
+                Reporting timezone: Asia/Kolkata (IST)
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+async function main(): Promise<void> {
+  if (!TARGET_USER_ID) {
+    throw new Error('TARGET_USER_ID is not configured.');
+  }
+
+  console.log(`[Daily Report] Starting report for user: ${TARGET_USER_ID}`);
+
   try {
-    // 1. Fetch user emails
     const emailResult = await pool.query<{ email: string }>(
-      'SELECT email FROM user_alert_emails WHERE user_id = $1',
+      `SELECT email
+       FROM user_alert_emails
+       WHERE user_id = $1
+       ORDER BY email`,
       [TARGET_USER_ID]
     );
-    const recipientEmails = emailResult.rows.map((r) => r.email);
+
+    const recipientEmails = emailResult.rows
+      .map((row) => row.email?.trim())
+      .filter((email): email is string => Boolean(email));
 
     if (recipientEmails.length === 0) {
-      console.log(
-        `[Daily Report] No alert emails registered for user ${TARGET_USER_ID}. Exiting.`
-      );
+      console.log('[Daily Report] No recipient emails configured. Exiting.');
       return;
     }
-    console.log(`[Daily Report] Recipients: ${recipientEmails.join(', ')}`);
 
-    // 2. Fetch devices
     const deviceResult = await pool.query<Device>(
-      'SELECT device_id, name, type FROM devices WHERE user_id = $1',
+      `SELECT
+         d.device_id,
+         d.name,
+         d.type,
+         d.location
+       FROM devices d
+       WHERE d.user_id = $1
+       ORDER BY d.name`,
       [TARGET_USER_ID]
     );
+
     const devices = deviceResult.rows;
+
     if (devices.length === 0) {
-      console.log(
-        `[Daily Report] No devices found for user ${TARGET_USER_ID}. Exiting.`
-      );
+      console.log('[Daily Report] No devices found. Exiting.');
       return;
     }
-    console.log(`[Daily Report] Found ${devices.length} devices.`);
 
-    // 3. Fetch alert rules.
-    // ORDER BY added: previously rules for the same device/parameter had no
-    // deterministic order, so "the first rule" picked further down could
-    // silently change between runs. Tightest threshold first is the most
-    // useful default for a single-line chart.
     const ruleResult = await pool.query<AlertRule>(
       `SELECT device_id, parameter, condition, threshold, label
        FROM alert_rules
-       WHERE device_id IN (SELECT device_id FROM devices WHERE user_id = $1)
+       WHERE device_id IN (
+         SELECT device_id FROM devices WHERE user_id = $1
+       )
          AND enabled = TRUE
        ORDER BY device_id, parameter, threshold ASC`,
       [TARGET_USER_ID]
     );
+
     const alertRules = ruleResult.rows;
+    const range = getYesterdayRange();
 
-    // 4. Fetch sensor readings for the previous day (12 AM to 12 AM IST)
     const readingsResult = await pool.query<SensorReadingRow>(
-      `SELECT device_id, payload, 
-              EXTRACT(HOUR FROM recorded_at AT TIME ZONE 'Asia/Kolkata')::int AS hour,
-              recorded_at
+      `SELECT
+         device_id,
+         payload,
+         EXTRACT(HOUR FROM recorded_at AT TIME ZONE $2)::int AS hour,
+         recorded_at
        FROM sensor_readings
-       WHERE device_id IN (SELECT device_id FROM devices WHERE user_id = $1)
-         AND recorded_at >= (timezone('Asia/Kolkata', now())::date - 1)::timestamp AT TIME ZONE 'Asia/Kolkata'
-         AND recorded_at < (timezone('Asia/Kolkata', now())::date)::timestamp AT TIME ZONE 'Asia/Kolkata'
+       WHERE device_id IN (
+         SELECT device_id FROM devices WHERE user_id = $1
+       )
+         AND recorded_at >= ($3::date::timestamp AT TIME ZONE $2)
+         AND recorded_at < ($4::date::timestamp AT TIME ZONE $2)
        ORDER BY recorded_at ASC`,
-      [TARGET_USER_ID]
-    );
-    const readings = readingsResult.rows;
-    console.log(
-      `[Daily Report] Fetched ${readings.length} readings for the previous day.`
+      [
+        TARGET_USER_ID,
+        TIME_ZONE,
+        range.start.slice(0, 10),
+        range.end.slice(0, 10),
+      ]
     );
 
-    // 5. Aggregate stats in TypeScript
-    // Structure: deviceId -> parameterName -> hour (0-23) -> values[]
+    const readings = readingsResult.rows;
+
     const groupedData: Record<
       string,
       Record<string, Record<number, number[]>>
     > = {};
 
-    for (const r of readings) {
-      const devGroup = (groupedData[r.device_id] ??= {});
-      for (const [key, val] of Object.entries(r.payload)) {
-        const numVal = Number(val);
-        if (isNaN(numVal)) continue;
+    for (const reading of readings) {
+      if (!reading.payload || typeof reading.payload !== 'object') continue;
 
-        const paramGroup = (devGroup[key] ??= {});
-        const hourVals = (paramGroup[r.hour] ??= []);
-        hourVals.push(numVal);
+      const deviceGroup = (groupedData[reading.device_id] ??= {});
+
+      for (const [key, rawValue] of Object.entries(reading.payload)) {
+        if (rawValue === null || rawValue === undefined || rawValue === '') {
+          continue;
+        }
+
+        const value = Number(rawValue);
+        if (!Number.isFinite(value)) continue;
+
+        const parameterGroup = (deviceGroup[key] ??= {});
+        const hourValues = (parameterGroup[reading.hour] ??= []);
+
+        hourValues.push(value);
       }
     }
 
-    // Now calculate hourly mean, min, max
-    // Structure: deviceId -> parameterName -> hour (0-23) -> AggregatedStats
     const statsData: Record<
       string,
       Record<string, Record<number, AggregatedStats>>
     > = {};
 
-    for (const [deviceId, devData] of Object.entries(groupedData)) {
-      const devStats = (statsData[deviceId] ??= {});
-      for (const [param, paramData] of Object.entries(devData)) {
-        const paramStats = (devStats[param] ??= {});
-        for (const [hourStr, vals] of Object.entries(paramData)) {
-          const hour = Number(hourStr);
-          if (vals.length === 0) continue;
-          const sum = vals.reduce((a, b) => a + b, 0);
-          const min = Math.min(...vals);
-          const max = Math.max(...vals);
-          paramStats[hour] = {
-            mean: Number((sum / vals.length).toFixed(2)),
-            min: Number(min.toFixed(2)),
-            max: Number(max.toFixed(2)),
-            count: vals.length,
+    for (const [deviceId, deviceData] of Object.entries(groupedData)) {
+      const deviceStats = (statsData[deviceId] ??= {});
+
+      for (const [parameter, parameterData] of Object.entries(deviceData)) {
+        const parameterStats = (deviceStats[parameter] ??= {});
+
+        for (const [hourText, values] of Object.entries(parameterData)) {
+          if (values.length === 0) continue;
+
+          const hour = Number(hourText);
+          const sum = values.reduce((total, value) => total + value, 0);
+
+          parameterStats[hour] = {
+            mean: Number((sum / values.length).toFixed(2)),
+            min: Number(Math.min(...values).toFixed(2)),
+            max: Number(Math.max(...values).toFixed(2)),
+            count: values.length,
           };
         }
       }
     }
 
-    // Yesterday's date string formatted for Asia/Kolkata
-    const yesterdayDateStr = new Intl.DateTimeFormat('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }).format(new Date(Date.now() - 24 * 60 * 60 * 1000));
-
-    // 6. Build the email HTML.
-    // Theme: modern slate/dark header with blue accent bar matching Cosmo style
-    let emailHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>Daily Performance Report</title>
-</head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;">
-  <tr>
-    <td align="center" style="padding:28px 12px;">
-      <table role="presentation" width="680" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:680px;background:#ffffff;border:1px solid #e2e8f0;">
-        <!-- HEADER -->
-        <tr>
-          <td style="background:#0f172a;padding:26px 28px;border-bottom:4px solid #2563eb;">
-            <div style="font-size:11px;line-height:16px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#93c5fd;margin-bottom:8px;">
-              VIZIBBLE SYSTEMS
-            </div>
-            <div style="font-size:22px;line-height:30px;font-weight:700;color:#ffffff;">
-              Daily Performance Report
-            </div>
-            <div style="margin-top:14px;font-size:12px;line-height:18px;color:#94a3b8;">
-              ${escapeHtml(yesterdayDateStr)}
-            </div>
-          </td>
-        </tr>
-
-        <!-- CONTENT -->
-        <tr>
-          <td style="padding:24px 28px;">
-    `;
-    for (const device of devices) {
-      const devStats = statsData[device.device_id];
-      if (!devStats || Object.keys(devStats).length === 0) {
-        continue;
-      }
-      const deviceName = escapeHtml(device.name);
-
-      emailHtml += `
-        <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 16px; margin-bottom: 16px; border-bottom: 2px solid #2563eb; padding-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em;">
-          ${deviceName}
-        </div>
-      `;
-
-      for (const [paramKey, paramData] of Object.entries(devStats)) {
-        const rules = alertRules.filter(
-          (rule) =>
-            rule.device_id === device.device_id &&
-            parametersMatch(rule.parameter, paramKey)
-        );
-        const rule = rules[0] || null;
-
-        const hourlyMeans: Record<number, number> = {};
-        for (const [hour, stats] of Object.entries(paramData)) {
-          hourlyMeans[Number(hour)] = stats.mean;
-        }
-
-        const paramLabel = escapeHtml(formatParamLabel(paramKey));
-
-        // Calculate Overall daily statistics
-        const allVals = Object.values(
-          groupedData[device.device_id]?.[paramKey] || {}
-        ).flat();
-        const overallSum = allVals.reduce((a, b) => a + b, 0);
-        const overallCount = allVals.length;
-        const overallAvg =
-          overallCount > 0 ? (overallSum / overallCount).toFixed(2) : '0.00';
-        const hourlyAverages = Object.values(paramData).map(
-          (stats) => stats.mean
-        );
-        const overallMin =
-          hourlyAverages.length > 0
-            ? Math.min(...hourlyAverages).toFixed(2)
-            : '0.00';
-        const overallMax =
-          hourlyAverages.length > 0
-            ? Math.max(...hourlyAverages).toFixed(2)
-            : '0.00';
-        const unit = getUnit(paramKey);
-        const specs = getSpecifications(rules);
-
-        // Generate QuickChart URL
-        const chartUrl = generateQuickChartUrl(paramKey, hourlyMeans, rules);
-
-        emailHtml += `
-          <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px;">
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.02em;">
-              ${paramLabel}
-            </div>
-            
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px;">
-              <tr>
-                <td width="33%" style="padding: 10px 12px; border-right: 1px solid #e2e8f0;">
-                  <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Average</div>
-                  <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">${overallAvg}${unit}</div>
-                </td>
-                <td width="33%" style="padding: 10px 12px; border-right: 1px solid #e2e8f0;">
-                  <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Min - Max</div>
-                  <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">${overallMin} - ${overallMax}${unit}</div>
-                </td>
-                <td width="34%" style="padding: 10px 12px;">
-                  <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Specifications</div>
-                  <div style="font-size: 15px; font-weight: 700; color: #2563eb; margin-top: 2px;">${specs}${unit}</div>
-                </td>
-              </tr>
-            </table>
-
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid #e2e8f0; background: #ffffff; border-radius: 6px;">
-              <tr>
-                <td style="padding: 12px;">
-                  <img src="${chartUrl}" width="600" style="display: block; width: 100%; height: auto; max-width: 600px; border: 0;" alt="${paramLabel} Chart" />
-                </td>
-              </tr>
-            </table>
-          </div>
-        `;
-      }
-    }
-
-    emailHtml += `
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
-</html>`;
-
-    // 7. Save preview file locally
-    await Bun.write('test_report_preview.html', emailHtml);
-    console.log(
-      '[Daily Report] HTML preview saved to backend/test_report_preview.html'
+    const emailHtml = buildEmail(
+      devices,
+      alertRules,
+      groupedData,
+      statsData,
+      readings.length,
+      range.date
     );
 
-    const smtpUser = process.env['SMTP_USER'] || process.env['GMAIL_USER'];
+    await Bun.write('test_report_preview.html', emailHtml);
+
+    console.log(
+      '[Daily Report] Preview saved to test_report_preview.html'
+    );
+
+    const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
 
     if (
-      process.env['SEND_EMAIL'] === 'true' ||
-      process.env['NODE_ENV'] === 'production'
+      process.env.SEND_EMAIL === 'true' ||
+      process.env.NODE_ENV === 'production'
     ) {
       await transporter.sendMail({
         from: `"Vizibble Reports" <${smtpUser}>`,
         to: recipientEmails.join(', '),
-        subject: `Daily Performance Report — ${yesterdayDateStr}`,
+        subject: `Daily Performance Report - ${formatDate(range.date)}`,
         html: emailHtml,
       });
+
       console.log(
-        `[Daily Report] Daily report successfully emailed to ${recipientEmails.length} recipients.`
+        `[Daily Report] Sent to ${recipientEmails.length} recipient(s).`
       );
     } else {
       console.log(
-        '[Daily Report] Local environment detected: skipping email sending. Set SEND_EMAIL=true in .env to force send.'
+        '[Daily Report] Sending skipped. Set SEND_EMAIL=true to send.'
       );
     }
   } catch (error) {
-    console.error('[Daily Report] Error executing daily report script:', error);
-    process.exit(1);
+    console.error('[Daily Report] Failed:', error);
+    process.exitCode = 1;
   } finally {
     await pool.end();
   }
-}
-
-function generateQuickChartUrl(
-  parameterName: string,
-  hourlyMeans: { [hour: number]: number },
-  rules: AlertRule[]
-): string {
-  const labels = Array.from(
-    { length: 24 },
-    (_, h) => `${String(h).padStart(2, '0')}:00`
-  );
-
-  const data = Array.from({ length: 24 }, (_, h) => {
-    const val = hourlyMeans[h];
-    return val !== undefined ? val : null;
-  });
-
-  const datasets: any[] = [
-    {
-      label: formatParamLabel(parameterName),
-      data: data,
-      borderColor: '#1e40af',
-      backgroundColor: 'rgba(30, 64, 175, 0.12)',
-      fill: true,
-      borderWidth: 2,
-      pointRadius: 2.5,
-      pointBackgroundColor: '#1e40af',
-      pointBorderColor: '#ffffff',
-      spanGaps: true,
-    },
-  ];
-
-  for (const rule of rules) {
-    const conditionText = rule.condition
-      ? ` (${rule.condition.toUpperCase()})`
-      : '';
-    datasets.push({
-      label: `Limit: ${rule.threshold}${conditionText}`,
-      data: Array(24).fill(rule.threshold),
-      borderColor: '#dc2626',
-      borderWidth: 1.5,
-      borderDash: [4, 4],
-      fill: false,
-      pointRadius: 0,
-      pointHitRadius: 0,
-    });
-  }
-
-  const chartConfig = {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: datasets,
-    },
-    options: {
-      legend: {
-        display: rules.length > 0,
-        position: 'top',
-        labels: {
-          fontSize: 10,
-          boxWidth: 20,
-        },
-      },
-      scales: {
-        xAxes: [
-          {
-            gridLines: {
-              color: '#e8edf3',
-            },
-            ticks: {
-              fontSize: 9,
-              fontColor: '#94a3b8',
-              maxTicksLimit: 6,
-            },
-          },
-        ],
-        yAxes: [
-          {
-            gridLines: {
-              color: '#e8edf3',
-            },
-            ticks: {
-              fontSize: 9,
-              fontColor: '#94a3b8',
-            },
-          },
-        ],
-      },
-    },
-  };
-
-  const encodedConfig = encodeURIComponent(JSON.stringify(chartConfig));
-  return `https://quickchart.io/chart?w=600&h=180&c=${encodedConfig}`;
 }
 
 main();

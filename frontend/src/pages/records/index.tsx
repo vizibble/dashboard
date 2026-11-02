@@ -16,6 +16,12 @@ import { Chart } from '@/pages/home/components/chart';
 import { LoomCumulativeBarChart } from '@/pages/home/components/loom-cumulative-bar-chart';
 import { LoomStats } from '@/pages/home/components/loom-stats';
 import { MachineStatusChart } from '@/pages/home/components/machine-status-chart';
+import { NodeStats } from '@/pages/home/components/node-stats';
+import { NodeStatusChart } from '@/pages/home/components/node-status-chart';
+import { NodeCumulativeBarChart } from '@/pages/home/components/node-cumulative-bar-chart';
+import { ThreadBreakChart } from '@/pages/home/components/thread-break-chart';
+import { NodeAnalogCharts } from '@/pages/home/components/node-analog-charts';
+import { useNodeTimeSeries } from '@/pages/home/hooks/use-node-time-series';
 import { useLoomTimeSeries, type SensorHistoryData } from '@/pages/home/hooks/use-loom-time-series';
 import {
   DEFAULT_HUMIDITY_THRESHOLDS,
@@ -79,12 +85,13 @@ export const RecordsPage = () => {
   const isDiffPressure = selectedDeviceType === 'diff_pressure';
   const isLengthCount = selectedDeviceType === 'production_count';
   const isCount = selectedDeviceType === 'count';
+  const isNode = selectedDeviceType?.toLowerCase() === 'node';
   const isLoomStyle = isLengthCount || isCount;
 
   const { dates: availableDates, isLoading: loadingDates } =
     useAvailableDates(selectedDeviceId);
 
-  const resolution = isLoomStyle ? 'minute' : 'hour';
+  const resolution = isLoomStyle || isNode ? 'minute' : 'hour';
   const nextDate = date ? new Date(date) : undefined;
   if (nextDate) nextDate.setDate(nextDate.getDate() + 1);
 
@@ -109,7 +116,7 @@ export const RecordsPage = () => {
   const historyRaw = [...history1, ...history2];
   
   const shiftStartHour = 8;
-  const shiftStartMinute = isCount ? 30 : 0;
+  const shiftStartMinute = isCount && !isNode ? 30 : 0;
   
   const startTimeObj = date ? new Date(date) : new Date();
   startTimeObj.setHours(shiftStartHour, shiftStartMinute, 0, 0);
@@ -162,6 +169,11 @@ export const RecordsPage = () => {
     loomHistory,
     date || new Date(),
     isCount
+  );
+
+  const nodeMetrics = useNodeTimeSeries(
+    loomHistory,
+    date || new Date()
   );
 
   const temperatureOptions = getTemperatureOptions({
@@ -329,6 +341,38 @@ export const RecordsPage = () => {
                   hideStats
                 />
               </>
+            )}
+            {isNode && (
+              <div className="space-y-5 md:space-y-6">
+                <NodeStats
+                  isHistory={true}
+                  summary={nodeMetrics.summary}
+                  unit="kg"
+                />
+                <NodeStatusChart
+                  key={`nodestat-${date.toISOString()}`}
+                  statusData={nodeMetrics.statusData}
+                  summary={nodeMetrics.summary}
+                  targetDate={date}
+                />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                  <NodeCumulativeBarChart
+                    key={`nodecum-${date.toISOString()}`}
+                    times={nodeMetrics.times}
+                    values={nodeMetrics.cumulativeValues}
+                    targetDate={date}
+                    unit="kg"
+                  />
+                  <ThreadBreakChart
+                    key={`nodetb-${date.toISOString()}`}
+                    hourlyData={nodeMetrics.threadBreak.hourly}
+                    totalSeconds={nodeMetrics.threadBreak.totalSeconds}
+                    values={nodeMetrics.threadBreak.values}
+                    targetDate={date}
+                  />
+                </div>
+                <NodeAnalogCharts sensors={nodeMetrics.analogSensors} />
+              </div>
             )}
           </div>
         )}
