@@ -43,10 +43,7 @@ const BRAND = {
   border: '#DCE5EC',
   text: '#172B3A',
   muted: '#647789',
-  green: '#16845B',
-  greenLight: '#EAF6F0',
   red: '#C43D4B',
-  redLight: '#FCEEEF',
 };
 
 const PARAM_UNITS: Record<string, string> = {
@@ -105,18 +102,6 @@ function parametersMatch(param1: string, param2: string): boolean {
   }
 
   return false;
-}
-
-function isOutOfRange(value: number, rules: AlertRule[]): boolean {
-  return rules.some((rule) => {
-    switch (rule.condition) {
-      case 'lt': return value < rule.threshold;
-      case 'lte': return value <= rule.threshold;
-      case 'gt': return value > rule.threshold;
-      case 'gte': return value >= rule.threshold;
-      default: return false;
-    }
-  });
 }
 
 function getSpecifications(rules: AlertRule[]): string {
@@ -310,8 +295,7 @@ function buildMetric(
   label: string,
   value: string,
   unit: string,
-  background: string,
-  valueColor = BRAND.text
+  background: string
 ): string {
   return `
     <td class="metric-cell" width="33.33%" valign="top"
@@ -319,7 +303,7 @@ function buildMetric(
       <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:${BRAND.muted};">
         ${escapeHtml(label)}
       </div>
-      <div style="padding-top:6px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:26px;font-weight:700;color:${valueColor};word-break:break-word;">
+      <div style="padding-top:6px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:26px;font-weight:700;color:${BRAND.text};word-break:break-word;">
         ${escapeHtml(value)}<span style="font-size:11px;line-height:16px;font-weight:600;color:${BRAND.muted};">${escapeHtml(unit)}</span>
       </div>
     </td>`;
@@ -339,31 +323,7 @@ function buildEmail(
     )
   );
 
-  let parameterCount = 0;
-  let breachedCount = 0;
-
-  for (const device of reportingDevices) {
-    for (const [paramKey] of Object.entries(statsData[device.device_id]!)) {
-      parameterCount++;
-
-      const rules = alertRules.filter((rule) =>
-        rule.device_id === device.device_id &&
-        parametersMatch(rule.parameter, paramKey)
-      );
-
-      const values = Object.values(
-        groupedData[device.device_id]?.[paramKey] ?? {}
-      ).flat();
-
-      if (values.some((value) => isOutOfRange(value, rules))) {
-        breachedCount++;
-      }
-    }
-  }
-
-  const normalCount = parameterCount - breachedCount;
-  const dateLabel = formatDate(reportDate);
-  const periodLabel = `${dateLabel} · 00:00–23:59 IST`;
+  const periodLabel = `${formatDate(reportDate)} · 00:00–23:59 IST`;
 
   let content = '';
 
@@ -415,15 +375,6 @@ function buildEmail(
         const minimum = Math.min(...allValues);
         const maximum = Math.max(...allValues);
 
-        const breachCount = allValues.filter(
-          (value) => isOutOfRange(value, rules)
-        ).length;
-
-        const flagged = breachCount > 0;
-        const statusColor = flagged ? BRAND.red : BRAND.green;
-        const statusBg = flagged ? BRAND.redLight : BRAND.greenLight;
-        const statusLabel = flagged ? 'LIMIT BREACH' : 'WITHIN LIMITS';
-
         const unit = getUnit(paramKey);
         const label = escapeHtml(formatParamLabel(paramKey));
         const spec = getSpecifications(rules);
@@ -441,31 +392,16 @@ function buildEmail(
           unit
         );
 
-        const exceptionText = flagged
-          ? `<div style="margin-top:12px;padding:11px 13px;background:${BRAND.redLight};border-left:3px solid ${BRAND.red};font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#842D37;">
-               <strong>${breachCount.toLocaleString('en-IN')} of ${allValues.length.toLocaleString('en-IN')} samples</strong> crossed the configured limit during this reporting period.
-             </div>`
-          : '';
-
         content += `
           <tr>
             <td style="padding:8px 26px 16px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                style="width:100%;border:1px solid ${BRAND.border};border-top:3px solid ${statusColor};background:${BRAND.surface};">
+                style="width:100%;border:1px solid ${BRAND.border};background:${BRAND.surface};">
                 <tr>
                   <td style="padding:15px 16px 13px;">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td valign="middle" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:20px;font-weight:700;letter-spacing:.2px;color:${BRAND.text};">
-                          ${label}
-                        </td>
-                        <td align="right" valign="middle" style="padding-left:8px;">
-                          <span style="display:inline-block;padding:5px 8px;background:${statusBg};font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:12px;font-weight:700;letter-spacing:.5px;color:${statusColor};">
-                            ${statusLabel}
-                          </span>
-                        </td>
-                      </tr>
-                    </table>
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:20px;font-weight:700;letter-spacing:.2px;color:${BRAND.text};">
+                      ${label}
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -474,23 +410,19 @@ function buildEmail(
                       <tr>
                         ${buildMetric('Average', formatNumber(average), unit, BRAND.blueLight)}
                         ${buildMetric('Minimum – Maximum', `${formatNumber(minimum)} – ${formatNumber(maximum)}`, unit, '#F5F8FA')}
-                        ${buildMetric('Configured limits', spec, '', flagged ? BRAND.redLight : '#F5F8FA', flagged ? BRAND.red : BRAND.text)}
+                        ${buildMetric('Configured limits', spec, '', '#F5F8FA')}
                       </tr>
                     </table>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:8px 12px 4px;">
-                    <img src="${chartUrl}" width="640" height="250" alt="${label} hourly average chart. Blue line shows readings; red dashed lines show configured limits."
+                  <td style="padding:8px 12px 15px;">
+                    <img src="${chartUrl}" width="640" height="250"
+                      alt="${label} hourly average chart."
                       style="display:block;width:100%;max-width:640px;height:auto;border:0;outline:none;text-decoration:none;" />
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:0 16px 15px;">
-                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:#8495A4;">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:${BRAND.muted};">
                       Hourly averages · Local time (IST)
                     </div>
-                    ${exceptionText}
                   </td>
                 </tr>
               </table>
@@ -513,12 +445,9 @@ function buildEmail(
     img { border:0; outline:none; text-decoration:none; }
     @media only screen and (max-width:600px) {
       .outer-pad { padding:12px 8px !important; }
-      .main-pad { padding-left:16px !important; padding-right:16px !important; }
       .header-pad { padding:22px 18px !important; }
       .metric-cell { display:block !important; width:auto !important; }
       .metric-cell + .metric-cell { border-top:0 !important; }
-      .summary-cell { display:block !important; width:auto !important; border-right:0 !important; border-bottom:1px solid ${BRAND.border} !important; }
-      .summary-cell:last-child { border-bottom:0 !important; }
     }
   </style>
 </head>
@@ -537,37 +466,6 @@ function buildEmail(
               </div>
               <div style="padding-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#C5D2DE;">
                 ${escapeHtml(periodLabel)}
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="main-pad" style="padding:20px 26px 0;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border:1px solid ${BRAND.border};background:#F8FAFC;">
-                <tr>
-                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;border-right:1px solid ${BRAND.border};">
-                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">REPORTING DEVICES</div>
-                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${BRAND.text};">${reportingDevices.length}</div>
-                  </td>
-                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;border-right:1px solid ${BRAND.border};">
-                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">PARAMETERS</div>
-                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${BRAND.text};">${parameterCount}</div>
-                  </td>
-                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;border-right:1px solid ${BRAND.border};">
-                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">WITHIN LIMITS</div>
-                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${BRAND.green};">${normalCount}</div>
-                  </td>
-                  <td class="summary-cell" width="25%" style="width:25%;padding:13px 10px;">
-                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:14px;color:${BRAND.muted};">LIMIT BREACHES</div>
-                    <div style="padding-top:4px;font-family:Arial,Helvetica,sans-serif;font-size:22px;line-height:27px;font-weight:700;color:${breachedCount ? BRAND.red : BRAND.green};">${breachedCount}</div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td class="main-pad" style="padding:14px 26px 8px;">
-              <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND.blue};">
-                Device performance
               </div>
             </td>
           </tr>
