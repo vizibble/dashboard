@@ -1,0 +1,38 @@
+# Vera runs as its own stack, independent of the main Vizibble deployment.
+#   docker compose -f Vera/docker-compose.yml --env-file Vera/.env up -d --build
+# Postgres and Redis are hosted services (set VERA_DATABASE_URL and REDIS_URL).
+name: vera
+
+x-vera: &vera
+  build:
+    context: ..
+    dockerfile: Vera/Dockerfile
+  image: vizibble-vera
+  env_file: .env
+  restart: unless-stopped
+
+services:
+  # Applies Vera's own migrations, then exits.
+  migrate:
+    <<: *vera
+    command: ["bun", "src/db/migrate.ts"]
+    restart: "no"
+
+  # MCP endpoint, WhatsApp webhook and health checks. Scale with --scale api=N.
+  api:
+    <<: *vera
+    ports:
+      - "4100:4100"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Processes queued WhatsApp messages. Scale independently with --scale worker=N.
+  worker:
+    <<: *vera
+    command: ["bun", "src/worker.ts"]
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully

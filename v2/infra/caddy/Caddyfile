@@ -1,0 +1,36 @@
+# DOMAIN=localhost serves a local self-signed cert; a real domain gets Let's Encrypt automatically
+{$DOMAIN:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# API and Better Auth (plus OAuth discovery for AI clients, served by the API)
+	@api path /api/* /.well-known/oauth-authorization-server* /.well-known/openid-configuration*
+	handle @api {
+		reverse_proxy api:3000 {
+			# Overwrite rather than append, so clients can't spoof their IP for rate limiting
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# Single-page app
+	handle {
+		root * /srv
+
+		@hashed path_regexp \.(js|css|png|jpg|svg|woff2?)$
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+		@html path / /index.html
+		header @html Cache-Control "no-cache"
+
+		try_files {path} /index.html
+		file_server
+	}
+}

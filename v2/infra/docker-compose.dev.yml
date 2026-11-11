@@ -1,0 +1,27 @@
+# Local development: only Postgres and Redis, run the apps with `bun run dev`
+# docker compose -f infra/docker-compose.dev.yml up -d
+name: vizibble-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vizibble
+      POSTGRES_PASSWORD: vizibble
+      POSTGRES_DB: vizibble
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:

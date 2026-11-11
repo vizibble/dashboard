@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "accessibility-inclusive-design": {
+      "source": "hueyexe/frontend-agent-skills",
+      "sourceType": "github",
+      "skillPath": "accessibility-inclusive-design/SKILL.md",
+      "computedHash": "ee329ce3702d2d26d358d4b9c483134ccee410b5232764e8d50752e5d4ac9dd8"
+    },
+    "apple-design": {
+      "source": "emilkowalski/skills",
+      "sourceType": "github",
+      "skillPath": "skills/apple-design/SKILL.md",
+      "computedHash": "0190417d092a0df447b000154e39733ea6d97efad6d3bec8a6ce3845aeb88914"
+    },
+    "frontend-design": {
+      "source": "PracticalSwan/agent-skills",
+      "sourceType": "github",
+      "skillPath": "frontend-design/SKILL.md",
+      "computedHash": "a07c2f5a5625c7061ae5ce0687e80aceb577a359c70e57c80f9d4eafce499623"
+    },
+    "ux-usability-foundations": {
+      "source": "hueyexe/frontend-agent-skills",
+      "sourceType": "github",
+      "skillPath": "ux-usability-foundations/SKILL.md",
+      "computedHash": "9b347d19d1f619a60c24b4dfe0e387910771e401b29f5ee644dbeba1cffd7dec"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "vizibble",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "server",
+      "client",
+      "shared",
+      "Vera"
+    ],
+    "catalog": {
+      "better-auth": "^1.7.20",
+      "zod": "^4.6.7",
+      "prettier": "^3.9.10",
+      "@types/bun": "^1.4.3"
+    }
+  },
+  "overrides": {
+    "jose": "^6.2.17"
+  }
+}

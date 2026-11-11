@@ -1,0 +1,1 @@
+ALTER TABLE "device_templates" ALTER COLUMN "is_global" SET DEFAULT false;

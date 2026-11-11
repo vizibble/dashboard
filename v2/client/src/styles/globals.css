@@ -1,0 +1,296 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/*
+ * Vizibble Systems theme
+ * Brand: #3FAFD5
+ * Neutral surfaces with slate text.
+ * Semantic status colours remain independent of the brand.
+ */
+
+:root {
+  --radius: 0.625rem;
+
+  /* Base surfaces and text */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.2 0.012 252);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.012 252);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.012 252);
+
+  /* Primary brand buttons */
+  --primary: #3fafd5;
+  --primary-foreground: #ffffff;
+
+  /* Secondary */
+  --secondary: oklch(0.96 0.004 252);
+  --secondary-foreground: oklch(0.27 0.012 252);
+
+  /* Muted content */
+  --muted: oklch(0.96 0.004 252);
+  --muted-foreground: oklch(0.5 0.01 252);
+
+  /* Light cyan selection and hover */
+  --accent: #e6f5fa;
+  --accent-foreground: #176580;
+
+  /* Errors and destructive actions */
+  --destructive: oklch(0.55 0.21 25);
+
+  /* Borders, inputs and focus */
+  --border: oklch(0.91 0.007 252);
+  --input: oklch(0.91 0.007 252);
+  --ring: #3fafd5;
+
+  /* Charts */
+  --chart-1: oklch(0.55 0.14 190);
+  --chart-2: oklch(0.62 0.14 290);
+  --chart-3: oklch(0.7 0.15 80);
+  --chart-4: oklch(0.62 0.18 35);
+  --chart-5: oklch(0.55 0.13 340);
+
+  /* Sidebar */
+  --sidebar: oklch(0.99 0 0);
+  --sidebar-foreground: oklch(0.23 0.012 252);
+  --sidebar-primary: #3fafd5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6f5fa;
+  --sidebar-accent-foreground: #176580;
+  --sidebar-border: oklch(0.91 0.007 252);
+  --sidebar-ring: #3fafd5;
+
+  /* Healthy */
+  --status-healthy: oklch(0.54 0.16 145);
+  --status-healthy-bg: oklch(0.96 0.05 145);
+  --status-healthy-fg: oklch(0.36 0.13 145);
+
+  /* Warning */
+  --status-warning: oklch(0.72 0.17 75);
+  --status-warning-bg: oklch(0.97 0.06 80);
+  --status-warning-fg: oklch(0.44 0.13 70);
+
+  /* Critical */
+  --status-critical: oklch(0.55 0.21 25);
+  --status-critical-bg: oklch(0.97 0.05 25);
+  --status-critical-fg: oklch(0.38 0.16 25);
+
+  /* Neutral */
+  --status-neutral: oklch(0.54 0.008 252);
+  --status-neutral-bg: oklch(0.96 0.004 252);
+  --status-neutral-fg: oklch(0.32 0.012 252);
+}
+
+.dark {
+  /* Base surfaces and text */
+  --background: oklch(0.14 0.008 252);
+  --foreground: oklch(0.94 0.006 252);
+
+  --card: oklch(0.18 0.01 252);
+  --card-foreground: oklch(0.94 0.006 252);
+
+  --popover: oklch(0.18 0.01 252);
+  --popover-foreground: oklch(0.94 0.006 252);
+
+  /* Primary brand on dark surfaces */
+  --primary: #3fafd5;
+  --primary-foreground: #082f3b;
+
+  /* Secondary */
+  --secondary: oklch(0.24 0.01 252);
+  --secondary-foreground: oklch(0.92 0.006 252);
+
+  /* Muted content */
+  --muted: oklch(0.22 0.01 252);
+  --muted-foreground: oklch(0.66 0.01 252);
+
+  /* Dark cyan selection and hover */
+  --accent: #173744;
+  --accent-foreground: #8adbf2;
+
+  /* Errors and destructive actions */
+  --destructive: oklch(0.65 0.2 25);
+
+  /* Borders, inputs and focus */
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: #3fafd5;
+
+  /* Charts */
+  --chart-1: oklch(0.68 0.14 190);
+  --chart-2: oklch(0.7 0.14 290);
+  --chart-3: oklch(0.76 0.15 80);
+  --chart-4: oklch(0.7 0.18 35);
+  --chart-5: oklch(0.68 0.13 340);
+
+  /* Sidebar */
+  --sidebar: oklch(0.16 0.01 252);
+  --sidebar-foreground: oklch(0.92 0.006 252);
+  --sidebar-primary: #3fafd5;
+  --sidebar-primary-foreground: #082f3b;
+  --sidebar-accent: #173744;
+  --sidebar-accent-foreground: #8adbf2;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #3fafd5;
+
+  /* Healthy */
+  --status-healthy: oklch(0.68 0.15 145);
+  --status-healthy-bg: oklch(0.24 0.06 145);
+  --status-healthy-fg: oklch(0.84 0.1 145);
+
+  /* Warning */
+  --status-warning: oklch(0.78 0.16 75);
+  --status-warning-bg: oklch(0.25 0.06 75);
+  --status-warning-fg: oklch(0.9 0.1 75);
+
+  /* Critical */
+  --status-critical: oklch(0.65 0.2 25);
+  --status-critical-bg: oklch(0.24 0.06 25);
+  --status-critical-fg: oklch(0.88 0.1 25);
+
+  /* Neutral */
+  --status-neutral: oklch(0.6 0.008 252);
+  --status-neutral-bg: oklch(0.22 0.01 252);
+  --status-neutral-fg: oklch(0.82 0.008 252);
+}
+
+/*
+ * Motion language. Mirrored for JS in app/shared/utils/motion.ts — keep the two in sync.
+ * enter: strong ease-out, things arrive quickly and settle.  exit: ease-in, leaves faster than it came.
+ * move: ease-in-out for elements travelling between two on-screen positions.
+ */
+@theme {
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+:root {
+  --motion-press: 100ms;
+  --motion-fast: 150ms;
+  --motion-normal: 200ms;
+  --motion-slow: 260ms;
+  --motion-exit: 120ms;
+  /* Spatial distances; zeroed under reduced motion so every animation becomes a plain fade. */
+  --motion-shift: 4px;
+  --motion-rise: 8px;
+  --motion-scale: 0.97;
+  --motion-press-scale: 0.97;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-shift: 0px;
+    --motion-rise: 0px;
+    --motion-scale: 1;
+    --motion-press-scale: 1;
+  }
+}
+
+/* Interactive surfaces: colour, border, ring and press feedback. Never `transition: all`. */
+@utility transition-interactive {
+  transition-property: color, background-color, border-color, outline-color, box-shadow, opacity, scale;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--ease-enter);
+}
+
+/* Applied by press-capable controls; snaps down on press, eases back on release. */
+@utility press {
+  &:active:not(:disabled, [aria-disabled='true']) {
+    scale: var(--motion-press-scale);
+    transition-duration: var(--motion-press);
+  }
+}
+
+/*
+ * CSS fallback for Radix surfaces Motion can't own: Select has no forceMount, and Tooltip
+ * opens on hover often enough that presence bookkeeping isn't worth it. Direction comes from data-side.
+ * Dialogs, dropdowns, toasts and the mobile menu animate with Motion (see utils/motion.ts).
+ */
+@utility motion-popover {
+  --popover-x: 0px;
+  --popover-y: 0px;
+  &[data-side='bottom'] {
+    --popover-y: calc(var(--motion-shift) * -1);
+  }
+  &[data-side='top'] {
+    --popover-y: var(--motion-shift);
+  }
+  &[data-side='left'] {
+    --popover-x: var(--motion-shift);
+  }
+  &[data-side='right'] {
+    --popover-x: calc(var(--motion-shift) * -1);
+  }
+  animation: popover-in var(--motion-fast) var(--ease-enter);
+  &[data-state='closed'] {
+    animation: popover-out var(--motion-exit) var(--ease-exit) forwards;
+  }
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--popover-x), var(--popover-y)) scale(var(--motion-scale));
+  }
+}
+@keyframes popover-out {
+  to {
+    opacity: 0;
+    transform: scale(var(--motion-scale));
+  }
+}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground selection:bg-primary selection:text-primary-foreground antialiased;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+}
