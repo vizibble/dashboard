@@ -57,7 +57,9 @@ export function PageHeader({ title, description, status, back, actions, menu, cl
       )}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 items-center gap-2.5">
-          <h1 className="text-foreground truncate text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
+          <h1 className="text-foreground truncate text-lg font-semibold tracking-tight sm:text-xl">
+            {title}
+          </h1>
           {status}
         </div>
         {(actions || (menu && menu.length > 0)) && (
@@ -108,7 +110,13 @@ const INDICATOR_TONES = {
 } as const;
 
 /** ERPNext-style status pill: coloured dot + label. */
-export function Indicator({ tone = 'gray', children }: { tone?: keyof typeof INDICATOR_TONES; children: ReactNode }) {
+export function Indicator({
+  tone = 'gray',
+  children,
+}: {
+  tone?: keyof typeof INDICATOR_TONES;
+  children: ReactNode;
+}) {
   return (
     <span
       className={cn(

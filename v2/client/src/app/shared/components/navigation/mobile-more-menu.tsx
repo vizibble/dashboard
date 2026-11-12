@@ -19,15 +19,20 @@ function matchesRoute(pathname: string, path: string) {
 
 export function MobileMoreMenu({ theme, onToggleTheme }: MobileMoreMenuProps) {
   const [open, setOpen] = useState(false);
+
   const moreItems = useVisibleNavItems(MOBILE_MORE_ITEMS);
+
   const menuRef = useRef<HTMLDivElement>(null);
+
   const triggerRef = useRef<HTMLButtonElement>(null);
+
   const location = useLocation();
 
   const isMoreRouteActive = moreItems.some((item) => matchesRoute(location.pathname, item.path));
 
   // Close the menu whenever the route changes (adjusting state during render, not in an effect).
   const [lastPathname, setLastPathname] = useState(location.pathname);
+
   if (lastPathname !== location.pathname) {
     setLastPathname(location.pathname);
     setOpen(false);
@@ -37,19 +42,23 @@ export function MobileMoreMenu({ theme, onToggleTheme }: MobileMoreMenuProps) {
     if (!open) {
       return;
     }
+
     function handlePointerDown(event: PointerEvent) {
       if (event.target instanceof Node && !menuRef.current?.contains(event.target)) {
         setOpen(false);
       }
     }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setOpen(false);
         triggerRef.current?.focus();
       }
     }
+
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
@@ -57,6 +66,7 @@ export function MobileMoreMenu({ theme, onToggleTheme }: MobileMoreMenuProps) {
   }, [open]);
 
   const isDark = theme === 'dark';
+
   const ThemeIcon = isDark ? SunIcon : MoonIcon;
 
   return (
@@ -72,7 +82,9 @@ export function MobileMoreMenu({ theme, onToggleTheme }: MobileMoreMenuProps) {
           'flex w-full flex-col items-center justify-center gap-1',
           'transition-interactive press rounded-lg px-1 py-1.5 text-[10px] [-webkit-tap-highlight-color:transparent]',
           'focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none',
-          open || isMoreRouteActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground',
+          open || isMoreRouteActive
+            ? 'text-primary font-medium'
+            : 'text-muted-foreground hover:text-foreground',
         ].join(' ')}
       >
         <DotsThreeIcon size={21} aria-hidden="true" />

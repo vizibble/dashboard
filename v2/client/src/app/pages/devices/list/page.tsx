@@ -5,8 +5,8 @@ import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { DevicesTable } from '@/app/pages/devices/list/components/devices-table';
 import { DeviceDialogs } from '@/app/pages/devices/shared/components/device-dialogs';
 import { useDeviceActions } from '@/app/pages/devices/shared/hooks/use-device-actions';
-import { useFetchDevices } from '@/app/pages/devices/shared/hooks/use-devices-api';
-import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-locations-api';
+import { useFetchDevices } from '@/app/pages/devices/shared/hooks/use-device-queries';
+import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-location-queries';
 import { ListMessage, ListNoMatch, ListView } from '@/app/shared/components/layout/list-view';
 import { PageContainer } from '@/app/shared/components/layout/page-container';
 import { PageHeader } from '@/app/shared/components/layout/page-header';
@@ -17,16 +17,27 @@ import { Button } from '@/app/shared/components/ui/button';
 
 export function DevicesListPage() {
   const { organisation } = useOrganisationContext();
+
   const { openCreate, can } = useDeviceActions();
-  const { devices, isLoading, isFetching, isError, refetch } = useFetchDevices(organisation.id);
-  const { locations } = useFetchLocations(organisation.id);
+
+  const { data: devices = [], isLoading, isFetching, isError, refetch } = useFetchDevices(organisation.id);
+
+  const { data: locations = [] } = useFetchLocations(organisation.id);
+
   const [search, setSearch] = useState('');
 
-  const locationsById = useMemo(() => new Map(locations.map((location) => [location.id, location])), [locations]);
+  const locationsById = useMemo(
+    () => new Map(locations.map((location) => [location.id, location])),
+    [locations],
+  );
 
   const visibleDevices = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return devices;
+
+    if (!query) {
+      return devices;
+    }
+
     return devices.filter(
       (device) =>
         device.name.toLowerCase().includes(query) ||
@@ -47,37 +58,51 @@ export function DevicesListPage() {
     },
   ];
 
-  const content = isLoading ? (
-    <TableSkeleton columns={deviceSkeletonColumns} rowCount={6} />
-  ) : isError ? (
-    <ListMessage>
-      <ErrorState
-        title="Could not load devices"
-        message="We couldn't retrieve your devices. Please check your connection and try again."
-        onRetry={() => void refetch()}
-        isRetrying={isFetching}
-      />
-    </ListMessage>
-  ) : devices.length === 0 ? (
-    <ListMessage>
-      <EmptyState
-        icon={CpuIcon}
-        title="No devices registered"
-        description="Register your first device to start collecting telemetry."
-        action={
-          can.create ? (
-            <Button onClick={openCreate}>
-              <PlusIcon /> Add device
-            </Button>
-          ) : undefined
-        }
-      />
-    </ListMessage>
-  ) : visibleDevices.length === 0 ? (
-    <ListNoMatch query={search} onClear={() => setSearch('')} />
-  ) : (
-    <DevicesTable devices={visibleDevices} locationsById={locationsById} />
-  );
+  const content = getContent();
+
+  function getContent() {
+    if (isLoading) {
+      return <TableSkeleton columns={deviceSkeletonColumns} rowCount={6} />;
+    }
+
+    if (isError) {
+      return (
+        <ListMessage>
+          <ErrorState
+            title="Could not load devices"
+            message="We couldn't retrieve your devices. Please check your connection and try again."
+            onRetry={() => void refetch()}
+            isRetrying={isFetching}
+          />
+        </ListMessage>
+      );
+    }
+
+    if (devices.length === 0) {
+      return (
+        <ListMessage>
+          <EmptyState
+            icon={CpuIcon}
+            title="No devices registered"
+            description="Register your first device to start collecting telemetry."
+            action={
+              can.create ? (
+                <Button onClick={openCreate}>
+                  <PlusIcon /> Add device
+                </Button>
+              ) : undefined
+            }
+          />
+        </ListMessage>
+      );
+    }
+
+    if (visibleDevices.length === 0) {
+      return <ListNoMatch query={search} onClear={() => setSearch('')} />;
+    }
+
+    return <DevicesTable devices={visibleDevices} locationsById={locationsById} />;
+  }
 
   return (
     <PageContainer>

@@ -2,13 +2,20 @@ import { timeRanges } from '@vizibble/shared/dashboards';
 import { useMemo } from 'react';
 
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
-import { DateTimeField } from '@/app/pages/dashboards/shared/components/widget-editor-dialog';
+import { DateTimeField } from '@/app/pages/dashboards/shared/components/date-time-field';
+import { isOneOf } from '@/app/pages/dashboards/shared/lib/is-one-of';
 import { TIME_RANGE_LABELS } from '@/app/pages/dashboards/shared/lib/labels';
+import { dashboardFilterOptions } from '@/app/pages/dashboards/shared/lib/location-scope';
 import type { DashboardDetail, DashboardFilters as Filters } from '@/app/pages/dashboards/shared/types';
-import { useFetchDevices } from '@/app/pages/devices/shared/hooks/use-devices-api';
-import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-locations-api';
-import { getLocationPath } from '@/app/pages/locations/shared/lib/get-location-path';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/shared/components/ui/select';
+import { useFetchDevices } from '@/app/pages/devices/shared/hooks/use-device-queries';
+import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-location-queries';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/app/shared/components/ui/select';
 
 const ALL = 'all';
 
@@ -22,37 +29,16 @@ type DashboardFiltersProps = {
 /** Dashboard-wide filters. Every widget that doesn't override them follows these. */
 export function DashboardFilters({ dashboard, filters, onChange, timezone }: DashboardFiltersProps) {
   const { organisation } = useOrganisationContext();
-  const { locations } = useFetchLocations(organisation.id);
-  const { devices } = useFetchDevices(organisation.id);
+
+  const { data: locations = [] } = useFetchLocations(organisation.id);
+
+  const { data: devices = [] } = useFetchDevices(organisation.id);
 
   // Locations within the dashboard's location (or all for an organisation dashboard).
-  const { locationOptions, deviceOptions } = useMemo(() => {
-    const byId = new Map(locations.map((location) => [location.id, location]));
-    const inScope = new Set<string>();
-    for (const location of locations) {
-      const path = getLocationPath(location, byId);
-      if (!dashboard.location_id || path.some((item) => item.id === dashboard.location_id)) inScope.add(location.id);
-    }
-    const filterLocation = filters.locationId;
-    const underFilter = (locationId: string) => {
-      const location = byId.get(locationId);
-      return (
-        !filterLocation || (location && getLocationPath(location, byId).some((item) => item.id === filterLocation))
-      );
-    };
-    return {
-      locationOptions: locations
-        .filter((location) => inScope.has(location.id) && location.id !== dashboard.location_id)
-        .map((location) => ({
-          id: location.id,
-          label: getLocationPath(location, byId)
-            .map((item) => item.name)
-            .join(' / '),
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-      deviceOptions: devices.filter((device) => inScope.has(device.location_id) && underFilter(device.location_id)),
-    };
-  }, [dashboard.location_id, devices, filters.locationId, locations]);
+  const { locationOptions, deviceOptions } = useMemo(
+    () => dashboardFilterOptions(locations, devices, dashboard.location_id, filters.locationId),
+    [dashboard.location_id, devices, filters.locationId, locations],
+  );
 
   const showScopeFilters = dashboard.scope !== 'device';
 
@@ -60,7 +46,7 @@ export function DashboardFilters({ dashboard, filters, onChange, timezone }: Das
     <div className="flex flex-wrap items-end gap-2">
       <Select
         value={filters.timeRange}
-        onValueChange={(value) => onChange({ ...filters, timeRange: value as Filters['timeRange'] })}
+        onValueChange={(value) => isOneOf(timeRanges, value) && onChange({ ...filters, timeRange: value })}
       >
         <SelectTrigger size="sm" className="w-40" aria-label="Time range">
           <SelectValue />
@@ -94,7 +80,9 @@ export function DashboardFilters({ dashboard, filters, onChange, timezone }: Das
       {showScopeFilters && locationOptions.length > 0 && (
         <Select
           value={filters.locationId ?? ALL}
-          onValueChange={(value) => onChange({ ...filters, locationId: value === ALL ? null : value, deviceId: null })}
+          onValueChange={(value) =>
+            onChange({ ...filters, locationId: value === ALL ? null : value, deviceId: null })
+          }
         >
           <SelectTrigger size="sm" className="w-48" aria-label="Location">
             <SelectValue />

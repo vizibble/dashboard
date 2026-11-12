@@ -33,7 +33,12 @@ question({
   question: 'What is the primary task this interface must help users complete?',
   recommended_default:
     'Optimize for the most common successful task first, then make secondary actions available but visually quieter.',
-  options: ['Complete one focused task', 'Compare or monitor multiple items', 'Explore choices', 'Other / custom'],
+  options: [
+    'Complete one focused task',
+    'Compare or monitor multiple items',
+    'Explore choices',
+    'Other / custom',
+  ],
 });
 ```
 
@@ -74,7 +79,12 @@ question({
   question: 'Should clarity or brand personality win if users may not understand the label immediately?',
   recommended_default:
     'Use the clearest user-language label first and express brand personality in supporting copy or tone.',
-  options: ['Prioritize clarity', 'Balance clarity and brand', 'Use required brand/domain wording', 'Other / custom'],
+  options: [
+    'Prioritize clarity',
+    'Balance clarity and brand',
+    'Use required brand/domain wording',
+    'Other / custom',
+  ],
 });
 ```
 
@@ -116,7 +126,12 @@ question({
     'Can this important action be shown with a visible label, or must it be hidden because of space or platform constraints?',
   recommended_default:
     'Show a visible label for primary and consequential actions; hide only secondary or infrequent actions.',
-  options: ['Visible labeled control', 'Icon with tooltip/accessible name', 'Overflow/menu', 'Other / custom'],
+  options: [
+    'Visible labeled control',
+    'Icon with tooltip/accessible name',
+    'Overflow/menu',
+    'Other / custom',
+  ],
 });
 ```
 
@@ -196,7 +211,8 @@ Question prompt:
 ```js
 question({
   question: 'Does this screen need to support quick task completion or dense comparison/monitoring?',
-  recommended_default: 'Optimize for quick scanning and one clear next action unless comparison density is essential.',
+  recommended_default:
+    'Optimize for quick scanning and one clear next action unless comparison density is essential.',
   options: ['Quick task completion', 'Dense comparison', 'Real-time monitoring', 'Other / custom'],
 });
 ```
@@ -278,7 +294,8 @@ Question prompt:
 question({
   question:
     'Which choices are truly needed for the first decision, and which can be revealed after users choose a path?',
-  recommended_default: 'Show the common first-step choices and progressively disclose advanced or rare options.',
+  recommended_default:
+    'Show the common first-step choices and progressively disclose advanced or rare options.',
   options: ['Common choices only', 'Grouped full list', 'Search/filter first', 'Other / custom'],
 });
 ```
@@ -318,7 +335,8 @@ Question prompt:
 ```js
 question({
   question: 'How long can this operation take, and what should users be able to do while it runs?',
-  recommended_default: 'Show immediate receipt, progress for delays, and allow safe continuation when possible.',
+  recommended_default:
+    'Show immediate receipt, progress for delays, and allow safe continuation when possible.',
   options: ['Instant', 'A few seconds', 'Long-running/background', 'Other / custom'],
 });
 ```
@@ -358,7 +376,8 @@ Question prompt:
 ```js
 question({
   question: 'Should this input be tightly constrained for safety, or flexible enough to handle edge cases?',
-  recommended_default: 'Constrain dangerous or invalid actions, but keep ordinary input flexible and correctable.',
+  recommended_default:
+    'Constrain dangerous or invalid actions, but keep ordinary input flexible and correctable.',
   options: ['Tightly constrained', 'Flexible with validation', 'Expert override', 'Other / custom'],
 });
 ```
@@ -439,7 +458,8 @@ Question prompt:
 ```js
 question({
   question: 'Is this action fully reversible, and for how long?',
-  recommended_default: 'Use undo for reversible actions; reserve confirmation for irreversible or high-risk actions.',
+  recommended_default:
+    'Use undo for reversible actions; reserve confirmation for irreversible or high-risk actions.',
   options: ['Fully reversible', 'Reversible for limited time', 'Not reversible', 'Other / custom'],
 });
 ```
@@ -479,7 +499,8 @@ Question prompt:
 ```js
 question({
   question: 'Should users be able to move freely, or must this flow keep them in a guided sequence?',
-  recommended_default: 'Allow free orientation and safe backtracking unless the task requires a controlled sequence.',
+  recommended_default:
+    'Allow free orientation and safe backtracking unless the task requires a controlled sequence.',
   options: ['Free navigation', 'Guided sequence', 'Hybrid', 'Other / custom'],
 });
 ```
@@ -567,7 +588,12 @@ question({
   question: 'Does this product have a required accessibility standard or procurement target?',
   recommended_default:
     'Meet core WCAG-oriented basics by default; confirm stricter targets for regulated, public-sector, education, healthcare, or enterprise contexts.',
-  options: ['WCAG AA target', 'Internal baseline only', 'Regulated/procurement requirement', 'Other / custom'],
+  options: [
+    'WCAG AA target',
+    'Internal baseline only',
+    'Regulated/procurement requirement',
+    'Other / custom',
+  ],
 });
 ```
 

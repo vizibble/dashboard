@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { TemplateDetails } from '@/app/pages/templates/detail/components/template-details';
 import { TemplateDialogs } from '@/app/pages/templates/shared/components/template-dialogs';
-import { useFetchTemplate } from '@/app/pages/templates/shared/hooks/use-templates-api';
+import { useFetchTemplate } from '@/app/pages/templates/shared/hooks/use-template-queries';
 import { PageContainer } from '@/app/shared/components/layout/page-container';
 import { PageHeader } from '@/app/shared/components/layout/page-header';
 import { ErrorState } from '@/app/shared/components/states/error-state';
@@ -14,9 +14,12 @@ const BACK = { to: '/templates', label: 'Templates' };
 
 export function TemplateDetailPage() {
   const navigate = useNavigate();
+
   const { organisation } = useOrganisationContext();
+
   const { templateId } = useParams();
-  const { template, isPending, isError, refetch } = useFetchTemplate(organisation.id, templateId);
+
+  const { data: template, isPending, isError, refetch } = useFetchTemplate(organisation.id, templateId);
 
   if (isPending) {
     return (

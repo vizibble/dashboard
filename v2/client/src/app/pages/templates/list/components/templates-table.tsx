@@ -24,7 +24,12 @@ export function TemplatesTable({ templates }: { templates: TemplateSummary[] }) 
       className: 'text-muted-foreground max-w-md truncate',
       cell: (template) => template.description ?? '—',
     },
-    { id: 'parameters', header: 'Parameters', className: 'w-28', cell: (template) => template.parameter_count },
+    {
+      id: 'parameters',
+      header: 'Parameters',
+      className: 'w-28',
+      cell: (template) => template.parameter_count,
+    },
     { id: 'devices', header: 'Devices', className: 'w-24', cell: (template) => template.device_count },
     {
       id: 'actions',

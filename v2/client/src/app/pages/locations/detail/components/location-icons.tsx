@@ -17,6 +17,7 @@ const TINT_OPACITY: Partial<Record<IconWeight, number>> = {
 
 function createCustomIcon(name: string, outline: ReactNode, tint: ReactNode): Icon {
   const weights = new Map<IconWeight, ReactElement>();
+
   (Object.keys(STROKE) as IconWeight[]).forEach((w) => {
     weights.set(
       w,
@@ -26,7 +27,13 @@ function createCustomIcon(name: string, outline: ReactNode, tint: ReactNode): Ic
             {tint}
           </g>
         )}
-        <g fill="none" stroke="currentColor" strokeWidth={STROKE[w]} strokeLinecap="round" strokeLinejoin="round">
+        <g
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={STROKE[w]}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           {outline}
         </g>
       </>,
@@ -34,7 +41,9 @@ function createCustomIcon(name: string, outline: ReactNode, tint: ReactNode): Ic
   });
 
   const Component: Icon = forwardRef((props, ref) => <IconBase ref={ref} {...props} weights={weights} />);
+
   Component.displayName = name;
+
   return Component;
 }
 

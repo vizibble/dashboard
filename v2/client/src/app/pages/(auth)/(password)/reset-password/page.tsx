@@ -25,6 +25,7 @@ export function ResetPasswordPage() {
     defaultValues: { password: '', confirmPassword: '' },
     mode: 'onBlur',
   });
+
   const { status, onSubmit, submitError } = useResetPassword();
 
   if (status === 'invalid') {

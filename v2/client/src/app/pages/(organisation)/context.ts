@@ -7,8 +7,10 @@ export const organisationContext = createContext<OrganisationContextValue | null
 
 export function useOrganisationContext(): OrganisationContextValue {
   const context = useContext(organisationContext);
+
   if (!context) {
     throw new Error('useOrganisationContext must be used within RequireOrganisation.');
   }
+
   return context;
 }

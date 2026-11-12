@@ -1,19 +1,34 @@
 import { PencilSimpleIcon, SlidersHorizontalIcon, TrashIcon } from '@phosphor-icons/react';
 
 import { useTemplateActions } from '@/app/pages/templates/shared/hooks/use-template-actions';
-import { DATA_TYPE_LABELS } from '@/app/pages/templates/shared/lib/parameters';
+import { DATA_TYPE_LABELS, pluralise } from '@/app/pages/templates/shared/lib/parameters';
 import type { Template, TemplateParameter } from '@/app/pages/templates/shared/types';
 import { DataTable, type DataTableColumn } from '@/app/shared/components/data-table';
 import { FormField, FormSection, FormView } from '@/app/shared/components/layout/form-view';
-import { Indicator, PageHeader } from '@/app/shared/components/layout/page-header';
+import { Indicator, PageHeader, type PageMenuItem } from '@/app/shared/components/layout/page-header';
 import { EmptyState } from '@/app/shared/components/states/empty-state';
 import { Badge } from '@/app/shared/components/ui/badge';
 import { Button } from '@/app/shared/components/ui/button';
 
 const PARAMETER_COLUMNS: DataTableColumn<TemplateParameter>[] = [
-  { id: 'label', header: 'Parameter', className: 'font-medium', cell: (parameter) => parameter.label },
-  { id: 'key', header: 'Key', className: 'font-mono text-xs', cell: (parameter) => parameter.key },
-  { id: 'unit', header: 'Unit', className: 'text-muted-foreground', cell: (parameter) => parameter.symbol ?? '—' },
+  {
+    id: 'label',
+    header: 'Parameter',
+    className: 'font-medium',
+    cell: (parameter) => parameter.label,
+  },
+  {
+    id: 'key',
+    header: 'Key',
+    className: 'font-mono text-xs',
+    cell: (parameter) => parameter.key,
+  },
+  {
+    id: 'unit',
+    header: 'Unit',
+    className: 'text-muted-foreground',
+    cell: (parameter) => parameter.symbol ?? '—',
+  },
   {
     id: 'type',
     header: 'Value',
@@ -23,7 +38,26 @@ const PARAMETER_COLUMNS: DataTableColumn<TemplateParameter>[] = [
 
 export function TemplateDetails({ template }: { template: Template }) {
   const { openEdit, openDelete, openParameters, can } = useTemplateActions();
+
   const devices = template.device_count;
+
+  const menu: PageMenuItem[] = [];
+
+  if (can.update) {
+    menu.push({
+      label: 'Edit details',
+      icon: PencilSimpleIcon,
+      onSelect: () => openEdit(template.id),
+    });
+  }
+  if (can.delete) {
+    menu.push({
+      label: 'Delete',
+      icon: TrashIcon,
+      destructive: true,
+      onSelect: () => openDelete(template.id),
+    });
+  }
 
   return (
     <>
@@ -33,17 +67,10 @@ export function TemplateDetails({ template }: { template: Template }) {
         description={template.description ?? undefined}
         status={
           <Indicator tone={devices > 0 ? 'green' : 'gray'}>
-            {devices > 0 ? `${devices} device${devices === 1 ? '' : 's'}` : 'Not in use'}
+            {devices > 0 ? pluralise(devices, 'device') : 'Not in use'}
           </Indicator>
         }
-        menu={[
-          ...(can.update
-            ? [{ label: 'Edit details', icon: PencilSimpleIcon, onSelect: () => openEdit(template.id) }]
-            : []),
-          ...(can.delete
-            ? [{ label: 'Delete', icon: TrashIcon, destructive: true, onSelect: () => openDelete(template.id) }]
-            : []),
-        ]}
+        menu={menu}
         actions={
           can.update && (
             <Button size="sm" onClick={() => openParameters(template.id)}>

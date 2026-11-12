@@ -16,6 +16,7 @@ function DropdownMenu({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   const [isOpen, setOpen] = useOpenState(open, defaultOpen, onOpenChange);
+
   return (
     <DropdownOpenContext.Provider value={isOpen}>
       <DropdownMenuPrimitive.Root data-slot="dropdown-menu" open={isOpen} onOpenChange={setOpen} {...props} />
@@ -46,6 +47,7 @@ function DropdownMenuContent({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
   const open = React.useContext(DropdownOpenContext);
+
   const from = SIDE_OFFSET[side];
 
   return (
@@ -182,7 +184,10 @@ function DropdownMenuLabel({
   );
 }
 
-function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+function DropdownMenuSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
   return (
     <DropdownMenuPrimitive.Separator
       data-slot="dropdown-menu-separator"

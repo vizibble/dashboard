@@ -11,13 +11,14 @@ import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { DashboardWorkspace } from '@/app/pages/dashboards/shared/components/dashboard-workspace';
 import { LocationDetails } from '@/app/pages/locations/detail/components/location-details';
 import { LocationDialogs } from '@/app/pages/locations/shared/components/location-dialogs';
-import { useFetchLocation, useFetchLocations } from '@/app/pages/locations/shared/hooks/use-locations-api';
+import { useFetchLocation, useFetchLocations } from '@/app/pages/locations/shared/hooks/use-location-queries';
 
 export function LocationDetailPage() {
   const { organisation } = useOrganisationContext();
+
   const { locationId } = useParams();
 
-  const { locations, isPending: isLocationsPending } = useFetchLocations(organisation.id);
+  const { data: locations = [], isPending: isLocationsPending } = useFetchLocations(organisation.id);
 
   const detailQuery = useFetchLocation(organisation.id, locationId);
 
@@ -44,7 +45,7 @@ export function LocationDetailPage() {
     );
   }
 
-  if (detailQuery.isError || !detailQuery.location) {
+  if (detailQuery.isError || !detailQuery.data) {
     return (
       <PageContainer>
         <PageHeader title="Location" back={{ to: '/locations', label: 'Locations' }} />
@@ -57,9 +58,9 @@ export function LocationDetailPage() {
 
   return (
     <PageContainer>
-      <LocationDetails location={detailQuery.location} locationsById={locationsById} />
+      <LocationDetails location={detailQuery.data} locationsById={locationsById} />
       <DashboardWorkspace
-        target={{ scope: 'location', locationId: detailQuery.location.id }}
+        target={{ scope: 'location', locationId: detailQuery.data.id }}
         variant="section"
         title="Telemetry"
       />
@@ -70,6 +71,7 @@ export function LocationDetailPage() {
 
 function LocationNotFound({ onRetry }: { onRetry?: () => void }) {
   const navigate = useNavigate();
+
   return (
     <ErrorState
       title="Location not found"

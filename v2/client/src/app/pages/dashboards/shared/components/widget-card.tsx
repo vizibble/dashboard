@@ -7,14 +7,24 @@ import {
   TrashIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react';
-import type { DragEvent, ReactNode } from 'react';
+import type { CSSProperties, DragEvent, HTMLAttributes, ReactNode } from 'react';
 
-import { MISSING_REASON_LABELS, WIDTH_OPTIONS } from '@/app/pages/dashboards/shared/lib/labels';
+import {
+  HEIGHT_OPTIONS,
+  MISSING_REASON_LABELS,
+  WIDTH_OPTIONS,
+} from '@/app/pages/dashboards/shared/lib/labels';
 import type { AnalyticsResult, Widget } from '@/app/pages/dashboards/shared/types';
 import { WIDGET_COMPONENTS } from '@/app/pages/dashboards/shared/widgets/registry';
 import { hasValues, type WidgetPresentation } from '@/app/pages/dashboards/shared/widgets/types';
 import { Button } from '@/app/shared/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/shared/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/app/shared/components/ui/select';
 import { Spinner } from '@/app/shared/components/ui/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/app/shared/components/ui/tooltip';
 
@@ -28,10 +38,17 @@ type WidgetBodyProps = {
 /** Picks the right state before handing data to a visualisation. Shared by the grid and the editor preview. */
 export function WidgetBody({ presentation, result, isLoading, isError }: WidgetBodyProps) {
   if (!result) {
-    if (isError) return <WidgetMessage tone="error">Couldn&apos;t load data.</WidgetMessage>;
-    return <WidgetMessage>{isLoading ? <Spinner aria-label="Loading" /> : 'Waiting for data…'}</WidgetMessage>;
+    if (isError) {
+      return <WidgetMessage tone="error">Couldn&apos;t load data.</WidgetMessage>;
+    }
+
+    return (
+      <WidgetMessage>{isLoading ? <Spinner aria-label="Loading" /> : 'Waiting for data…'}</WidgetMessage>
+    );
   }
-  if (result.error) return <WidgetMessage tone="error">{result.error}</WidgetMessage>;
+  if (result.error) {
+    return <WidgetMessage tone="error">{result.error}</WidgetMessage>;
+  }
   if (!result.metric) {
     return (
       <WidgetMessage>
@@ -49,6 +66,7 @@ export function WidgetBody({ presentation, result, isLoading, isError }: WidgetB
     );
   }
   const View = WIDGET_COMPONENTS[presentation.type];
+
   return <View presentation={presentation} result={result} />;
 }
 
@@ -69,11 +87,15 @@ function WidgetMessage({ children, tone }: { children: ReactNode; tone?: 'error'
 
 /** Small note under the title when part of the scope has no data or results were capped. */
 function DataNote({ result }: { result: AnalyticsResult | undefined }) {
-  if (!result || result.error || (!result.truncated && result.missing.length === 0)) return null;
-  const lines = [
-    ...result.missing.map((item) => `${item.device_name} ${MISSING_REASON_LABELS[item.reason]}`),
-    ...(result.truncated ? ['Only part of the data is shown. Narrow the devices or time range to see all of it.'] : []),
-  ];
+  if (!result || result.error || (!result.truncated && result.missing.length === 0)) {
+    return null;
+  }
+  const lines = result.missing.map((item) => `${item.device_name} ${MISSING_REASON_LABELS[item.reason]}`);
+
+  if (result.truncated) {
+    lines.push('Only part of the data is shown. Narrow the devices or time range to see all of it.');
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -82,7 +104,9 @@ function DataNote({ result }: { result: AnalyticsResult | undefined }) {
           className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center gap-1 rounded-sm text-xs focus-visible:ring-2 focus-visible:outline-none"
         >
           <InfoIcon size={13} aria-hidden="true" />
-          {result.truncated && result.missing.length === 0 ? 'Partial' : `${result.missing.length} without data`}
+          {result.truncated && result.missing.length === 0
+            ? 'Partial'
+            : `${result.missing.length} without data`}
         </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-72">
@@ -115,6 +139,25 @@ type WidgetCardProps = {
   onDragEnd: () => void;
 };
 
+/** Native drag-and-drop wiring for a card in edit mode. */
+function dragHandlers({
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
+}: Pick<WidgetCardProps, 'onDragStart' | 'onDragEnter' | 'onDragEnd'>): HTMLAttributes<HTMLElement> {
+  return {
+    draggable: true,
+    onDragStart: (event: DragEvent) => {
+      event.dataTransfer.effectAllowed = 'move';
+      onDragStart();
+    },
+    onDragEnter,
+    onDragOver: (event: DragEvent) => event.preventDefault(),
+    onDragEnd,
+    onDrop: (event: DragEvent) => event.preventDefault(),
+  };
+}
+
 export function WidgetCard({
   widget,
   result,
@@ -132,19 +175,12 @@ export function WidgetCard({
   onDragEnter,
   onDragEnd,
 }: WidgetCardProps) {
-  const dragProps = editing
-    ? {
-        draggable: true,
-        onDragStart: (event: DragEvent) => {
-          event.dataTransfer.effectAllowed = 'move';
-          onDragStart();
-        },
-        onDragEnter,
-        onDragOver: (event: DragEvent) => event.preventDefault(),
-        onDragEnd,
-        onDrop: (event: DragEvent) => event.preventDefault(),
-      }
-    : {};
+  const dragProps = editing ? dragHandlers({ onDragStart, onDragEnter, onDragEnd }) : {};
+
+  const style: CSSProperties & { '--span': string } = {
+    '--span': `span ${widget.width} / span ${widget.width}`,
+    gridRow: `span ${widget.height}`,
+  };
 
   return (
     <section
@@ -154,7 +190,7 @@ export function WidgetCard({
         (editing ? 'border-dashed ' : '') +
         (isDragging ? 'opacity-50' : '')
       }
-      style={{ '--span': `span ${widget.width} / span ${widget.width}`, gridRow: `span ${widget.height}` } as never}
+      style={style}
       {...dragProps}
     >
       <header className="flex min-h-10 items-center justify-between gap-2 px-4 pt-2.5">
@@ -183,7 +219,13 @@ export function WidgetCard({
             >
               <ArrowLeftIcon aria-hidden="true" />
             </Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Move later" disabled={isLast} onClick={() => onMove(1)}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Move later"
+              disabled={isLast}
+              onClick={() => onMove(1)}
+            >
               <ArrowRightIcon aria-hidden="true" />
             </Button>
             <Button variant="ghost" size="icon-sm" aria-label={`Edit ${widget.title}`} onClick={onEdit}>
@@ -214,14 +256,17 @@ export function WidgetCard({
               ))}
             </SelectContent>
           </Select>
-          <Select value={String(widget.height)} onValueChange={(value) => onResize({ height: Number(value) })}>
+          <Select
+            value={String(widget.height)}
+            onValueChange={(value) => onResize({ height: Number(value) })}
+          >
             <SelectTrigger size="sm" className="h-7 w-24 text-xs" aria-label="Height">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {[1, 2, 3, 4].map((rows) => (
-                <SelectItem key={rows} value={String(rows)}>
-                  {rows === 1 ? 'Short' : rows === 2 ? 'Normal' : rows === 3 ? 'Tall' : 'Extra tall'}
+              {HEIGHT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={String(option.value)}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>

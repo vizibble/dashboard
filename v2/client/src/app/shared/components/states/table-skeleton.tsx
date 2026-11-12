@@ -1,5 +1,12 @@
 import { Skeleton } from '@/app/shared/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/shared/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/app/shared/components/ui/table';
 import { cn } from '@/app/shared/utils/cn';
 import type * as React from 'react';
 
@@ -21,47 +28,31 @@ export type TableSkeletonProps = {
  */
 export function TableSkeleton({ columns, rowCount = 5, className }: TableSkeletonProps) {
   return (
-    <Table className={cn('min-w-[480px]', className)}>
+    <Table className={cn('min-w-120', className)}>
       <TableHeader className="bg-muted/50">
         <TableRow className="hover:bg-transparent">
           {columns.map((column) => (
-            <TableHead key={column.id} className={cn('text-muted-foreground h-9 px-4 text-xs', column.className)}>
+            <TableHead
+              key={column.id}
+              className={cn('text-muted-foreground h-9 px-4 text-xs', column.className)}
+            >
               {column.header}
             </TableHead>
           ))}
         </TableRow>
       </TableHeader>
       <TableBody>
-        {Array.from({ length: rowCount }).map((_, rowIndex) => (
-          <TableRow key={rowIndex} className="hover:bg-transparent">
+        {Array.from({ length: rowCount }, (_, index) => `skeleton-row-${index + 1}`).map((rowId) => (
+          <TableRow key={rowId} className="hover:bg-transparent">
             {columns.map((column) => (
               <TableCell key={column.id} className={cn('px-4 py-3', column.className)}>
-                <Skeleton className={cn('h-4 w-3/4 max-w-[180px]', column.skeletonClassName)} />
+                <Skeleton className={cn('h-4 w-3/4 max-w-45', column.skeletonClassName)} />
               </TableCell>
             ))}
           </TableRow>
         ))}
       </TableBody>
     </Table>
-  );
-}
-
-/**
- * Generic row/list skeleton for flat items.
- */
-export function ListSkeleton({ count = 4, className }: { count?: number; className?: string }) {
-  return (
-    <div className={cn('divide-y', className)}>
-      {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="flex items-center justify-between p-4">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-3 w-64" />
-          </div>
-          <Skeleton className="h-8 w-20" />
-        </div>
-      ))}
-    </div>
   );
 }
 

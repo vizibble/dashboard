@@ -60,8 +60,14 @@ Question tool pattern:
 ```js
 question({
   question: 'Which user experience level should the main interface optimize for?',
-  recommended_default: 'Optimize for frequent intermediates, with visible basics and optional expert accelerators.',
-  options: ['First-time or infrequent users', 'Frequent intermediates', 'Trained experts/operators', 'Other / custom'],
+  recommended_default:
+    'Optimize for frequent intermediates, with visible basics and optional expert accelerators.',
+  options: [
+    'First-time or infrequent users',
+    'Frequent intermediates',
+    'Trained experts/operators',
+    'Other / custom',
+  ],
 });
 ```
 
@@ -146,7 +152,8 @@ Question tool pattern:
 ```js
 question({
   question: 'Do users need a focused task path or dense comparison/monitoring?',
-  recommended_default: 'Use a focused, scannable layout unless simultaneous comparison or monitoring is essential.',
+  recommended_default:
+    'Use a focused, scannable layout unless simultaneous comparison or monitoring is essential.',
   options: ['Focused task completion', 'Dense comparison', 'Real-time monitoring', 'Other / custom'],
 });
 ```
@@ -202,7 +209,8 @@ Question tool pattern:
 
 ```js
 question({
-  question: 'Can the error safely explain the exact problem, or must details be limited for security/compliance?',
+  question:
+    'Can the error safely explain the exact problem, or must details be limited for security/compliance?',
   recommended_default: 'Give specific recovery guidance unless revealing details creates risk.',
   options: [
     'Specific recovery guidance',
@@ -328,7 +336,8 @@ Question tool pattern:
 ```js
 question({
   question: 'How long can this operation take, and what should users be able to do while it runs?',
-  recommended_default: 'Show immediate receipt, progress for delays, and allow safe continuation when possible.',
+  recommended_default:
+    'Show immediate receipt, progress for delays, and allow safe continuation when possible.',
   options: ['Instant', 'A few seconds', 'Long-running/background', 'Other / custom'],
 });
 ```
@@ -358,6 +367,11 @@ question({
   question: 'Does this product have a required accessibility standard or procurement target?',
   recommended_default:
     'Meet core WCAG AA-oriented basics by default; confirm stricter targets for regulated or procurement contexts.',
-  options: ['WCAG AA target', 'Stricter regulated/procurement target', 'Internal baseline only', 'Other / custom'],
+  options: [
+    'WCAG AA target',
+    'Stricter regulated/procurement target',
+    'Internal baseline only',
+    'Other / custom',
+  ],
 });
 ```

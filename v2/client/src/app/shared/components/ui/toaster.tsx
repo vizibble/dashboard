@@ -21,8 +21,10 @@ const HAPTIC_BY_VARIANT: Partial<Record<string, HapticKind>> = {
 
 export function Toaster() {
   const { toasts } = useToast();
+
   // Dismissed toasts linger in the store with open=false; presence is driven by `open`.
   const visible = toasts.filter((t) => t.open !== false);
+
   useOutcomeHaptics(visible);
 
   return (
@@ -33,7 +35,11 @@ export function Toaster() {
             <motion.li
               layout="position"
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0, transition: { ...transition.enter, duration: 0.26 } }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                transition: { ...transition.enter, duration: 0.26 },
+              }}
               exit={{ opacity: 0, scale: 0.98, transition: transition.exit }}
               transition={{ layout: spring.indicator }}
             >
@@ -55,12 +61,18 @@ export function Toaster() {
 /** One haptic per newly shown outcome toast; neutral toasts stay silent. */
 function useOutcomeHaptics(visible: { id: string; variant?: string | null }[]) {
   const seen = useRef(new Set<string>());
+
   useEffect(() => {
     for (const t of visible) {
-      if (seen.current.has(t.id)) continue;
+      if (seen.current.has(t.id)) {
+        continue;
+      }
       seen.current.add(t.id);
       const kind = t.variant ? HAPTIC_BY_VARIANT[t.variant] : undefined;
-      if (kind) haptic(kind);
+
+      if (kind) {
+        haptic(kind);
+      }
     }
   }, [visible]);
 }

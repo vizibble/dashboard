@@ -24,29 +24,38 @@ export const statements = {
   location: ["read", "create", "update", "delete"],
   device: ["read", "create", "update", "delete"],
   template: ["read", "create", "update", "delete"],
-  telemetry: ["read", "export"],
+  telemetry: ["read"],
   dashboard: ["read", "create", "update", "delete"],
-  report: ["read", "create", "update", "delete", "export"],
 } as const;
 
 export const ac = createAccessControl(statements);
+
+/**
+ * Roles are sized for a small manufacturing unit (MSME), where one or two people run
+ * the plant and a few more watch it:
+ *   owner    – proprietor / director. Everything, including deleting the organisation.
+ *   admin    – plant manager. Runs the team and settings alongside the owner.
+ *   engineer – technician or maintenance engineer. Sets up machines, sensors and dashboards.
+ *   member   – shown as "Viewer": supervisor or floor staff. Watches dashboards and readings,
+ *              changes nothing. It is Better Auth's default role (the schema default for
+ *              member.role), so anyone added without an explicit role is safely read-only.
+ */
 
 const readOnly = {
   settings: ["read"],
   location: ["read"],
   device: ["read"],
+  template: ["read"],
   telemetry: ["read"],
   dashboard: ["read"],
-  report: ["read"],
 } as const;
 
 const fullResources = {
   location: ["read", "create", "update", "delete"],
   device: ["read", "create", "update", "delete"],
   template: ["read", "create", "update", "delete"],
-  telemetry: ["read", "export"],
+  telemetry: ["read"],
   dashboard: ["read", "create", "update", "delete"],
-  report: ["read", "create", "update", "delete", "export"],
 } as const;
 
 export const owner = ac.newRole({
@@ -67,27 +76,12 @@ export const engineer = ac.newRole({
   settings: ["read"],
 });
 
-export const operator = ac.newRole({
-  ...memberAc.statements,
-  ...readOnly,
-  template: ["read"],
-});
-
-export const viewer = ac.newRole({
-  ...memberAc.statements,
-  ...readOnly,
-});
-
-/**
- * Better Auth's default role for members added without an explicit role. Kept so
- * existing `member` rows keep working; it grants exactly what a viewer gets.
- */
 export const member = ac.newRole({
   ...memberAc.statements,
   ...readOnly,
 });
 
-export const roles = { owner, admin, engineer, operator, viewer, member };
+export const roles = { owner, admin, engineer, member };
 
 export type RoleName = keyof typeof roles;
 export type Statements = typeof statements;
@@ -100,8 +94,7 @@ export const assignableRoles = [
   "owner",
   "admin",
   "engineer",
-  "operator",
-  "viewer",
+  "member",
 ] as const satisfies readonly RoleName[];
 
 export type AssignableRole = (typeof assignableRoles)[number];
@@ -110,17 +103,14 @@ export const roleLabels: Record<RoleName, string> = {
   owner: "Owner",
   admin: "Admin",
   engineer: "Engineer",
-  operator: "Operator",
-  viewer: "Viewer",
   member: "Viewer",
 };
 
 export const roleDescriptions: Record<AssignableRole, string> = {
   owner: "Full control, including deleting the organisation.",
-  admin: "Manages members, settings and every resource.",
-  engineer: "Manages devices, templates, locations, dashboards and reports.",
-  operator: "Monitors devices, telemetry and dashboards. Read-only.",
-  viewer: "Views dashboards, devices and reports. Read-only.",
+  admin: "Manages the team, settings and everything in the plant.",
+  engineer: "Sets up machines, sensors, templates and dashboards.",
+  member: "Watches dashboards and live readings. Can't change anything.",
 };
 
 /**

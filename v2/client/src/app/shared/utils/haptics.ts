@@ -49,14 +49,6 @@ export function hapticsEnabled() {
   }
 }
 
-export function setHapticsEnabled(enabled: boolean) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, enabled ? 'on' : 'off');
-  } catch {
-    // Storage unavailable (private mode); preference just won't persist.
-  }
-}
-
 export function haptic(kind: HapticKind) {
   if (typeof window === 'undefined' || !hapticsEnabled()) {
     return;

@@ -65,3 +65,10 @@ export const WIDTH_OPTIONS = [
   { value: 8, label: 'Wide' },
   { value: 12, label: 'Full' },
 ] as const;
+
+export const HEIGHT_OPTIONS = [
+  { value: 1, label: 'Short' },
+  { value: 2, label: 'Normal' },
+  { value: 3, label: 'Tall' },
+  { value: 4, label: 'Extra tall' },
+] as const;

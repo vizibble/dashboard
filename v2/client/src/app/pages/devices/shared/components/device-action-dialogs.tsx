@@ -4,35 +4,50 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { DeviceKeyPanel } from '@/app/pages/devices/shared/components/device-key-panel';
 import { useDeviceActions } from '@/app/pages/devices/shared/hooks/use-device-actions';
-import { useDeleteDevice, useFetchDevices, useRotateDeviceKey } from '@/app/pages/devices/shared/hooks/use-devices-api';
+import { useDeleteDevice, useRotateDeviceKey } from '@/app/pages/devices/shared/hooks/use-device-mutations';
+import { useFetchDevices } from '@/app/pages/devices/shared/hooks/use-device-queries';
 import { ConfirmDialog } from '@/app/shared/components/confirm-dialog';
 import { Dialog, DialogContent } from '@/app/shared/components/ui/dialog';
 import { toast } from '@/app/shared/hooks/use-toast';
-
-function errorMessage(cause: unknown) {
-  return cause instanceof Error ? cause.message : 'Something went wrong. Please try again.';
-}
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 
 /** ?action=delete&id=… */
 export function DeviceDeleteDialog() {
   const navigate = useNavigate();
+
   const { deviceId: activeDeviceId } = useParams();
+
   const { organisation } = useOrganisationContext();
+
   const { action, targetId, closeDialog } = useDeviceActions();
-  const { devices } = useFetchDevices(organisation.id);
-  const { mutateAsync, isDeleting } = useDeleteDevice(organisation.id);
+
+  const { data: devices = [] } = useFetchDevices(organisation.id);
+
+  const { mutateAsync, isPending: isDeleting } = useDeleteDevice(organisation.id);
 
   const device = action === 'delete' && targetId ? devices.find((item) => item.id === targetId) : undefined;
 
   const handleDelete = async () => {
-    if (!device) return;
+    if (!device) {
+      return;
+    }
     try {
       await mutateAsync(device.id);
       closeDialog();
-      toast({ variant: 'success', title: 'Device deleted', description: `"${device.name}" has been deleted.` });
-      if (activeDeviceId === device.id) void navigate('/devices', { replace: true });
+      toast({
+        variant: 'success',
+        title: 'Device deleted',
+        description: `"${device.name}" has been deleted.`,
+      });
+      if (activeDeviceId === device.id) {
+        void navigate('/devices', { replace: true });
+      }
     } catch (cause: unknown) {
-      toast({ variant: 'destructive', title: 'Unable to delete device', description: errorMessage(cause) });
+      toast({
+        variant: 'destructive',
+        title: 'Unable to delete device',
+        description: getErrorMessage(cause),
+      });
     }
   };
 
@@ -53,23 +68,38 @@ export function DeviceDeleteDialog() {
 /** ?action=rotate-key&id=… — confirm, then show the new key once. */
 export function DeviceRotateKeyDialog() {
   const { organisation } = useOrganisationContext();
-  const { action, targetId, closeDialog } = useDeviceActions();
-  const { devices } = useFetchDevices(organisation.id);
-  const { mutateAsync, isRotating } = useRotateDeviceKey(organisation.id);
-  const [rotated, setRotated] = useState<{ deviceId: string; key: string } | null>(null);
 
-  const device = action === 'rotate-key' && targetId ? devices.find((item) => item.id === targetId) : undefined;
+  const { action, targetId, closeDialog } = useDeviceActions();
+
+  const { data: devices = [] } = useFetchDevices(organisation.id);
+
+  const { mutateAsync, isPending: isRotating } = useRotateDeviceKey(organisation.id);
+
+  const [rotated, setRotated] = useState<{
+    deviceId: string;
+    key: string;
+  } | null>(null);
+
+  const device =
+    action === 'rotate-key' && targetId ? devices.find((item) => item.id === targetId) : undefined;
 
   // A key is only shown for the device it was generated for.
   const newKey = rotated && rotated.deviceId === device?.id ? rotated.key : null;
 
   const handleRotate = async () => {
-    if (!device) return;
+    if (!device) {
+      return;
+    }
     try {
       const result = await mutateAsync(device.id);
+
       setRotated({ deviceId: device.id, key: result.device_key });
     } catch (cause: unknown) {
-      toast({ variant: 'destructive', title: 'Unable to rotate key', description: errorMessage(cause) });
+      toast({
+        variant: 'destructive',
+        title: 'Unable to rotate key',
+        description: getErrorMessage(cause),
+      });
     }
   };
 

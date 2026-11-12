@@ -7,6 +7,7 @@ import { LoadingState } from '@/app/shared/components/states/loading-state';
 
 export function RequireAuth() {
   const location = useLocation();
+
   const session = useSession();
 
   if (session.status === 'loading') {
@@ -17,11 +18,13 @@ export function RequireAuth() {
   }
   if (session.status === 'signed-out') {
     const returnTo = `${location.pathname}${location.search}`;
+
     return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />;
   }
 
   if (!session.emailVerified) {
     const state: CheckEmailState = { email: session.email, next: `${location.pathname}${location.search}` };
+
     return <Navigate to="/check-email" state={state} replace />;
   }
 

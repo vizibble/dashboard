@@ -1,7 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type * as React from 'react';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/shared/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/app/shared/components/ui/table';
 import { cn } from '@/app/shared/utils/cn';
 import { transition } from '@/app/shared/utils/motion';
 
@@ -28,12 +35,16 @@ type DataTableProps<T> = {
 /** Column-driven table on top of shadcn <Table>, styled like an ERPNext list (muted header, compact rows). */
 export function DataTable<T>({ columns, rows, getRowId, className }: DataTableProps<T>) {
   const animateRows = rows.length <= ANIMATED_ROW_LIMIT;
+
   return (
     <Table className={cn('min-w-[480px]', className)}>
       <TableHeader className="bg-muted/50">
         <TableRow className="hover:bg-transparent">
           {columns.map((column) => (
-            <TableHead key={column.id} className={cn('text-muted-foreground h-9 px-4 text-xs', column.className)}>
+            <TableHead
+              key={column.id}
+              className={cn('text-muted-foreground h-9 px-4 text-xs', column.className)}
+            >
               {column.header}
             </TableHead>
           ))}

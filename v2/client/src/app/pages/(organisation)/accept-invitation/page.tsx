@@ -7,9 +7,11 @@ import { Button } from '@/app/shared/components/ui/button';
 
 export function AcceptInvitation() {
   const [searchParams] = useSearchParams();
+
   const invitationId = searchParams.get('id');
 
   const { state } = useAcceptInvitation(invitationId);
+
   if (state.status === 'checking') {
     return <LoadingState label="Checking your sign-in status…" variant="fullscreen" />;
   }
@@ -22,6 +24,7 @@ export function AcceptInvitation() {
 
   if (state.status === 'authentication-required') {
     const authQuery = invitationId ? `?invitationId=${encodeURIComponent(invitationId)}` : '';
+
     return (
       <main className="flex items-center justify-center px-5">
         <div className="w-full max-w-md space-y-4 text-center">

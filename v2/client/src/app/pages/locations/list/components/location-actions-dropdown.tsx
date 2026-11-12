@@ -17,8 +17,12 @@ interface LocationItemActionsProps {
 
 export function LocationItemActions({ location }: LocationItemActionsProps) {
   const { openCreate, openRename, openDelete, can } = useLocationActions();
+
   const canAddChild = can.create && location.can_have_children;
-  if (!can.update && !can.delete && !canAddChild) return null;
+
+  if (!can.update && !can.delete && !canAddChild) {
+    return null;
+  }
 
   return (
     <DropdownMenu>

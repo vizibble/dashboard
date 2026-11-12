@@ -39,6 +39,7 @@ export function DevicesTable({ devices, locationsById }: DevicesTableProps) {
       className: 'text-muted-foreground',
       cell: (device) => {
         const location = locationsById.get(device.location_id);
+
         return location ? (
           <Link to={`/locations/${location.id}`} className="hover:text-foreground">
             {location.name}

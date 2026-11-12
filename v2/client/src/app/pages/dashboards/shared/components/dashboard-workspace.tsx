@@ -1,38 +1,35 @@
-import { GearSixIcon, PencilSimpleIcon, PlusIcon, SquaresFourIcon, TrashIcon } from '@phosphor-icons/react';
-import { useMemo, useState, type ReactNode } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { usePermission } from '@/app/pages/(organisation)/shared/hooks/use-permission';
 import { DashboardDialog } from '@/app/pages/dashboards/shared/components/dashboard-dialog';
 import { DashboardFilters } from '@/app/pages/dashboards/shared/components/dashboard-filters';
+import { DashboardHeading } from '@/app/pages/dashboards/shared/components/dashboard-heading';
+import {
+  DashboardSkeleton,
+  DashboardsError,
+  EmptyDashboard,
+  NoDashboards,
+} from '@/app/pages/dashboards/shared/components/dashboard-states';
+import { DeleteDashboardDialog } from '@/app/pages/dashboards/shared/components/delete-dashboard-dialog';
 import { DeviceStatusStrip } from '@/app/pages/dashboards/shared/components/device-status-strip';
-import { WidgetCard } from '@/app/pages/dashboards/shared/components/widget-card';
+import { RemoveWidgetDialog } from '@/app/pages/dashboards/shared/components/remove-widget-dialog';
 import { WidgetEditorDialog } from '@/app/pages/dashboards/shared/components/widget-editor-dialog';
+import { WidgetGrid } from '@/app/pages/dashboards/shared/components/widget-grid';
+import { useDashboardFilters } from '@/app/pages/dashboards/shared/hooks/use-dashboard-filters';
 import {
   useDashboardData,
-  useDeleteDashboard,
-  useDeleteWidget,
   useFetchDashboard,
   useFetchDashboards,
-  useSaveLayout,
-} from '@/app/pages/dashboards/shared/hooks/use-dashboards-api';
+} from '@/app/pages/dashboards/shared/hooks/use-dashboard-queries';
+import { useDashboardSelection } from '@/app/pages/dashboards/shared/hooks/use-dashboard-selection';
+import { useLayoutEditor } from '@/app/pages/dashboards/shared/hooks/use-layout-editor';
 import { buildWidgetQuery, widgetToInput } from '@/app/pages/dashboards/shared/lib/build-query';
-import type {
-  DashboardDetail,
-  DashboardTarget,
-  DashboardFilters as Filters,
-  Widget,
-} from '@/app/pages/dashboards/shared/types';
-import { ConfirmDialog } from '@/app/shared/components/confirm-dialog';
-import { PageHeader, type PageMenuItem } from '@/app/shared/components/layout/page-header';
-import { EmptyState } from '@/app/shared/components/states/empty-state';
-import { ErrorState } from '@/app/shared/components/states/error-state';
-import { Button } from '@/app/shared/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/shared/components/ui/select';
-import { Skeleton } from '@/app/shared/components/ui/skeleton';
-import { Spinner } from '@/app/shared/components/ui/spinner';
-import { toast } from '@/app/shared/hooks/use-toast';
+import {
+  dataRefreshSeconds,
+  isCustomRangeIncomplete,
+} from '@/app/pages/dashboards/shared/lib/dashboard-layout';
+import type { DashboardDetail, DashboardTarget, Widget } from '@/app/pages/dashboards/shared/types';
 
 type DashboardWorkspaceProps = {
   target: DashboardTarget;
@@ -41,16 +38,9 @@ type DashboardWorkspaceProps = {
   title?: string;
 };
 
-type LayoutItem = Pick<Widget, 'id' | 'width' | 'height'>;
-
-function filtersFrom(dashboard: DashboardDetail): Filters {
-  return {
-    timeRange: dashboard.time_range,
-    timeFrom: dashboard.time_from?.toISOString() ?? null,
-    timeTo: dashboard.time_to?.toISOString() ?? null,
-    locationId: null,
-    deviceId: null,
-  };
+/** Organisation dashboards show the strip only as a page; locations and devices always do. */
+function showsStatusStrip(target: DashboardTarget, variant: DashboardWorkspaceProps['variant']) {
+  return target.scope !== 'organisation' || variant === 'page';
 }
 
 /**
@@ -60,355 +50,119 @@ function filtersFrom(dashboard: DashboardDetail): Filters {
 export function DashboardWorkspace({ target, variant, title = 'Dashboard' }: DashboardWorkspaceProps) {
   // Editing an existing dashboard is decided per dashboard by the API (`can_edit`).
   const canCreate = usePermission({ dashboard: ['create'] });
+
   const { organisation } = useOrganisationContext();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { dashboards, isPending: isListPending, isError: isListError } = useFetchDashboards(organisation.id, target);
 
-  const requestedId = searchParams.get('dashboard');
-  const selectedId =
-    dashboards.find((item) => item.id === requestedId)?.id ??
-    dashboards.find((item) => item.is_default)?.id ??
-    dashboards[0]?.id;
-  const { dashboard, isPending: isDashboardPending } = useFetchDashboard(organisation.id, selectedId);
+  const {
+    data: dashboards = [],
+    isPending: isListPending,
+    isError: isListError,
+  } = useFetchDashboards(organisation.id, target);
 
-  const select = (dashboardId: string) =>
-    setSearchParams(
-      (params) => {
-        params.set('dashboard', dashboardId);
-        return params;
-      },
-      { replace: true },
-    );
+  const { selectedId, select, clear } = useDashboardSelection(dashboards);
 
-  // Filters and edit mode belong to one dashboard; switching dashboards starts fresh.
-  const [filterState, setFilterState] = useState<{ dashboardId: string; filters: Filters } | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<LayoutItem[] | null>(null);
-  const [dragging, setDragging] = useState<string | null>(null);
+  const { data: dashboard, isPending: isDashboardPending } = useFetchDashboard(organisation.id, selectedId);
+
+  const { filters, setFilters } = useDashboardFilters(dashboard);
+
+  const layout = useLayoutEditor(dashboard);
+
   const [widgetTarget, setWidgetTarget] = useState<Widget | 'new' | null>(null);
+
   const [dashboardTarget, setDashboardTarget] = useState<DashboardDetail | 'new' | null>(null);
+
   const [removingWidget, setRemovingWidget] = useState<Widget | null>(null);
+
   const [removingDashboard, setRemovingDashboard] = useState(false);
 
-  const { mutateAsync: saveLayout, isSaving: isSavingLayout } = useSaveLayout(organisation.id, selectedId ?? '');
-  const { mutateAsync: deleteWidget, isDeleting: isDeletingWidget } = useDeleteWidget(
-    organisation.id,
-    selectedId ?? '',
-  );
-  const { mutateAsync: deleteDashboard, isDeleting: isDeletingDashboard } = useDeleteDashboard(organisation.id);
-
-  const editing = Boolean(dashboard) && editingId === dashboard?.id;
-  const activeFilters = dashboard
-    ? filterState?.dashboardId === dashboard.id
-      ? filterState.filters
-      : filtersFrom(dashboard)
-    : null;
-  const setFilters = (filters: Filters) => dashboard && setFilterState({ dashboardId: dashboard.id, filters });
-
-  // Widgets in display order with unsaved layout changes applied. Widgets added while
-  // editing go last; removed ones drop out of the draft.
-  const widgets = useMemo(() => {
-    if (!dashboard) return [];
-    if (!editing || !draft) return dashboard.widgets;
-    const byId = new Map(dashboard.widgets.map((widget) => [widget.id, widget]));
-    const ordered = draft.flatMap((item) => {
-      const widget = byId.get(item.id);
-      return widget ? [{ ...widget, width: item.width, height: item.height }] : [];
-    });
-    const added = dashboard.widgets.filter((widget) => !draft.some((item) => item.id === widget.id));
-    return [...ordered, ...added];
-  }, [dashboard, draft, editing]);
-  const layoutOf = () => widgets.map(({ id, width, height }) => ({ id, width, height }));
-
-  const queries = useMemo(
-    () =>
-      dashboard && activeFilters
-        ? dashboard.widgets.map((widget) =>
-            buildWidgetQuery(widget.id, widgetToInput(widget), dashboard, activeFilters),
-          )
-        : [],
-    [activeFilters, dashboard],
-  );
-  const customRangeIncomplete =
-    activeFilters?.timeRange === 'custom' && (!activeFilters.timeFrom || !activeFilters.timeTo);
-  const data = useDashboardData(
-    organisation.id,
-    customRangeIncomplete ? [] : queries,
-    // Fixed past ranges never change; only live ranges are refreshed.
-    activeFilters?.timeRange === 'custom' || activeFilters?.timeRange === 'yesterday'
-      ? 0
-      : (dashboard?.refresh_seconds ?? 0),
-  );
-  const resultById = useMemo(() => new Map(data.results.map((result) => [result.id, result])), [data.results]);
-
-  const startEditing = () => {
-    setDraft(null);
-    setEditingId(dashboard?.id ?? null);
-  };
-  const cancelEditing = () => {
-    setDraft(null);
-    setEditingId(null);
-  };
-  const updateDraft = (update: (items: LayoutItem[]) => LayoutItem[]) => setDraft(update(layoutOf()));
-
-  const move = (id: string, toIndex: number) =>
-    updateDraft((items) => {
-      const from = items.findIndex((item) => item.id === id);
-      if (from < 0 || toIndex < 0 || toIndex >= items.length || from === toIndex) return items;
-      const next = [...items];
-      const [moved] = next.splice(from, 1);
-      next.splice(toIndex, 0, moved!);
-      return next;
-    });
-
-  const saveEditing = async () => {
-    if (!draft) return cancelEditing();
-    try {
-      await saveLayout({
-        widgets: layoutOf().map((item, index) => ({
-          id: item.id,
-          sort_order: index,
-          width: item.width,
-          height: item.height,
-        })),
-      });
-      toast({ variant: 'success', title: 'Layout saved' });
-      cancelEditing();
-    } catch (cause: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Unable to save layout',
-        description: cause instanceof Error ? cause.message : undefined,
-      });
+  const queries = useMemo(() => {
+    if (!dashboard || !filters || isCustomRangeIncomplete(filters)) {
+      return [];
     }
-  };
 
-  const picker =
-    dashboards.length > 1 ? (
-      <Select value={selectedId} onValueChange={select} disabled={editing}>
-        <SelectTrigger size="sm" className="w-48" aria-label="Dashboard">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {dashboards.map((item) => (
-            <SelectItem key={item.id} value={item.id}>
-              {item.name}
-              {item.visibility === 'private' ? ' (only you)' : ''}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    ) : null;
+    return dashboard.widgets.map((widget) =>
+      buildWidgetQuery(widget.id, widgetToInput(widget), dashboard, filters),
+    );
+  }, [dashboard, filters]);
 
-  const actions = editing ? (
-    <>
-      <Button variant="outline" size="sm" onClick={() => setWidgetTarget('new')}>
-        <PlusIcon aria-hidden="true" />
-        Add widget
-      </Button>
-      <Button variant="ghost" size="sm" onClick={cancelEditing} disabled={isSavingLayout}>
-        Cancel
-      </Button>
-      <Button size="sm" onClick={() => void saveEditing()} disabled={isSavingLayout}>
-        {isSavingLayout && <Spinner aria-hidden="true" />}
-        Save layout
-      </Button>
-    </>
-  ) : (
-    <>
-      {picker}
-      {dashboard?.can_edit && (
-        <Button variant="outline" size="sm" onClick={startEditing}>
-          <PencilSimpleIcon aria-hidden="true" />
-          Edit
-        </Button>
-      )}
-    </>
+  const dataQuery = useDashboardData(
+    organisation.id,
+    queries,
+    dashboard && filters ? dataRefreshSeconds(filters, dashboard) : 0,
   );
 
-  const menu: PageMenuItem[] = editing
-    ? []
-    : [
-        ...(canCreate ? [{ label: 'New dashboard', icon: PlusIcon, onSelect: () => setDashboardTarget('new') }] : []),
-        ...(dashboard?.can_edit
-          ? [
-              { label: 'Settings', icon: GearSixIcon, onSelect: () => setDashboardTarget(dashboard) },
-              {
-                label: 'Delete dashboard',
-                icon: TrashIcon,
-                destructive: true,
-                onSelect: () => setRemovingDashboard(true),
-              },
-            ]
-          : []),
-      ];
+  const resultById = useMemo(
+    () => new Map((dataQuery.data?.results ?? []).map((result) => [result.id, result])),
+    [dataQuery.data],
+  );
 
-  const heading =
-    variant === 'page' ? (
-      <PageHeader
-        title={dashboard?.name ?? title}
-        description={
-          editing ? 'Editing — drag widgets to reorder, resize them, then save.' : (dashboard?.description ?? undefined)
-        }
-        actions={dashboards.length > 0 ? actions : undefined}
-        menu={dashboards.length > 0 ? menu : undefined}
-      />
-    ) : (
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-5">
-        <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold">{dashboard?.name ?? title}</h2>
-          {editing && <p className="text-muted-foreground text-xs">Editing — drag to reorder, resize, then save.</p>}
-        </div>
-        {dashboards.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            {actions}
-            {!editing && canCreate && (
-              <Button variant="ghost" size="sm" onClick={() => setDashboardTarget('new')}>
-                <PlusIcon aria-hidden="true" />
-                New
-              </Button>
-            )}
-            {!editing && dashboard?.can_edit && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Dashboard settings"
-                onClick={() => setDashboardTarget(dashboard)}
-              >
-                <GearSixIcon aria-hidden="true" />
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-    );
+  const addWidget = () => {
+    if (!layout.editing) {
+      layout.start();
+    }
+    setWidgetTarget('new');
+  };
 
-  let body: ReactNode;
-  if (isListPending || (selectedId && isDashboardPending)) {
-    body = (
-      <div className="space-y-4">
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-9 w-32" />
-        </div>
-        <div className="grid grid-flow-row-dense auto-rows-[9.5rem] grid-cols-12 gap-3">
-          <Skeleton className="col-span-12 row-span-2 rounded-lg sm:col-span-6 lg:col-span-4" />
-          <Skeleton className="col-span-12 row-span-2 rounded-lg sm:col-span-6 lg:col-span-4" />
-          <Skeleton className="col-span-12 row-span-2 rounded-lg sm:col-span-6 lg:col-span-4" />
-        </div>
-      </div>
-    );
-  } else if (isListError) {
-    body = (
-      <div className="bg-card flex min-h-60 items-center justify-center rounded-lg border p-8">
-        <ErrorState
-          title="Dashboards unavailable"
-          message="We couldn't load your dashboards. Please verify your connection."
-          variant="inline"
-        />
-      </div>
-    );
-  } else if (!dashboard || !activeFilters) {
-    body = (
-      <div className="bg-card rounded-lg border">
-        <EmptyState
-          icon={SquaresFourIcon}
-          title="No dashboards yet"
-          description={
-            canCreate
-              ? "Create a dashboard and add charts, values and maps from your devices' data."
-              : 'No dashboards have been shared with you yet.'
-          }
-          action={
-            canCreate ? (
-              <Button size="sm" onClick={() => setDashboardTarget('new')}>
-                <PlusIcon aria-hidden="true" />
-                Create dashboard
-              </Button>
-            ) : undefined
-          }
-        />
-      </div>
-    );
-  } else {
-    body = (
+  const renderBody = () => {
+    if (isListPending || (selectedId && isDashboardPending)) {
+      return <DashboardSkeleton />;
+    }
+    if (isListError) {
+      return <DashboardsError />;
+    }
+    if (!dashboard || !filters) {
+      return <NoDashboards canCreate={canCreate} onCreate={() => setDashboardTarget('new')} />;
+    }
+
+    return (
       <>
         <DashboardFilters
           dashboard={dashboard}
-          filters={activeFilters}
+          filters={filters}
           onChange={setFilters}
-          timezone={data.timezone}
+          timezone={dataQuery.data?.timezone}
         />
-        {widgets.length === 0 ? (
-          <div className="bg-card rounded-lg border">
-            <EmptyState
-              icon={SquaresFourIcon}
-              title="This dashboard is empty"
-              description={dashboard.can_edit ? 'Add a widget to start showing data.' : 'Nothing has been added yet.'}
-              action={
-                dashboard.can_edit ? (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (!editing) startEditing();
-                      setWidgetTarget('new');
-                    }}
-                  >
-                    <PlusIcon aria-hidden="true" />
-                    Add widget
-                  </Button>
-                ) : undefined
-              }
-            />
-          </div>
+        {layout.widgets.length === 0 ? (
+          <EmptyDashboard canEdit={dashboard.can_edit} onAddWidget={addWidget} />
         ) : (
-          <div className="grid grid-flow-row-dense auto-rows-[9.5rem] grid-cols-12 gap-3">
-            {widgets.map((widget, index) => (
-              <WidgetCard
-                key={widget.id}
-                widget={widget}
-                result={resultById.get(widget.id)}
-                isLoading={data.isFetching}
-                isError={data.isError}
-                editing={editing}
-                isFirst={index === 0}
-                isLast={index === widgets.length - 1}
-                isDragging={dragging === widget.id}
-                onEdit={() => setWidgetTarget(widget)}
-                onDelete={() => setRemovingWidget(widget)}
-                onResize={(size) =>
-                  updateDraft((items) => items.map((item) => (item.id === widget.id ? { ...item, ...size } : item)))
-                }
-                onMove={(direction) => move(widget.id, index + direction)}
-                onDragStart={() => setDragging(widget.id)}
-                onDragEnter={() => dragging && dragging !== widget.id && move(dragging, index)}
-                onDragEnd={() => setDragging(null)}
-              />
-            ))}
-          </div>
+          <WidgetGrid
+            layout={layout}
+            resultById={resultById}
+            isLoading={dataQuery.isFetching}
+            isError={dataQuery.isError}
+            onEdit={setWidgetTarget}
+            onDelete={setRemovingWidget}
+          />
         )}
       </>
     );
-  }
+  };
 
   return (
     <>
-      {heading}
-      {target.scope !== 'device' && variant === 'page' && (
+      <DashboardHeading
+        variant={variant}
+        title={title}
+        dashboards={dashboards}
+        dashboard={dashboard}
+        selectedId={selectedId}
+        onSelect={select}
+        layout={layout}
+        canCreate={canCreate}
+        onAddWidget={() => setWidgetTarget('new')}
+        onCreateDashboard={() => setDashboardTarget('new')}
+        onOpenSettings={setDashboardTarget}
+        onDeleteDashboard={() => setRemovingDashboard(true)}
+      />
+      {showsStatusStrip(target, variant) && (
         <DeviceStatusStrip target={target} refreshSeconds={dashboard?.refresh_seconds ?? 60} />
       )}
-      {target.scope === 'location' && variant === 'section' && (
-        <DeviceStatusStrip target={target} refreshSeconds={dashboard?.refresh_seconds ?? 60} />
-      )}
-      {target.scope === 'device' && (
-        <DeviceStatusStrip target={target} refreshSeconds={dashboard?.refresh_seconds ?? 60} />
-      )}
-      {body}
+      {renderBody()}
 
-      {dashboard && activeFilters && (
+      {dashboard && filters && (
         <WidgetEditorDialog
           dashboard={dashboard}
-          filters={activeFilters}
+          filters={filters}
           target={widgetTarget}
           onClose={() => setWidgetTarget(null)}
         />
@@ -422,44 +176,18 @@ export function DashboardWorkspace({ target, variant, title = 'Dashboard' }: Das
           select(dashboardId);
         }}
       />
-      <ConfirmDialog
-        open={removingWidget !== null}
-        onClose={() => setRemovingWidget(null)}
-        onConfirm={() => {
-          if (!removingWidget) return;
-          void deleteWidget(removingWidget.id)
-            .then(() => toast({ variant: 'success', title: 'Widget removed' }))
-            .finally(() => setRemovingWidget(null));
-        }}
-        title="Remove widget?"
-        description={`"${removingWidget?.title ?? ''}" will be removed from this dashboard. Device data is not affected.`}
-        confirmLabel="Remove"
-        destructive
-        isPending={isDeletingWidget}
-      />
-      <ConfirmDialog
+      {dashboard && (
+        <RemoveWidgetDialog
+          dashboardId={dashboard.id}
+          widget={removingWidget}
+          onClose={() => setRemovingWidget(null)}
+        />
+      )}
+      <DeleteDashboardDialog
         open={removingDashboard}
+        dashboard={dashboard}
         onClose={() => setRemovingDashboard(false)}
-        onConfirm={() => {
-          if (!dashboard) return;
-          void deleteDashboard(dashboard.id)
-            .then(() => {
-              toast({ variant: 'success', title: 'Dashboard deleted' });
-              setSearchParams(
-                (params) => {
-                  params.delete('dashboard');
-                  return params;
-                },
-                { replace: true },
-              );
-            })
-            .finally(() => setRemovingDashboard(false));
-        }}
-        title="Delete dashboard?"
-        description={`"${dashboard?.name ?? ''}" and its widgets will be deleted for everyone. Device data is not affected.`}
-        confirmLabel="Delete dashboard"
-        destructive
-        isPending={isDeletingDashboard}
+        onDeleted={clear}
       />
     </>
   );

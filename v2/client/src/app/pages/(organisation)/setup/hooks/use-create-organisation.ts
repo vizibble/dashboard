@@ -1,88 +1,86 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useRef, useState, type SubmitEvent } from 'react';
+import { useRef, useState, type SubmitEvent } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
-import { authClient } from '@/app/pages/(auth)/client';
+import { checkSlugAvailability, createOrganisation } from '@/app/pages/(organisation)/setup/api';
+import { useSlugAvailability } from '@/app/pages/(organisation)/setup/hooks/use-slug-availability';
+import {
+  generateOrganisationSlug,
+  normaliseSlug,
+} from '@/app/pages/(organisation)/setup/lib/organisation-slug';
 import {
   organisationSchema,
   type OrganisationFormValues,
 } from '@/app/pages/(organisation)/setup/schemas/organisation-setup-schema';
-import { checkSlugAvailability } from '@/app/pages/(organisation)/setup/utils/check-slug-availability';
-import { generateOrganisationSlug } from '@/app/pages/(organisation)/setup/utils/generate-organisation-slug';
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 
-type SlugAvailability = {
-  slug: string;
-  status: 'checking' | 'available' | 'taken' | 'error';
-};
+const setValueOptions = { shouldDirty: true, shouldValidate: true } as const;
 
 export function useCreateOrganisation() {
   const navigate = useNavigate();
+
   const slugEdited = useRef(false);
+
   const submitting = useRef(false);
 
   const [error, setError] = useState<string | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [slugAvailability, setSlugAvailability] = useState<SlugAvailability | null>(null);
 
   const form = useForm<OrganisationFormValues>({
     resolver: zodResolver(organisationSchema),
     defaultValues: { name: '', slug: '', location: '' },
     mode: 'onBlur',
   });
+
   const name = useWatch({ control: form.control, name: 'name' }) ?? '';
-  const slug = (useWatch({ control: form.control, name: 'slug' }) ?? '').trim().toLowerCase();
 
-  useEffect(() => {
-    if (!slug || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 48) {
-      return;
-    }
-    let active = true;
-    async function checkAvailability() {
-      try {
-        const available = await checkSlugAvailability(slug);
-        if (active) {
-          setSlugAvailability({
-            slug,
-            status: available ? 'available' : 'taken',
-          });
-        }
-      } catch {
-        if (active) {
-          setSlugAvailability({ slug, status: 'error' });
-        }
-      }
-    }
+  const slug = normaliseSlug(useWatch({ control: form.control, name: 'slug' }) ?? '');
 
-    const timeout = window.setTimeout(() => {
-      setSlugAvailability({ slug, status: 'checking' });
-      void checkAvailability();
-    }, 450);
-    return () => {
-      active = false;
-      window.clearTimeout(timeout);
-    };
-  }, [slug]);
+  const slugAvailability = useSlugAvailability(slug);
 
   function handleNameChange(value: string) {
-    form.setValue('name', value, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    if (!slugEdited.current) {
-      form.setValue('slug', generateOrganisationSlug(value), {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
+    form.setValue('name', value, setValueOptions);
+    if (slugEdited.current) {
+      return;
     }
+    form.setValue('slug', generateOrganisationSlug(value), setValueOptions);
   }
 
   function handleSlugChange(value: string) {
     slugEdited.current = true;
-    form.setValue('slug', generateOrganisationSlug(value), {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
+    form.setValue('slug', generateOrganisationSlug(value), setValueOptions);
+  }
+
+  /** Re-checks the slug, then creates the organisation. Returns an error message, or null on success. */
+  async function submit(values: OrganisationFormValues): Promise<string | null> {
+    const submittedSlug = normaliseSlug(values.slug);
+
+    let available: boolean;
+
+    try {
+      available = await checkSlugAvailability(submittedSlug);
+    } catch {
+      return 'Could not verify the organisation URL';
+    }
+    if (!available) {
+      form.setError('slug', {
+        type: 'manual',
+        message: 'This organisation URL is already taken.',
+      });
+      slugAvailability.markTaken(submittedSlug);
+
+      return null;
+    }
+    try {
+      await createOrganisation(values, submittedSlug);
+    } catch (cause: unknown) {
+      return getErrorMessage(cause, 'Could not create the organisation.');
+    }
+    void navigate('/dashboard');
+
+    return null;
   }
 
   async function onSubmit(values: OrganisationFormValues) {
@@ -93,42 +91,19 @@ export function useCreateOrganisation() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const submittedSlug = values.slug.trim().toLowerCase();
-      const available = await checkSlugAvailability(submittedSlug);
-      if (!available) {
-        form.setError('slug', {
-          type: 'manual',
-          message: 'This organisation URL is already taken.',
-        });
-        setSlugAvailability({ slug: submittedSlug, status: 'taken' });
-        return;
-      }
-      const result = await authClient.organization.create({
-        name: values.name.trim(),
-        slug: submittedSlug,
-        ...(values.location.trim() ? { metadata: { location: values.location.trim() } } : {}),
-      });
-      if (result.error) {
-        setError(result.error.message || 'Could not create the organisation.');
-        return;
-      }
-      void navigate('/dashboard');
-    } catch {
-      setError('Could not verify the organisation URL');
+      setError(await submit(values));
     } finally {
       submitting.current = false;
       setIsSubmitting(false);
     }
   }
 
-  const currentSlugAvailability = slugAvailability?.slug === slug ? slugAvailability.status : null;
-
   return {
     form,
     name,
     error,
     isSubmitting,
-    slugAvailability: currentSlugAvailability,
+    slugAvailability: slugAvailability.status,
     handleNameChange,
     handleSlugChange,
     onSubmit: (event: SubmitEvent<HTMLFormElement>) => {

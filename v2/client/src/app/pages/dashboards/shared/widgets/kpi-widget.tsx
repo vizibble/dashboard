@@ -29,42 +29,62 @@ export function KpiWidget({ presentation, result }: WidgetViewProps) {
   }
 
   const item = result.values[0];
+
   const value = item?.value ?? null;
-  const delta = typeof value === 'number' && typeof item?.previous === 'number' ? value - item.previous : null;
+
+  const delta =
+    typeof value === 'number' && typeof item?.previous === 'number' ? value - item.previous : null;
 
   return (
     <div className="flex h-full flex-col justify-center gap-1">
       <p
         className="text-foreground text-3xl font-semibold tracking-tight tabular-nums"
-        style={{ color: (item && colorOf(item, presentation)) ?? presentation.color ?? undefined }}
+        style={{
+          color: (item && colorOf(item, presentation)) ?? presentation.color ?? undefined,
+        }}
       >
         {formatValue(value, result.metric, presentation)}
       </p>
-      {delta !== null ? (
-        <p className="text-muted-foreground flex items-center gap-1 text-xs">
-          <span
-            className={cn(
-              'inline-flex items-center gap-0.5 font-medium tabular-nums',
-              delta > 0 && 'text-emerald-700 dark:text-emerald-400',
-              delta < 0 && 'text-amber-700 dark:text-amber-400',
-            )}
-          >
-            {delta > 0 ? (
-              <ArrowUpRightIcon size={12} weight="bold" aria-hidden="true" />
-            ) : delta < 0 ? (
-              <ArrowDownRightIcon size={12} weight="bold" aria-hidden="true" />
-            ) : null}
-            {formatValue(Math.abs(delta), result.metric, presentation)}
-          </span>
-          vs previous period
-        </p>
-      ) : item?.t ? (
-        <p className="text-muted-foreground text-xs">Updated {formatRelative(item.t)}</p>
-      ) : item && 'previous' in item && item.previous === null && value !== null ? (
-        <p className="text-muted-foreground text-xs">No readings in the previous period</p>
-      ) : null}
+      <KpiFooter item={item} delta={delta} presentation={presentation} metric={result.metric} />
     </div>
   );
+}
+
+type KpiFooterProps = {
+  item: SummaryValue | undefined;
+  delta: number | null;
+  presentation: WidgetViewProps['presentation'];
+  metric: WidgetViewProps['result']['metric'];
+};
+
+/** Change from the previous period, else when the reading arrived, else why there's no comparison. */
+function KpiFooter({ item, delta, presentation, metric }: KpiFooterProps) {
+  if (delta !== null) {
+    return (
+      <p className="text-muted-foreground flex items-center gap-1 text-xs">
+        <span
+          className={cn(
+            'inline-flex items-center gap-0.5 font-medium tabular-nums',
+            delta > 0 && 'text-emerald-700 dark:text-emerald-400',
+            delta < 0 && 'text-amber-700 dark:text-amber-400',
+          )}
+        >
+          {delta > 0 && <ArrowUpRightIcon size={12} weight="bold" aria-hidden="true" />}
+          {delta < 0 && <ArrowDownRightIcon size={12} weight="bold" aria-hidden="true" />}
+          {formatValue(Math.abs(delta), metric, presentation)}
+        </span>
+        vs previous period
+      </p>
+    );
+  }
+  if (item?.t) {
+    return <p className="text-muted-foreground text-xs">Updated {formatRelative(item.t)}</p>;
+  }
+  if (item && item.previous === null && item.value !== null) {
+    return <p className="text-muted-foreground text-xs">No readings in the previous period</p>;
+  }
+
+  return null;
 }
 
 function colorOf(item: SummaryValue, presentation: WidgetViewProps['presentation']) {

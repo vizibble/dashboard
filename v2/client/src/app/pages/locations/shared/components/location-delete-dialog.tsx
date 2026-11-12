@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { useLocationActions } from '@/app/pages/locations/shared/hooks/use-location-actions';
-import { useDeleteLocation, useFetchLocations } from '@/app/pages/locations/shared/hooks/use-locations-api';
+import { useDeleteLocation } from '@/app/pages/locations/shared/hooks/use-location-mutations';
+import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-location-queries';
 
 import { Button } from '@/app/shared/components/ui/button';
 import {
@@ -17,28 +18,40 @@ import {
 import { Input } from '@/app/shared/components/ui/input';
 import { Spinner } from '@/app/shared/components/ui/spinner';
 import { toast } from '@/app/shared/hooks/use-toast';
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 import { useMemo, useState } from 'react';
 
 export function LocationDeleteDialog() {
   const navigate = useNavigate();
+
   const { locationId: activeLocationId } = useParams();
+
   const { organisation } = useOrganisationContext();
+
   const { action, targetId, closeDialog } = useLocationActions();
+
   const { data: locations = [] } = useFetchLocations(organisation.id);
-  const { mutateAsync, isDeleting } = useDeleteLocation(organisation.id);
+
+  const { mutateAsync, isPending: isDeleting } = useDeleteLocation(organisation.id);
 
   const [confirmName, setConfirmName] = useState('');
 
   const location = targetId ? locations.find((item) => item.id === targetId) : null;
+
   const isOpen = action === 'delete' && Boolean(location);
 
   const directChildCount = useMemo(() => {
-    if (!location) return 0;
+    if (!location) {
+      return 0;
+    }
+
     return locations.filter((item) => item.parent_id === location.id).length;
   }, [locations, location]);
 
   const hasChildren = directChildCount > 0;
+
   const isNameConfirmed = Boolean(location && confirmName.trim() === location.name);
+
   const canConfirm = !hasChildren && isNameConfirmed;
 
   const handleOpenChange = (open: boolean) => {
@@ -53,6 +66,7 @@ export function LocationDeleteDialog() {
       return;
     }
     const { id, name } = location;
+
     try {
       await mutateAsync(id);
       setConfirmName('');
@@ -69,7 +83,7 @@ export function LocationDeleteDialog() {
       toast({
         variant: 'destructive',
         title: 'Unable to delete location',
-        description: cause instanceof Error ? cause.message : 'Something went wrong. Please try again.',
+        description: getErrorMessage(cause),
       });
     }
   };

@@ -13,8 +13,16 @@ import type { ChangeEvent } from 'react';
 import orgSetupBanner from '../../../../assets/images/org-setup-banner.png';
 
 export function OrganisationSetupPage() {
-  const { form, error, isSubmitting, slugAvailability, handleNameChange, handleSlugChange, onSubmit, clearError } =
-    useCreateOrganisation();
+  const {
+    form,
+    error,
+    isSubmitting,
+    slugAvailability,
+    handleNameChange,
+    handleSlugChange,
+    onSubmit,
+    clearError,
+  } = useCreateOrganisation();
 
   const {
     register,
@@ -24,6 +32,7 @@ export function OrganisationSetupPage() {
   } = form;
 
   const location = watch('location');
+
   return (
     <main className="bg-background min-h-svh">
       <header className="mb-8 flex p-6 md:p-10">
@@ -142,13 +151,16 @@ export function OrganisationSetupPage() {
                     aria-describedby={errors.slug ? 'slug-error' : 'slug-availability'}
                     className="h-full border-0 shadow-none focus-visible:ring-0"
                     {...register('slug', {
-                      onChange: (event: ChangeEvent<HTMLInputElement>) => handleSlugChange(event.target.value),
+                      onChange: (event: ChangeEvent<HTMLInputElement>) =>
+                        handleSlugChange(event.target.value),
                     })}
                   />
                 </div>
                 <FieldError id="slug-error">{errors.slug?.message}</FieldError>
                 {slugAvailability === 'error' && (
-                  <p className="text-muted-foreground text-xs">Availability will be checked again when you submit.</p>
+                  <p className="text-muted-foreground text-xs">
+                    Availability will be checked again when you submit.
+                  </p>
                 )}
               </Field>
             </FieldGroup>

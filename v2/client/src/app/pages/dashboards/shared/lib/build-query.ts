@@ -21,17 +21,117 @@ type WidgetConfig = Pick<
   | 'sources'
 >;
 
+type DashboardOwner = Pick<DashboardDetail, 'device_id' | 'location_id'>;
+type WidgetSource = NonNullable<WidgetInput['sources']>[number];
+type AnalyticsScope = AnalyticsQuery['scope'];
+
 /** The dashboard's own scope, narrowed by the location/device filter when one is chosen. */
-export function dashboardScope(
-  dashboard: Pick<DashboardDetail, 'device_id' | 'location_id'>,
-  filters: DashboardFilters,
-) {
-  if (filters.deviceId) return { device_ids: [filters.deviceId], location_ids: [], include_child_locations: true };
-  if (filters.locationId) return { device_ids: [], location_ids: [filters.locationId], include_child_locations: true };
+export function dashboardScope(dashboard: DashboardOwner, filters: DashboardFilters) {
+  if (filters.deviceId) {
+    return {
+      device_ids: [filters.deviceId],
+      location_ids: [],
+      include_child_locations: true,
+    };
+  }
+  if (filters.locationId) {
+    return {
+      device_ids: [],
+      location_ids: [filters.locationId],
+      include_child_locations: true,
+    };
+  }
+  const deviceIds: string[] = [];
+
+  const locationIds: string[] = [];
+
+  if (dashboard.device_id) {
+    deviceIds.push(dashboard.device_id);
+  }
+  if (dashboard.location_id) {
+    locationIds.push(dashboard.location_id);
+  }
+
   return {
-    device_ids: dashboard.device_id ? [dashboard.device_id] : [],
-    location_ids: dashboard.location_id ? [dashboard.location_id] : [],
+    device_ids: deviceIds,
+    location_ids: locationIds,
     include_child_locations: true,
+  };
+}
+
+/** The devices and locations a widget's own sources select. */
+export function sourcesScope(sources: WidgetSource[]): AnalyticsScope {
+  const deviceIds: string[] = [];
+
+  const locationIds: string[] = [];
+
+  for (const source of sources) {
+    if (source.device_id) {
+      deviceIds.push(source.device_id);
+    }
+    if (source.location_id) {
+      locationIds.push(source.location_id);
+    }
+  }
+
+  return {
+    device_ids: deviceIds,
+    location_ids: locationIds,
+    include_child_locations: sources.every((source) => source.include_child_locations !== false),
+  };
+}
+
+/** A widget with its own sources ignores the dashboard scope and filters. */
+export function widgetScope(
+  sources: WidgetSource[],
+  dashboard: DashboardOwner,
+  filters: DashboardFilters,
+): AnalyticsScope {
+  if (sources.length > 0) {
+    return sourcesScope(sources);
+  }
+
+  return dashboardScope(dashboard, filters);
+}
+
+/** A widget's own time range, or the dashboard's when it doesn't set one. */
+function widgetTime(widget: WidgetConfig, filters: DashboardFilters) {
+  if (widget.time_range == null) {
+    return {
+      time_range: filters.timeRange,
+      time_from: filters.timeFrom,
+      time_to: filters.timeTo,
+    };
+  }
+
+  return {
+    time_range: widget.time_range,
+    time_from: widget.time_from ?? null,
+    time_to: widget.time_to ?? null,
+  };
+}
+
+/** Summary widgets show one value per device; the rest draw a series over time. */
+function queryMode(widget: WidgetConfig): AnalyticsQuery['mode'] {
+  if (widget.type === 'kpi' || widget.type === 'gauge' || widget.type === 'map') {
+    return 'summary';
+  }
+  if (widget.type === 'table' && widget.aggregation === 'latest') {
+    return 'summary';
+  }
+
+  return 'series';
+}
+
+/** Only maps read position parameters. */
+function positionMetrics(widget: WidgetConfig) {
+  if (widget.type !== 'map') {
+    return { latitude_metric: null, longitude_metric: null };
+  }
+
+  return {
+    latitude_metric: widget.latitude_metric,
+    longitude_metric: widget.longitude_metric,
   };
 }
 
@@ -43,40 +143,20 @@ export function dashboardScope(
 export function buildWidgetQuery(
   id: string,
   widget: WidgetConfig,
-  dashboard: Pick<DashboardDetail, 'device_id' | 'location_id'>,
+  dashboard: DashboardOwner,
   filters: DashboardFilters,
 ): AnalyticsQuery {
-  const sources = widget.sources ?? [];
-  const scope =
-    sources.length > 0
-      ? {
-          device_ids: sources.flatMap((source) => (source.device_id ? [source.device_id] : [])),
-          location_ids: sources.flatMap((source) => (source.location_id ? [source.location_id] : [])),
-          include_child_locations: sources.every((source) => source.include_child_locations !== false),
-        }
-      : dashboardScope(dashboard, filters);
-
-  const ownRange = widget.time_range ?? null;
-  const time =
-    ownRange === null
-      ? { time_range: filters.timeRange, time_from: filters.timeFrom, time_to: filters.timeTo }
-      : { time_range: ownRange, time_from: widget.time_from ?? null, time_to: widget.time_to ?? null };
-
-  const summary = widget.type === 'kpi' || widget.type === 'gauge' || widget.type === 'map';
-  const latestTable = widget.type === 'table' && widget.aggregation === 'latest';
-
   return {
     id,
-    scope,
+    scope: widgetScope(widget.sources ?? [], dashboard, filters),
     metric_key: widget.metric_key,
     aggregation: widget.aggregation,
-    mode: summary || latestTable ? 'summary' : 'series',
+    mode: queryMode(widget),
     bucket_size: widget.bucket_size ?? 'auto',
     split_by_device: widget.type === 'gauge' ? false : (widget.split_by_device ?? true),
     compare_previous: widget.type === 'kpi' && widget.aggregation !== 'latest',
-    latitude_metric: widget.type === 'map' ? widget.latitude_metric : null,
-    longitude_metric: widget.type === 'map' ? widget.longitude_metric : null,
-    ...time,
+    ...positionMetrics(widget),
+    ...widgetTime(widget, filters),
   };
 }
 

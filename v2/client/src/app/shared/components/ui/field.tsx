@@ -11,7 +11,9 @@ function FieldGroup({ className, ...props }: FieldGroupProps) {
 type FieldSetProps = React.ComponentProps<'fieldset'>;
 
 function FieldSet({ className, ...props }: FieldSetProps) {
-  return <fieldset data-slot="field-set" className={cn('m-0 space-y-4 border-none p-0', className)} {...props} />;
+  return (
+    <fieldset data-slot="field-set" className={cn('m-0 space-y-4 border-none p-0', className)} {...props} />
+  );
 }
 
 type FieldLegendProps = React.ComponentProps<'legend'>;
@@ -72,7 +74,9 @@ function FieldLabel({ className, required, children, ...props }: FieldLabelProps
 type FieldDescriptionProps = React.ComponentProps<'p'>;
 
 function FieldDescription({ className, ...props }: FieldDescriptionProps) {
-  return <p data-slot="field-description" className={cn('text-muted-foreground text-xs', className)} {...props} />;
+  return (
+    <p data-slot="field-description" className={cn('text-muted-foreground text-xs', className)} {...props} />
+  );
 }
 
 interface FieldSeparatorProps extends React.ComponentProps<'div'> {

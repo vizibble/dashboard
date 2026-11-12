@@ -25,5 +25,9 @@ export function deleteDevice(organisationId: string, deviceId: string) {
 }
 
 export function rotateDeviceKey(organisationId: string, deviceId: string) {
-  return api.post(buildPath(routes.devices.rotateKey, { organisationId, deviceId }), undefined, deviceWithKeySchema);
+  return api.post(
+    buildPath(routes.devices.rotateKey, { organisationId, deviceId }),
+    undefined,
+    deviceWithKeySchema,
+  );
 }

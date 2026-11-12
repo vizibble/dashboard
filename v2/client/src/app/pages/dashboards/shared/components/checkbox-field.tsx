@@ -13,7 +13,14 @@ type CheckboxFieldProps = {
   disabled?: boolean;
 };
 
-export function CheckboxField({ id, checked, onCheckedChange, children, className, disabled }: CheckboxFieldProps) {
+export function CheckboxField({
+  id,
+  checked,
+  onCheckedChange,
+  children,
+  className,
+  disabled,
+}: CheckboxFieldProps) {
   return (
     <Field orientation="horizontal" className={cn('items-center gap-2', className)}>
       <Checkbox id={id} checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />

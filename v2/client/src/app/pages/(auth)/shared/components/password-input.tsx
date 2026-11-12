@@ -9,28 +9,46 @@ import { cn } from '@/utils/cn';
 type PasswordInputProps = Omit<React.ComponentProps<typeof Input>, 'type'>;
 
 export const PasswordInput = React.forwardRef<React.ElementRef<typeof Input>, PasswordInputProps>(
-  function PasswordInput({ className, ...props }, ref) {
+  function PasswordInput({ className, disabled, ...props }, ref) {
     const [visible, setVisible] = React.useState(false);
-    const toggleId = React.useId();
+
     const toggleVisibility = React.useCallback(() => {
       setVisible((current) => !current);
     }, []);
 
     return (
       <div className="relative">
-        <Input {...props} ref={ref} type={visible ? 'text' : 'password'} className={cn('pr-10', className)} />
+        <Input
+          {...props}
+          ref={ref}
+          disabled={disabled}
+          type={visible ? 'text' : 'password'}
+          className={cn('pr-11', className)}
+        />
         <Button
-          id={toggleId}
           type="button"
           variant="ghost"
           size="icon"
-          tabIndex={-1}
+          disabled={disabled}
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
+          onMouseDown={(event) => event.preventDefault()}
           onClick={toggleVisibility}
-          className="text-muted-foreground hover:text-foreground absolute top-1/2 right-0 size-9 -translate-y-1/2 hover:bg-transparent"
+          className={cn(
+            'absolute top-1/2 right-1 size-8 -translate-y-1/2',
+            'text-muted-foreground hover:text-foreground',
+            'hover:bg-muted/70',
+            'focus-visible:ring-ring focus-visible:ring-2',
+            'focus-visible:ring-offset-1',
+          )}
         >
-          <IconSwap swapKey={visible ? 'hide' : 'show'}>{visible ? <EyeSlashIcon /> : <EyeIcon />}</IconSwap>
+          <IconSwap swapKey={visible ? 'hide' : 'show'}>
+            {visible ? (
+              <EyeSlashIcon size={18} weight="regular" aria-hidden="true" />
+            ) : (
+              <EyeIcon size={18} weight="regular" aria-hidden="true" />
+            )}
+          </IconSwap>
         </Button>
       </div>
     );

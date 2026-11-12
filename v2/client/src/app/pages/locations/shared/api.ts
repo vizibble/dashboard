@@ -5,11 +5,15 @@ import type { LocationFormValues, LocationRenameValues } from '@/app/pages/locat
 import { api } from '@/app/shared/utils/api-request';
 
 export function getLocations(organisationId: string, signal?: AbortSignal) {
-  return api.get(buildPath(routes.locations.collection, { organisationId }), locationSchema.array(), { signal });
+  return api.get(buildPath(routes.locations.collection, { organisationId }), locationSchema.array(), {
+    signal,
+  });
 }
 
 export function getLocation(organisationId: string, locationId: string, signal?: AbortSignal) {
-  return api.get(buildPath(routes.locations.item, { organisationId, locationId }), locationSchema, { signal });
+  return api.get(buildPath(routes.locations.item, { organisationId, locationId }), locationSchema, {
+    signal,
+  });
 }
 
 export function createLocation(organisationId: string, values: LocationFormValues) {

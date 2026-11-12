@@ -1,11 +1,7 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import axios, { type AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type { z } from 'zod';
 
 import { API_BASE_URL } from '@/app/shared/utils/config';
-
-type DataResponse<T> = {
-  data: T;
-};
 
 type ApiRequestConfig = AxiosRequestConfig;
 
@@ -29,7 +25,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function getErrorMessage(payload: unknown, fallback: string): string {
+function getPayloadMessage(payload: unknown, fallback: string): string {
   if (!isRecord(payload)) {
     return fallback;
   }
@@ -39,7 +35,19 @@ function getErrorMessage(payload: unknown, fallback: string): string {
   if (typeof payload.message === 'string' && payload.message.trim()) {
     return payload.message;
   }
+
   return fallback;
+}
+
+function getAxiosErrorMessage(error: AxiosError): string {
+  if (error.response) {
+    return getPayloadMessage(error.response.data, `Request failed with status ${error.response.status}.`);
+  }
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+    return 'The request timed out.';
+  }
+
+  return 'Unable to reach the server. Check your connection and try again.';
 }
 
 export const apiClient = axios.create({
@@ -57,17 +65,15 @@ export const apiClient = axios.create({
  */
 export async function apiRequest<T>(config: ApiRequestConfig, schema?: z.ZodType<T>): Promise<T> {
   let response: AxiosResponse<unknown>;
+
   try {
     response = await apiClient.request<unknown>(config);
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      const message = error.response
-        ? getErrorMessage(error.response.data, `Request failed with status ${status}.`)
-        : error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT'
-          ? 'The request timed out.'
-          : 'Unable to reach the server. Check your connection and try again.';
-      throw new ApiClientError(message, { status, code: error.code });
+      throw new ApiClientError(getAxiosErrorMessage(error), {
+        status: error.response?.status,
+        code: error.code,
+      });
     }
     throw error;
   }
@@ -75,18 +81,28 @@ export async function apiRequest<T>(config: ApiRequestConfig, schema?: z.ZodType
     return undefined as T;
   }
   if (!isRecord(response.data) || !('data' in response.data)) {
-    throw new ApiClientError('The server returned an invalid response.', { status: response.status });
+    throw new ApiClientError('The server returned an invalid response.', {
+      status: response.status,
+    });
   }
-  const data = (response.data as DataResponse<unknown>).data;
-  if (!schema) return data as T;
+  const data = response.data.data;
+
+  if (!schema) {
+    return data as T;
+  }
   const result = schema.safeParse(data);
+
   if (!result.success) {
-    console.error(`Response from ${config.method} ${config.url} violates the API contract`, result.error.issues);
+    console.error(
+      `Response from ${config.method} ${config.url} violates the API contract`,
+      result.error.issues,
+    );
     throw new ApiClientError('The server returned an unexpected response.', {
       status: response.status,
       code: 'CONTRACT_VIOLATION',
     });
   }
+
   return result.data;
 }
 

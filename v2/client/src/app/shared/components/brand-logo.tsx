@@ -9,7 +9,12 @@ interface BrandLogoProps {
   'aria-label'?: string;
 }
 
-export function BrandLogo({ hideText = false, to = '/', className, 'aria-label': ariaLabel }: BrandLogoProps) {
+export function BrandLogo({
+  hideText = false,
+  to = '/',
+  className,
+  'aria-label': ariaLabel,
+}: BrandLogoProps) {
   return (
     <Link
       to={to}
@@ -18,7 +23,9 @@ export function BrandLogo({ hideText = false, to = '/', className, 'aria-label':
     >
       <Avatar className="size-7 rounded-lg">
         <AvatarImage src={logo} alt="Vizibble Logo" className="object-cover" />
-        <AvatarFallback className="bg-primary text-primary-foreground rounded-lg text-sm font-bold">V</AvatarFallback>
+        <AvatarFallback className="bg-primary text-primary-foreground rounded-lg text-sm font-bold">
+          V
+        </AvatarFallback>
       </Avatar>
       {!hideText && <span className="text-foreground text-xl font-bold tracking-tight">Vizibble</span>}
     </Link>

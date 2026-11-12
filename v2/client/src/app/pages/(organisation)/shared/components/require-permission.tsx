@@ -21,6 +21,7 @@ export function Can({
 /** Route guard. The API still rejects the underlying requests on its own. */
 export function RequirePermission({ permissions }: { permissions: Permissions }) {
   const allowed = usePermission(permissions);
+
   if (!allowed) {
     return (
       <ErrorState
@@ -31,5 +32,6 @@ export function RequirePermission({ permissions }: { permissions: Permissions })
       />
     );
   }
+
   return <Outlet />;
 }

@@ -8,7 +8,7 @@ import { useLocationActions } from '@/app/pages/locations/shared/hooks/use-locat
 import { getLocationPath } from '@/app/pages/locations/shared/lib/get-location-path';
 import type { Location } from '@/app/pages/locations/shared/types';
 import { FormField, FormSection, FormView } from '@/app/shared/components/layout/form-view';
-import { Indicator, PageHeader } from '@/app/shared/components/layout/page-header';
+import { Indicator, PageHeader, type PageMenuItem } from '@/app/shared/components/layout/page-header';
 import { Button } from '@/app/shared/components/ui/button';
 
 interface LocationDetailsProps {
@@ -28,22 +28,39 @@ export function LocationDetails({ location, locationsById }: LocationDetailsProp
 
   const parent = path.length > 1 ? path[path.length - 2] : undefined;
 
+  const menu: PageMenuItem[] = [];
+
+  if (can.update) {
+    menu.push({
+      label: 'Rename',
+      icon: PencilSimpleIcon,
+      onSelect: () => openRename(location.id),
+    });
+  }
+  if (can.delete) {
+    menu.push({
+      label: 'Delete',
+      icon: TrashIcon,
+      destructive: true,
+      onSelect: () => openDelete(location.id),
+    });
+  }
+
   return (
     <>
       <PageHeader
-        back={parent ? { to: `/locations/${parent.id}`, label: parent.name } : { to: '/locations', label: 'Locations' }}
+        back={
+          parent
+            ? { to: `/locations/${parent.id}`, label: parent.name }
+            : { to: '/locations', label: 'Locations' }
+        }
         title={location.name}
         status={
           <Indicator tone={location.can_have_children ? 'blue' : 'green'}>
             {location.can_have_children ? 'Container' : 'Device-ready'}
           </Indicator>
         }
-        menu={[
-          ...(can.update ? [{ label: 'Rename', icon: PencilSimpleIcon, onSelect: () => openRename(location.id) }] : []),
-          ...(can.delete
-            ? [{ label: 'Delete', icon: TrashIcon, destructive: true, onSelect: () => openDelete(location.id) }]
-            : []),
-        ]}
+        menu={menu}
         actions={
           can.create &&
           location.can_have_children && (
@@ -56,7 +73,9 @@ export function LocationDetails({ location, locationsById }: LocationDetailsProp
 
       <FormView>
         <FormSection title="Details" columns={3}>
-          <FormField label="Type">{location.can_have_children ? 'Container space' : 'Terminal space'}</FormField>
+          <FormField label="Type">
+            {location.can_have_children ? 'Container space' : 'Terminal space'}
+          </FormField>
           <FormField label="Parent">
             {parent && (
               <Link to={`/locations/${parent.id}`} className="hover:text-primary">

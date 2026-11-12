@@ -1,5 +1,4 @@
 import { authClient } from '@/app/pages/(auth)/client';
-import { useEffect, useState } from 'react';
 
 type SessionState =
   | { status: 'loading' }
@@ -7,50 +6,21 @@ type SessionState =
   | { status: 'signed-out' }
   | { status: 'error'; error: string };
 
-export function useSession() {
-  const [state, setState] = useState<SessionState>({
-    status: 'loading',
-  });
+const SESSION_ERROR = 'Unable to verify your session.';
 
-  useEffect(() => {
-    let active = true;
-    async function checkSession() {
-      setState({ status: 'loading' });
-      try {
-        const result = await authClient.getSession();
-        if (!active) {
-          return;
-        }
-        if (result.error) {
-          setState({
-            status: 'error',
-            error: result.error.message || 'Unable to verify your session.',
-          });
-          return;
-        }
-        const user = result.data?.user;
-        setState(
-          user
-            ? { status: 'signed-in', email: user.email, emailVerified: user.emailVerified }
-            : { status: 'signed-out' },
-        );
-      } catch (cause: unknown) {
-        if (!active) {
-          return;
-        }
-        setState({
-          status: 'error',
-          error: cause instanceof Error ? cause.message : 'Unable to verify your session.',
-        });
-      }
-    }
+/** Better Auth's reactive session, narrowed to what route guards need. */
+export function useSession(): SessionState {
+  const { data, isPending, error } = authClient.useSession();
 
-    void checkSession();
+  if (isPending) {
+    return { status: 'loading' };
+  }
+  if (error) {
+    return { status: 'error', error: error.message || SESSION_ERROR };
+  }
+  if (!data) {
+    return { status: 'signed-out' };
+  }
 
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return state;
+  return { status: 'signed-in', email: data.user.email, emailVerified: data.user.emailVerified };
 }

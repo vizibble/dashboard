@@ -1,6 +1,13 @@
 import { roleDescriptions, roleLabels, type AssignableRole } from '@vizibble/shared/permissions';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/shared/components/ui/select';
+import { isAssignableRole } from '@/app/pages/(organisation)/shared/lib/roles';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/app/shared/components/ui/select';
 
 type RoleSelectProps = {
   id?: string;
@@ -14,7 +21,15 @@ type RoleSelectProps = {
 
 export function RoleSelect({ id, value, roles, onChange, disabled, className, ...props }: RoleSelectProps) {
   return (
-    <Select value={value} onValueChange={(next) => onChange(next as AssignableRole)} disabled={disabled}>
+    <Select
+      value={value}
+      onValueChange={(next) => {
+        if (isAssignableRole(next)) {
+          onChange(next);
+        }
+      }}
+      disabled={disabled}
+    >
       <SelectTrigger id={id} aria-label={props['aria-label']} className={className}>
         <SelectValue>{roleLabels[value]}</SelectValue>
       </SelectTrigger>

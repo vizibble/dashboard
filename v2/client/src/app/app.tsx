@@ -5,14 +5,14 @@ import { MotionConfig } from 'motion/react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { CheckEmailPage } from '@/app/pages/(auth)/(email)/check-email/page';
+import { VerifyEmailPage } from '@/app/pages/(auth)/(email)/verify-email/page';
 import { ForgotPasswordPage } from '@/app/pages/(auth)/(password)/forgot-password/page';
+import { ResetPasswordPage } from '@/app/pages/(auth)/(password)/reset-password/page';
 import { AuthLayout } from '@/app/pages/(auth)/layout';
 import { LoginForm } from '@/app/pages/(auth)/login/page';
 import { OAuthConsentPage } from '@/app/pages/(auth)/oauth-consent/page';
-import { ResetPasswordPage } from '@/app/pages/(auth)/(password)/reset-password/page';
 import { RequireAuth } from '@/app/pages/(auth)/shared/components/require-auth';
 import { SignupForm } from '@/app/pages/(auth)/signup/page';
-import { VerifyEmailPage } from '@/app/pages/(auth)/(email)/verify-email/page';
 
 import { AcceptInvitation } from '@/app/pages/(organisation)/accept-invitation/page';
 import { MembersPage } from '@/app/pages/(organisation)/members/page';
@@ -64,7 +64,10 @@ export function App() {
                   <Route index element={<Navigate to="/dashboard" replace />} />
 
                   {/* Dashboard */}
-                  <Route path="dashboard" element={<RequirePermission permissions={{ dashboard: ['read'] }} />}>
+                  <Route
+                    path="dashboard"
+                    element={<RequirePermission permissions={{ dashboard: ['read'] }} />}
+                  >
                     <Route index element={<DashboardPage />} />
                   </Route>
 
@@ -75,13 +78,19 @@ export function App() {
                   </Route>
 
                   {/* Locations */}
-                  <Route path="locations" element={<RequirePermission permissions={{ location: ['read'] }} />}>
+                  <Route
+                    path="locations"
+                    element={<RequirePermission permissions={{ location: ['read'] }} />}
+                  >
                     <Route index element={<LocationsTreePage />} />
                     <Route path=":locationId" element={<LocationDetailPage />} />
                   </Route>
 
                   {/* Templates */}
-                  <Route path="templates" element={<RequirePermission permissions={{ template: ['read'] }} />}>
+                  <Route
+                    path="templates"
+                    element={<RequirePermission permissions={{ template: ['read'] }} />}
+                  >
                     <Route index element={<TemplatesListPage />} />
                     <Route path=":templateId" element={<TemplateDetailPage />} />
                   </Route>

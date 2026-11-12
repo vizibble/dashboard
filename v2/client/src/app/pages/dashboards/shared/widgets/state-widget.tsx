@@ -10,17 +10,33 @@ const PALETTE = ['var(--chart-1)', 'var(--chart-3)', 'var(--chart-2)', 'var(--ch
  */
 export function StateWidget({ presentation, result }: WidgetViewProps) {
   const from = result.range.from.getTime();
+
   const span = result.range.to.getTime() - from || 1;
+
   const tz = result.range.timezone;
 
   const colorFor = (() => {
     const seen = new Map<string, string>();
+
     return (value: string | number | boolean | null) => {
-      if (value === true) return presentation.color ?? 'var(--chart-1)';
-      if (value === false) return 'var(--muted-foreground)';
+      if (value === true) {
+        return presentation.color ?? 'var(--chart-1)';
+      }
+      if (value === false) {
+        return 'var(--muted-foreground)';
+      }
       const key = String(value);
-      if (!seen.has(key)) seen.set(key, PALETTE[seen.size % PALETTE.length]!);
-      return seen.get(key)!;
+
+      const known = seen.get(key);
+
+      if (known) {
+        return known;
+      }
+      const color = PALETTE[seen.size % PALETTE.length] ?? 'var(--chart-1)';
+
+      seen.set(key, color);
+
+      return color;
     };
   })();
 
@@ -30,6 +46,7 @@ export function StateWidget({ presentation, result }: WidgetViewProps) {
     <div className="flex h-full flex-col gap-2 overflow-y-auto">
       {result.series.map((series) => {
         const points = series.points.filter((point) => point.value !== null);
+
         return (
           <div key={series.device_id ?? 'all'} className="min-w-0">
             {result.series.length > 1 && (
@@ -38,11 +55,17 @@ export function StateWidget({ presentation, result }: WidgetViewProps) {
             <div className="bg-muted/60 relative h-5 overflow-hidden rounded-sm">
               {points.map((point, index) => {
                 const next = points[index + 1];
+
                 const start = (point.t.getTime() - from) / span;
+
                 const end = next ? (next.t.getTime() - from) / span : start + 0.004;
+
                 const label = formatValue(point.value, result.metric, presentation);
+
                 const color = colorFor(point.value);
+
                 legend.set(label, color);
+
                 return (
                   <Tooltip key={point.t.getTime()}>
                     <TooltipTrigger asChild>

@@ -9,12 +9,15 @@ let probe: CanvasRenderingContext2D | null = null;
 
 function toRgb(color: string) {
   probe ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-  if (!probe || !color) return color;
+  if (!probe || !color) {
+    return color;
+  }
   probe.clearRect(0, 0, 1, 1);
   probe.fillStyle = '#000';
   probe.fillStyle = color;
   probe.fillRect(0, 0, 1, 1);
   const [r, g, b, a] = probe.getImageData(0, 0, 1, 1).data;
+
   return `rgba(${r}, ${g}, ${b}, ${((a ?? 255) / 255).toFixed(3)})`;
 }
 

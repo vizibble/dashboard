@@ -4,24 +4,36 @@ import { useForm } from 'react-hook-form';
 
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { useLocationActions } from '@/app/pages/locations/shared/hooks/use-location-actions';
-import { useFetchLocations, useRenameLocation } from '@/app/pages/locations/shared/hooks/use-locations-api';
+import { useRenameLocation } from '@/app/pages/locations/shared/hooks/use-location-mutations';
+import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-location-queries';
 import type { LocationRenameValues } from '@/app/pages/locations/shared/types';
 import { renameLocationSchema } from '@vizibble/shared/locations';
 
 import { Button } from '@/app/shared/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/app/shared/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/app/shared/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/app/shared/components/ui/field';
 import { Input } from '@/app/shared/components/ui/input';
 import { Spinner } from '@/app/shared/components/ui/spinner';
 import { toast } from '@/app/shared/hooks/use-toast';
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 
 export function LocationRenameDialog() {
   const { organisation } = useOrganisationContext();
+
   const { action, targetId, closeDialog } = useLocationActions();
-  const { locations } = useFetchLocations(organisation.id);
-  const { isRenaming, mutateAsync } = useRenameLocation(organisation.id);
+
+  const { data: locations = [] } = useFetchLocations(organisation.id);
+
+  const { isPending: isRenaming, mutateAsync } = useRenameLocation(organisation.id);
 
   const location = targetId ? locations.find((item) => item.id === targetId) : null;
+
   const isOpen = action === 'rename' && Boolean(location);
 
   const {
@@ -49,6 +61,7 @@ export function LocationRenameDialog() {
         locationId: location.id,
         values,
       });
+
       closeDialog();
       toast({
         variant: 'success',
@@ -59,7 +72,7 @@ export function LocationRenameDialog() {
       toast({
         variant: 'destructive',
         title: 'Unable to rename location',
-        description: cause instanceof Error ? cause.message : 'Something went wrong. Please try again.',
+        description: getErrorMessage(cause),
       });
     }
   };

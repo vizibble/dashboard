@@ -10,6 +10,7 @@ interface CheckboxProps extends Omit<React.ComponentProps<'input'>, 'type'> {
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, checked, defaultChecked, onChange, onCheckedChange, ...props }, ref) => {
     const [isChecked, setIsChecked] = React.useState(defaultChecked ?? false);
+
     const resolvedChecked = checked !== undefined ? checked : isChecked;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +55,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     );
   },
 );
+
 Checkbox.displayName = 'Checkbox';
 
 export { Checkbox };

@@ -7,7 +7,10 @@ export function getSafeReturnPath(value: string | null | undefined, fallback = '
     if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) {
       return false;
     }
-    const hasControlCharacters = [...path].some((char) => char.charCodeAt(0) <= 31 || char.charCodeAt(0) === 127);
+    const hasControlCharacters = [...path].some(
+      (char) => char.charCodeAt(0) <= 31 || char.charCodeAt(0) === 127,
+    );
+
     if (hasControlCharacters) {
       return false;
     }
@@ -17,9 +20,11 @@ export function getSafeReturnPath(value: string | null | undefined, fallback = '
       return false;
     }
   };
+
   if (value && isSafePath(value)) {
     return value;
   }
+
   return isSafePath(fallback) ? fallback : '/dashboard';
 }
 
@@ -28,8 +33,11 @@ export function getSafeReturnPath(value: string | null | undefined, fallback = '
  */
 export function getVerificationCallbackUrl(next: string): string {
   const safeNext = getSafeReturnPath(next);
+
   const url = new URL('/verify-email', window.location.origin);
+
   url.searchParams.set('next', safeNext);
+
   return url.toString();
 }
 
@@ -45,3 +53,32 @@ export type CheckEmailState = {
   email?: string;
   next?: string;
 };
+
+export type AuthFlowParams = {
+  invitationId: string | null;
+  /** Where to go once authenticated. */
+  next: string;
+  /** Query to carry between login and signup links. */
+  authQuery: string;
+};
+
+/**
+ * Reads the invitation / returnTo params shared by login and signup.
+ */
+export function getAuthFlowParams(searchParams: URLSearchParams, fallback: string): AuthFlowParams {
+  const invitationId = searchParams.get('invitationId');
+
+  const returnTo = getSafeReturnPath(searchParams.get('returnTo'), fallback);
+
+  const authParams = new URLSearchParams();
+
+  if (invitationId) {
+    authParams.set('invitationId', invitationId);
+  }
+  if (searchParams.has('returnTo')) {
+    authParams.set('returnTo', returnTo);
+  }
+  const next = invitationId ? `/accept-invitation?id=${encodeURIComponent(invitationId)}` : returnTo;
+
+  return { invitationId, next, authQuery: authParams.toString() };
+}

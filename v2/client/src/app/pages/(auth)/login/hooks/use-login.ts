@@ -1,7 +1,8 @@
 import { authClient } from '@/app/pages/(auth)/client';
 import type { LoginInput } from '@/app/pages/(auth)/login/schemas/login-schema';
+import { getAuthErrorMessage, logAuthFailure } from '@/app/pages/(auth)/shared/utils/auth-errors';
 import {
-  getSafeReturnPath,
+  getAuthFlowParams,
   getVerificationCallbackUrl,
   type CheckEmailState,
 } from '@/app/pages/(auth)/shared/utils/auth-redirects';
@@ -15,19 +16,13 @@ function isOAuthRequest(params: URLSearchParams) {
 
 export function useLogin() {
   const navigate = useNavigate();
+
   const [searchParams] = useSearchParams();
-  const invitationId = searchParams.get('invitationId');
-  const returnTo = getSafeReturnPath(searchParams.get('returnTo'), '/dashboard');
-  const next = invitationId ? `/accept-invitation?id=${encodeURIComponent(invitationId)}` : returnTo;
-  const authParams = new URLSearchParams();
-  if (invitationId) {
-    authParams.set('invitationId', invitationId);
-  }
-  if (searchParams.has('returnTo')) {
-    authParams.set('returnTo', returnTo);
-  }
+
+  const { invitationId, next, authQuery } = getAuthFlowParams(searchParams, '/dashboard');
 
   const [submitError, setSubmitError] = useState<string>();
+
   const onSubmit = async (data: LoginInput) => {
     setSubmitError(undefined);
     try {
@@ -35,35 +30,36 @@ export function useLogin() {
         ...data,
         callbackURL: getVerificationCallbackUrl(next),
       });
+
       if (result.error) {
         // Only returned after a correct password, so it doesn't reveal whether an account exists
         if (result.error.code === 'EMAIL_NOT_VERIFIED') {
           const state: CheckEmailState = { email: data.email, next };
+
           void navigate('/check-email', { state });
+
           return;
         }
-        if (result.error.status === 429) {
-          setSubmitError('Too many attempts. Wait a minute and try again.');
-          return;
-        }
-        setSubmitError('Incorrect email or password.');
+        setSubmitError(
+          getAuthErrorMessage(
+            result.error,
+            'Too many attempts. Wait a minute and try again.',
+            'Incorrect email or password.',
+          ),
+        );
+
         return;
       }
       // Signing in for an AI app (ChatGPT, Claude): the OAuth client plugin continues to consent.
-      if (isOAuthRequest(searchParams)) return;
+      if (isOAuthRequest(searchParams)) {
+        return;
+      }
       void navigate(next);
     } catch (cause) {
-      if (cause instanceof Error) {
-        console.error(cause.message);
-      }
+      logAuthFailure(cause);
       setSubmitError('Unable to log in.');
     }
   };
 
-  return {
-    onSubmit,
-    submitError,
-    invitationId,
-    authQuery: authParams.toString(),
-  };
+  return { onSubmit, submitError, invitationId, authQuery };
 }

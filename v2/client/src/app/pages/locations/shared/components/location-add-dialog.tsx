@@ -5,26 +5,39 @@ import { useNavigate } from 'react-router-dom';
 
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { useLocationActions } from '@/app/pages/locations/shared/hooks/use-location-actions';
-import { useCreateLocation, useFetchLocations } from '@/app/pages/locations/shared/hooks/use-locations-api';
+import { useCreateLocation } from '@/app/pages/locations/shared/hooks/use-location-mutations';
+import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-location-queries';
 import type { LocationFormInput, LocationFormValues } from '@/app/pages/locations/shared/types';
 import { createLocationSchema } from '@vizibble/shared/locations';
 
 import { Button } from '@/app/shared/components/ui/button';
 import { Checkbox } from '@/app/shared/components/ui/checkbox';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/app/shared/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/app/shared/components/ui/dialog';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/app/shared/components/ui/field';
 import { Input } from '@/app/shared/components/ui/input';
 import { Spinner } from '@/app/shared/components/ui/spinner';
 import { toast } from '@/app/shared/hooks/use-toast';
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 
 export function LocationAddDialog() {
   const navigate = useNavigate();
+
   const { organisation } = useOrganisationContext();
+
   const { action, parentId, closeDialog } = useLocationActions();
-  const { locations } = useFetchLocations(organisation.id);
-  const { isCreating, mutateAsync } = useCreateLocation(organisation.id);
+
+  const { data: locations = [] } = useFetchLocations(organisation.id);
+
+  const { isPending: isCreating, mutateAsync } = useCreateLocation(organisation.id);
 
   const isOpen = action === 'create';
+
   const parentLocation = parentId ? locations.find((l) => l.id === parentId) : null;
 
   const {
@@ -59,6 +72,7 @@ export function LocationAddDialog() {
         ...values,
         parent_id: parentId ?? null,
       });
+
       closeDialog();
       toast({
         variant: 'success',
@@ -70,7 +84,7 @@ export function LocationAddDialog() {
       toast({
         variant: 'destructive',
         title: 'Unable to create location',
-        description: cause instanceof Error ? cause.message : 'Something went wrong. Please try again.',
+        description: getErrorMessage(cause),
       });
     }
   };
@@ -79,9 +93,15 @@ export function LocationAddDialog() {
     <Dialog open={isOpen} onOpenChange={(open) => !open && closeDialog()}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
         <DialogHeader className="border-border/60 border-b px-6 py-5">
-          <DialogTitle>{parentLocation ? `Add sub-location in ${parentLocation.name}` : 'Add location'}</DialogTitle>
+          <DialogTitle>
+            {parentLocation ? `Add sub-location in ${parentLocation.name}` : 'Add location'}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={(event) => void handleSubmit(onSubmit)(event)} className="space-y-5 px-6 py-5" noValidate>
+        <form
+          onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+          className="space-y-5 px-6 py-5"
+          noValidate
+        >
           <Field>
             <FieldLabel htmlFor="location-name" required>
               Location name
@@ -118,7 +138,9 @@ export function LocationAddDialog() {
                 <FieldLabel htmlFor="location-can-have-children" className="cursor-pointer font-medium">
                   Allow sub-locations
                 </FieldLabel>
-                <FieldDescription>Enable this if the location should contain other locations.</FieldDescription>
+                <FieldDescription>
+                  Enable this if the location should contain other locations.
+                </FieldDescription>
               </div>
             </Field>
           </div>

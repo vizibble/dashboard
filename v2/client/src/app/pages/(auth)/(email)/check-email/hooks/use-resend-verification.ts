@@ -1,13 +1,16 @@
 import { authClient } from '@/app/pages/(auth)/client';
+import { getAuthErrorMessage, logAuthFailure } from '@/app/pages/(auth)/shared/utils/auth-errors';
 import { getVerificationCallbackUrl } from '@/app/pages/(auth)/shared/utils/auth-redirects';
 import { useEffect, useState } from 'react';
 
 const COOLDOWN_SECONDS = 60;
 
-type ResendStatus = { kind: 'idle' } | { kind: 'sending' } | { kind: 'sent' } | { kind: 'error'; message: string };
+type ResendStatus =
+  { kind: 'idle' } | { kind: 'sending' } | { kind: 'sent' } | { kind: 'error'; message: string };
 
 export function useResendVerification(next: string) {
   const [status, setStatus] = useState<ResendStatus>({ kind: 'idle' });
+
   const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
@@ -15,6 +18,7 @@ export function useResendVerification(next: string) {
       return;
     }
     const timer = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
+
     return () => window.clearTimeout(timer);
   }, [cooldown]);
 
@@ -25,22 +29,23 @@ export function useResendVerification(next: string) {
         email,
         callbackURL: getVerificationCallbackUrl(next),
       });
+
       if (result.error) {
         setStatus({
           kind: 'error',
-          message:
-            result.error.status === 429
-              ? 'Too many requests. Wait a few minutes and try again.'
-              : 'Unable to resend the email. Try again.',
+          message: getAuthErrorMessage(
+            result.error,
+            'Too many requests. Wait a few minutes and try again.',
+            'Unable to resend the email. Try again.',
+          ),
         });
+
         return;
       }
       setStatus({ kind: 'sent' });
       setCooldown(COOLDOWN_SECONDS);
     } catch (cause) {
-      if (cause instanceof Error) {
-        console.error(cause.message);
-      }
+      logAuthFailure(cause);
       setStatus({ kind: 'error', message: 'Unable to resend the email. Try again.' });
     }
   };

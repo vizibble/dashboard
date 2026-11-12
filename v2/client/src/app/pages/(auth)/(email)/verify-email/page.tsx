@@ -8,12 +8,16 @@ import { Button } from '@/components/ui/button';
 // Better Auth redirects here after handling the link, adding ?error=<code> on failure
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
+
   const error = searchParams.get('error');
+
   const next = getSafeReturnPath(searchParams.get('next'), '/dashboard');
 
   if (error) {
     const expired = error.toLowerCase().includes('expired');
+
     const state: CheckEmailState = { next };
+
     return (
       <AuthNotice
         icon={LinkBreakIcon}

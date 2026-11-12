@@ -42,7 +42,8 @@ export type ButtonProps = React.ComponentProps<'button'> &
     loadingText?: React.ReactNode;
   };
 
-const layer = 'col-start-1 row-start-1 inline-flex items-center justify-center gap-[inherit] transition-opacity';
+const layer =
+  'col-start-1 row-start-1 inline-flex items-center justify-center gap-[inherit] transition-opacity';
 
 function Button({
   className,

@@ -1,20 +1,27 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AssignableRole } from '@vizibble/shared/permissions';
+import { assignableRoles, type AssignableRole } from '@vizibble/shared/permissions';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { RoleSelect } from '@/app/pages/(organisation)/members/components/role-select';
-import { useInviteMember } from '@/app/pages/(organisation)/members/hooks/use-members';
+import { useInviteMember } from '@/app/pages/(organisation)/members/hooks/use-member-mutations';
 import { Button } from '@/app/shared/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/app/shared/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/app/shared/components/ui/dialog';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/app/shared/components/ui/field';
 import { Input } from '@/app/shared/components/ui/input';
 import { toast } from '@/app/shared/hooks/use-toast';
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 
 const inviteSchema = z.object({
   email: z.string().email('Enter a valid email address'),
-  role: z.string() as z.ZodType<AssignableRole>,
+  role: z.enum(assignableRoles),
 });
 
 type InviteFormValues = z.infer<typeof inviteSchema>;
@@ -38,18 +45,20 @@ export function InviteMemberDialog({ open, onClose, roles }: InviteMemberDialogP
     formState: { errors },
   } = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { email: '', role: 'viewer' },
+    defaultValues: { email: '', role: 'member' },
   });
 
   // Reset form when dialog opens/closes.
   useEffect(() => {
     if (open) {
-      reset({ email: '', role: 'viewer' });
+      reset({ email: '', role: 'member' });
     }
   }, [open, reset]);
 
   const close = () => {
-    if (isPending) return;
+    if (isPending) {
+      return;
+    }
     onClose();
   };
 
@@ -63,9 +72,7 @@ export function InviteMemberDialog({ open, onClose, roles }: InviteMemberDialogP
       });
       close();
     } catch (cause: unknown) {
-      setError('root', {
-        message: cause instanceof Error ? cause.message : 'Something went wrong. Please try again.',
-      });
+      setError('root', { message: getErrorMessage(cause) });
     }
   };
 

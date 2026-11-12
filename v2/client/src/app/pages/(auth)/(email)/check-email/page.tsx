@@ -13,14 +13,19 @@ import { Input } from '@/components/ui/input';
 
 export function CheckEmailPage() {
   const location = useLocation();
+
   const state = location.state as CheckEmailState | null;
+
   const next = getSafeReturnPath(state?.next);
 
   const [email, setEmail] = useState(state?.email ?? '');
+
   const knownEmail = Boolean(state?.email);
 
   const { resend, status, cooldown } = useResendVerification(next);
+
   const normalizedEmail = email.trim().toLowerCase();
+
   const canResend = normalizedEmail.includes('@') && status.kind !== 'sending' && cooldown === 0;
 
   return (
@@ -63,10 +68,8 @@ export function CheckEmailPage() {
                   <Spinner aria-hidden="true" />
                   Sending…
                 </>
-              ) : cooldown > 0 ? (
-                `Resend email in ${cooldown}s`
               ) : (
-                'Resend verification email'
+                getResendLabel(cooldown)
               )}
             </Button>
           </form>
@@ -92,8 +95,8 @@ export function CheckEmailPage() {
     >
       {knownEmail ? (
         <p>
-          We sent a verification link to <span className="text-foreground font-medium">{state?.email}</span>. Open it to
-          activate your account.
+          We sent a verification link to <span className="text-foreground font-medium">{state?.email}</span>.
+          Open it to activate your account.
         </p>
       ) : (
         <p>We sent you a verification link. Open it to activate your account.</p>
@@ -101,4 +104,12 @@ export function CheckEmailPage() {
       <p>The link expires in 1 hour. If you can’t find it, check your spam folder.</p>
     </AuthNotice>
   );
+}
+
+function getResendLabel(cooldown: number) {
+  if (cooldown > 0) {
+    return `Resend email in ${cooldown}s`;
+  }
+
+  return 'Resend verification email';
 }

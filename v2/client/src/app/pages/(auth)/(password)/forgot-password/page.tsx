@@ -25,6 +25,7 @@ export function ForgotPasswordPage() {
     defaultValues: { email: '' },
     mode: 'onBlur',
   });
+
   const { onSubmit, sentTo, submitError, reset } = useForgotPassword();
 
   if (sentTo) {
@@ -44,8 +45,8 @@ export function ForgotPasswordPage() {
         }
       >
         <p>
-          If an account exists for <span className="text-foreground font-medium">{sentTo}</span>, we’ve sent a link to
-          reset your password.
+          If an account exists for <span className="text-foreground font-medium">{sentTo}</span>, we’ve sent a
+          link to reset your password.
         </p>
         <p>The link expires in 1 hour. If you can’t find it, check your spam folder.</p>
       </AuthNotice>
@@ -56,7 +57,9 @@ export function ForgotPasswordPage() {
     <form className="flex flex-col gap-6" onSubmit={(event) => void handleSubmit(onSubmit)(event)} noValidate>
       <div className="space-y-1.5">
         <h1 className="text-2xl font-semibold tracking-tight">Reset your password</h1>
-        <p className="text-muted-foreground text-sm">Enter your account email and we’ll send you a reset link.</p>
+        <p className="text-muted-foreground text-sm">
+          Enter your account email and we’ll send you a reset link.
+        </p>
       </div>
 
       {submitError && <StatusBanner variant="destructive">{submitError}</StatusBanner>}

@@ -16,7 +16,13 @@ const toneStyles = {
 };
 
 // Status screen used by the verification and password-reset flows
-export function AuthNotice({ icon: IconComponent, tone = 'default', title, children, actions }: AuthNoticeProps) {
+export function AuthNotice({
+  icon: IconComponent,
+  tone = 'default',
+  title,
+  children,
+  actions,
+}: AuthNoticeProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="space-y-4">

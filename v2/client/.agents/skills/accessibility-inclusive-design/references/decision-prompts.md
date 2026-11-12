@@ -497,7 +497,8 @@ Question tool pattern:
 ```js
 question({
   question: 'What display density should the content use?',
-  recommended_default: 'Use a readable list by default and offer grid view when comparison or visual overview matters.',
+  recommended_default:
+    'Use a readable list by default and offer grid view when comparison or visual overview matters.',
   options: ['Readable list', 'Compact list', 'Grid/cards', 'User can switch list/grid', 'Other / custom'],
 });
 ```
@@ -528,7 +529,8 @@ Question tool pattern:
 ```js
 question({
   question: 'What purpose does this image or media serve in the user task?',
-  recommended_default: 'Describe meaningful content or action; hide purely decorative media from assistive technology.',
+  recommended_default:
+    'Describe meaningful content or action; hide purely decorative media from assistive technology.',
   options: [
     'Decorative only',
     'Informative image or illustration',

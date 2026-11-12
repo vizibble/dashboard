@@ -7,11 +7,12 @@ import { z } from 'zod';
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { DeviceKeyPanel } from '@/app/pages/devices/shared/components/device-key-panel';
 import { useDeviceActions } from '@/app/pages/devices/shared/hooks/use-device-actions';
-import { useCreateDevice, useFetchDevices, useUpdateDevice } from '@/app/pages/devices/shared/hooks/use-devices-api';
-import type { UpdateDeviceInput } from '@/app/pages/devices/shared/types';
-import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-locations-api';
-import { getLocationPath } from '@/app/pages/locations/shared/lib/get-location-path';
-import { useFetchTemplates } from '@/app/pages/templates/shared/hooks/use-templates-api';
+import { useCreateDevice, useUpdateDevice } from '@/app/pages/devices/shared/hooks/use-device-mutations';
+import { useFetchDevices } from '@/app/pages/devices/shared/hooks/use-device-queries';
+import { getDeviceChanges } from '@/app/pages/devices/shared/lib/device-changes';
+import { useFetchLocations } from '@/app/pages/locations/shared/hooks/use-location-queries';
+import { getLocationPathLabel } from '@/app/pages/locations/shared/lib/get-location-path';
+import { useFetchTemplates } from '@/app/pages/templates/shared/hooks/use-template-queries';
 import { Button } from '@/app/shared/components/ui/button';
 import {
   Dialog,
@@ -23,8 +24,15 @@ import {
 } from '@/app/shared/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/app/shared/components/ui/field';
 import { Input } from '@/app/shared/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/shared/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/app/shared/components/ui/select';
 import { toast } from '@/app/shared/hooks/use-toast';
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 
 const deviceSchema = z.object({
   template_id: z.string().min(1, 'Please choose a template.'),
@@ -34,40 +42,74 @@ const deviceSchema = z.object({
 
 type DeviceFormValues = z.infer<typeof deviceSchema>;
 
+function getTemplateHint(templateCount: number, parameterCount: number | undefined) {
+  if (templateCount === 0) {
+    return 'Create a template first — it defines what the device sends.';
+  }
+  if (parameterCount === undefined) {
+    return 'The template defines what the device sends.';
+  }
+
+  return `Sends ${parameterCount} parameter${parameterCount === 1 ? '' : 's'}.`;
+}
+
 /**
  * Register (?action=create) or edit (?action=edit&id=…) a device.
  * A device is an instance of a template, placed in a leaf location (one that can't hold other locations).
  */
 export function DeviceEditorDialog() {
   const navigate = useNavigate();
+
   const { organisation } = useOrganisationContext();
+
   const { action, targetId, closeDialog } = useDeviceActions();
-  const { devices } = useFetchDevices(organisation.id);
-  const { locations } = useFetchLocations(organisation.id);
-  const { templates } = useFetchTemplates(organisation.id);
-  const { mutateAsync: create, isCreating } = useCreateDevice(organisation.id);
-  const { mutateAsync: update, isUpdating } = useUpdateDevice(organisation.id);
+
+  const { data: devices = [] } = useFetchDevices(organisation.id);
+
+  const { data: locations = [] } = useFetchLocations(organisation.id);
+
+  const { data: templates = [] } = useFetchTemplates(organisation.id);
+
+  const { mutateAsync: create, isPending: isCreating } = useCreateDevice(organisation.id);
+
+  const { mutateAsync: update, isPending: isUpdating } = useUpdateDevice(organisation.id);
 
   const device = action === 'edit' && targetId ? devices.find((item) => item.id === targetId) : undefined;
+
   const isOpen = action === 'create' || Boolean(device);
+
   const isSaving = isCreating || isUpdating;
 
   // Leaf locations, labelled with their full path so similarly named rooms are distinguishable.
   const leafLocations = useMemo(() => {
     const byId = new Map(locations.map((location) => [location.id, location]));
+
     return locations
       .filter((location) => !location.can_have_children)
       .map((location) => ({
         id: location.id,
-        label: getLocationPath(location, byId)
-          .map((item) => item.name)
-          .join(' / '),
+        label: getLocationPathLabel(location, byId),
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [locations]);
 
   // Post-creation state: show the device key after a successful create.
-  const [created, setCreated] = useState<{ deviceId: string; key: string } | null>(null);
+  const [created, setCreated] = useState<{
+    deviceId: string;
+    key: string;
+  } | null>(null);
+
+  // Clear the post-creation state each time the dialog opens or switches device (adjusting state while rendering).
+  const openSession = isOpen ? (device?.id ?? 'new') : null;
+
+  const [currentSession, setCurrentSession] = useState(openSession);
+
+  if (openSession !== currentSession) {
+    setCurrentSession(openSession);
+    if (openSession !== null) {
+      setCreated(null);
+    }
+  }
 
   const {
     register,
@@ -89,41 +131,48 @@ export function DeviceEditorDialog() {
         name: device?.name ?? '',
         location_id: device?.location_id ?? '',
       });
-      setCreated(null);
     }
   }, [isOpen, device?.id, reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const watchTemplateId = useWatch({ control, name: 'template_id' });
+
   const selectedTemplate = templates.find((template) => template.id === watchTemplateId);
 
   const finish = () => {
-    if (created) void navigate(`/devices/${created.deviceId}`);
-    else closeDialog();
+    if (created) {
+      void navigate(`/devices/${created.deviceId}`);
+    } else {
+      closeDialog();
+    }
+  };
+
+  const saveChanges = async (values: DeviceFormValues) => {
+    if (!device) {
+      return;
+    }
+    const changes = getDeviceChanges(device, values);
+
+    if (Object.keys(changes).length > 0) {
+      await update({ deviceId: device.id, values: changes });
+    }
+    closeDialog();
+    toast({ variant: 'success', title: 'Device updated' });
+  };
+
+  const createDevice = async (values: DeviceFormValues) => {
+    const result = await create({ ...values, name: values.name.trim() });
+
+    setCreated({ deviceId: result.id, key: result.device_key });
+    toast({ variant: 'success', title: 'Device registered successfully' });
   };
 
   const onSubmit = async (values: DeviceFormValues) => {
     try {
-      if (device) {
-        // Send only what changed.
-        const changes: UpdateDeviceInput = {
-          ...(values.name.trim() === device.name ? {} : { name: values.name.trim() }),
-          ...(values.template_id === device.template_id ? {} : { template_id: values.template_id }),
-          ...(values.location_id === device.location_id ? {} : { location_id: values.location_id }),
-        };
-        if (Object.keys(changes).length > 0) await update({ deviceId: device.id, values: changes });
-        closeDialog();
-        toast({ variant: 'success', title: 'Device updated' });
-      } else {
-        const result = await create({
-          name: values.name.trim(),
-          template_id: values.template_id,
-          location_id: values.location_id,
-        });
-        setCreated({ deviceId: result.id, key: result.device_key });
-        toast({ variant: 'success', title: 'Device registered successfully' });
-      }
+      await (device ? saveChanges(values) : createDevice(values));
     } catch (cause: unknown) {
-      setError('root', { message: cause instanceof Error ? cause.message : 'Unable to save device.' });
+      setError('root', {
+        message: getErrorMessage(cause, 'Unable to save device.'),
+      });
     }
   };
 
@@ -172,11 +221,7 @@ export function DeviceEditorDialog() {
                   <FieldError>{errors.template_id.message}</FieldError>
                 ) : (
                   <p className="text-muted-foreground text-xs">
-                    {templates.length === 0
-                      ? 'Create a template first — it defines what the device sends.'
-                      : selectedTemplate
-                        ? `Sends ${selectedTemplate.parameter_count} parameter${selectedTemplate.parameter_count === 1 ? '' : 's'}.`
-                        : 'The template defines what the device sends.'}
+                    {getTemplateHint(templates.length, selectedTemplate?.parameter_count)}
                   </p>
                 )}
               </Field>
@@ -223,16 +268,19 @@ export function DeviceEditorDialog() {
                 />
                 {errors.location_id ? (
                   <FieldError>{errors.location_id.message}</FieldError>
-                ) : leafLocations.length === 0 ? (
-                  <p className="text-muted-foreground text-xs">
-                    Devices are placed in locations that don&apos;t contain other locations. Add one in Locations.
-                  </p>
-                ) : null}
+                ) : (
+                  leafLocations.length === 0 && (
+                    <p className="text-muted-foreground text-xs">
+                      Devices are placed in locations that don&apos;t contain other locations. Add one in
+                      Locations.
+                    </p>
+                  )
+                )}
               </Field>
               {device && watchTemplateId !== device.template_id && (
                 <p className="text-muted-foreground rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
-                  The device will start reporting the new template&apos;s parameters. Readings already recorded are
-                  kept.
+                  The device will start reporting the new template&apos;s parameters. Readings already
+                  recorded are kept.
                 </p>
               )}
               <FieldError>{errors.root?.message}</FieldError>

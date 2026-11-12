@@ -21,7 +21,11 @@ const sizeClasses = {
 export function PageContainer({ children, className, size = 'default', ...props }: PageContainerProps) {
   return (
     <div
-      className={cn('mx-auto flex w-full flex-col gap-5 px-4 pb-8 sm:px-6 lg:px-8', sizeClasses[size], className)}
+      className={cn(
+        'mx-auto flex w-full flex-col gap-5 px-4 pb-8 sm:px-6 lg:px-8',
+        sizeClasses[size],
+        className,
+      )}
       {...props}
     >
       {children}

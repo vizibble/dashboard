@@ -4,6 +4,7 @@ import type { WidgetViewProps } from '@/app/pages/dashboards/shared/widgets/type
 /** Latest reading per device, or individual readings newest first. */
 export function TableWidget({ presentation, result }: WidgetViewProps) {
   const tz = result.range.timezone;
+
   const rows =
     presentation.aggregation === 'latest'
       ? result.values.map((value) => ({

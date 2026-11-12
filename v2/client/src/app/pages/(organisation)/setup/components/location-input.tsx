@@ -1,90 +1,29 @@
 import { MapPinIcon } from '@phosphor-icons/react';
-import axios from 'axios';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
-import type { LocationInputProps, LocationSuggestion, PhotonFeature } from '@/app/pages/(organisation)/setup/types';
+import { useLocationSuggestions } from '@/app/pages/(organisation)/setup/hooks/use-location-suggestions';
+import type { LocationInputProps } from '@/app/pages/(organisation)/setup/types';
 import { cn } from '@/app/shared/utils/cn';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 
-export function LocationInput({ id, value, onChange, disabled = false, hasError = false }: LocationInputProps) {
+export function LocationInput({
+  id,
+  value,
+  onChange,
+  disabled = false,
+  hasError = false,
+}: LocationInputProps) {
   const generatedId = useId();
+
   const inputId = id ?? `location-${generatedId}`;
+
   const listId = `${inputId}-suggestions`;
 
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const { suggestions, open, setOpen, loading, activeIndex, setActiveIndex, selectLocation, changeQuery } =
+    useLocationSuggestions(value, onChange);
 
   const listRef = useRef<HTMLUListElement>(null);
-  const selectedLocationRef = useRef<string | null>(null);
-  useEffect(() => {
-    const query = value.trim();
-    // Do not search again immediately after selecting a suggestion.
-    if (selectedLocationRef.current === query) {
-      selectedLocationRef.current = null;
-      return;
-    }
-    if (query.length < 2) {
-      return;
-    }
-    const controller = new AbortController();
-    async function searchLocations() {
-      setLoading(true);
-      try {
-        const response = await axios.get<{ features?: PhotonFeature[] }>('https://photon.komoot.io/api/', {
-          params: {
-            q: query,
-            limit: 5,
-            lang: 'en',
-          },
-          signal: controller.signal,
-        });
-        if (controller.signal.aborted) {
-          return;
-        }
-        const results = (response.data.features ?? [])
-          .map(({ properties = {} }) => {
-            const name = properties.name || properties.city || '';
-            const detail = [
-              properties.city !== name ? properties.city : undefined,
-              properties.state,
-              properties.country,
-            ]
-              .filter(Boolean)
-              .join(', ');
-            return {
-              name,
-              detail,
-              full: [name, detail].filter(Boolean).join(', '),
-            };
-          })
-          .filter((item) => item.full)
-          .filter((item, index, all) => all.findIndex((other) => other.full === item.full) === index);
-        setSuggestions(results);
-        setOpen(results.length > 0);
-        setActiveIndex(-1);
-      } catch (error) {
-        if (!controller.signal.aborted && !axios.isCancel(error)) {
-          setSuggestions([]);
-          setOpen(false);
-          setActiveIndex(-1);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-    const timeout = window.setTimeout(() => {
-      void searchLocations();
-    }, 300);
-    return () => {
-      window.clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [value]);
 
   // Scroll only the suggestions list when navigating with the keyboard.
   useEffect(() => {
@@ -92,12 +31,16 @@ export function LocationInput({ id, value, onChange, disabled = false, hasError 
       return;
     }
     const list = listRef.current;
+
     const option = list?.children.item(activeIndex) as HTMLElement | null;
+
     if (!list || !option) {
       return;
     }
     const listRect = list.getBoundingClientRect();
+
     const optionRect = option.getBoundingClientRect();
+
     if (optionRect.bottom > listRect.bottom) {
       list.scrollTop += optionRect.bottom - listRect.bottom;
     } else if (optionRect.top < listRect.top) {
@@ -105,32 +48,11 @@ export function LocationInput({ id, value, onChange, disabled = false, hasError 
     }
   }, [activeIndex, open, suggestions]);
 
-  function selectLocation(location: string) {
-    selectedLocationRef.current = location;
-    onChange(location);
-    setSuggestions([]);
-    setOpen(false);
-    setLoading(false);
-    setActiveIndex(-1);
-  }
-
-  function handleChange(newValue: string) {
-    selectedLocationRef.current = null;
-    onChange(newValue);
-    if (newValue.trim().length < 2) {
-      setSuggestions([]);
-      setOpen(false);
-      setLoading(false);
-      setActiveIndex(-1);
-      return;
-    }
-    setOpen(true);
-  }
-
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Escape') {
       setOpen(false);
       setActiveIndex(-1);
+
       return;
     }
     if (!open || suggestions.length === 0) {
@@ -145,6 +67,7 @@ export function LocationInput({ id, value, onChange, disabled = false, hasError 
     } else if (event.key === 'Enter' && activeIndex >= 0) {
       event.preventDefault();
       const selected = suggestions[activeIndex];
+
       if (selected) {
         selectLocation(selected.full);
       }
@@ -166,7 +89,7 @@ export function LocationInput({ id, value, onChange, disabled = false, hasError 
           aria-expanded={open}
           aria-controls={listId}
           aria-activedescendant={open && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined}
-          onChange={(event) => handleChange(event.target.value)}
+          onChange={(event) => changeQuery(event.target.value)}
           onFocus={() => {
             if (suggestions.length > 0) {
               setOpen(true);
@@ -211,7 +134,9 @@ export function LocationInput({ id, value, onChange, disabled = false, hasError 
                 <MapPinIcon className="text-muted-foreground mt-0.5 size-4 shrink-0" />
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{item.name}</span>
-                  {item.detail && <span className="text-muted-foreground block truncate text-xs">{item.detail}</span>}
+                  {item.detail && (
+                    <span className="text-muted-foreground block truncate text-xs">{item.detail}</span>
+                  )}
                 </span>
               </button>
             </li>

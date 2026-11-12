@@ -13,10 +13,15 @@ export function TimeSeriesWidget({ presentation, result }: WidgetViewProps) {
   const option = useCallback(
     (theme: ChartTheme) => {
       const type = presentation.type;
+
       const many = result.series.length > 1;
+
       const days = (result.range.to.getTime() - result.range.from.getTime()) / 86_400_000;
+
       const tz = result.range.timezone;
-      const unit = presentation.show_unit && presentation.aggregation !== 'count' ? result.metric?.symbol : null;
+
+      const unit =
+        presentation.show_unit && presentation.aggregation !== 'count' ? result.metric?.symbol : null;
 
       return {
         animation: false,
@@ -59,7 +64,9 @@ export function TimeSeriesWidget({ presentation, result }: WidgetViewProps) {
             hideOverlap: true,
             formatter: (value: number) =>
               days > 2
-                ? new Intl.DateTimeFormat(undefined, { timeZone: tz, day: 'numeric', month: 'short' }).format(value)
+                ? new Intl.DateTimeFormat(undefined, { timeZone: tz, day: 'numeric', month: 'short' }).format(
+                    value,
+                  )
                 : formatTimestamp(new Date(value), tz, false),
           },
           splitLine: { show: false },
@@ -74,42 +81,39 @@ export function TimeSeriesWidget({ presentation, result }: WidgetViewProps) {
           axisLabel: { color: theme.muted, fontSize: 11 },
           splitLine: { lineStyle: { color: theme.border } },
         },
-        series: result.series.map((series, index) => ({
-          name: series.device_name ?? result.metric?.label ?? 'All devices',
-          type: type === 'bar' ? 'bar' : 'line',
-          showSymbol: series.points.filter((point) => point.value !== null).length < 2,
-          symbolSize: 5,
-          connectNulls: false,
-          barMaxWidth: 18,
-          lineStyle: { width: 1.75 },
-          ...(type === 'area'
-            ? {
-                areaStyle: {
-                  opacity: 1,
-                  color: withAlpha(
-                    presentation.color && !many
-                      ? presentation.color
-                      : (theme.series[index % theme.series.length] ?? ''),
-                    0.15,
-                  ),
-                },
-              }
-            : {}),
-          data: series.points.map((point) => [point.t.getTime(), point.value]),
-          ...(index === 0 && presentation.thresholds.length > 0
-            ? {
-                markLine: {
-                  silent: true,
-                  symbol: 'none',
-                  label: { show: false },
-                  data: presentation.thresholds.map((threshold) => ({
-                    yAxis: threshold.value,
-                    lineStyle: { color: threshold.color, type: 'dashed', width: 1 },
-                  })),
-                },
-              }
-            : {}),
-        })),
+        series: result.series.map((series, index) => {
+          const item: Record<string, unknown> = {
+            name: series.device_name ?? result.metric?.label ?? 'All devices',
+            type: type === 'bar' ? 'bar' : 'line',
+            showSymbol: series.points.filter((point) => point.value !== null).length < 2,
+            symbolSize: 5,
+            connectNulls: false,
+            barMaxWidth: 18,
+            lineStyle: { width: 1.75 },
+            data: series.points.map((point) => [point.t.getTime(), point.value]),
+          };
+
+          if (type === 'area') {
+            const color =
+              presentation.color && !many ? presentation.color : theme.series[index % theme.series.length];
+
+            item.areaStyle = { opacity: 1, color: withAlpha(color ?? '', 0.15) };
+          }
+          // Threshold lines are drawn once, on the first series.
+          if (index === 0 && presentation.thresholds.length > 0) {
+            item.markLine = {
+              silent: true,
+              symbol: 'none',
+              label: { show: false },
+              data: presentation.thresholds.map((threshold) => ({
+                yAxis: threshold.value,
+                lineStyle: { color: threshold.color, type: 'dashed', width: 1 },
+              })),
+            };
+          }
+
+          return item;
+        }),
       };
     },
     [presentation, result],

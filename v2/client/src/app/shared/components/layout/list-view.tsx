@@ -59,7 +59,9 @@ export function ListView({ search, filters, count, isRefetching, children, class
       {children}
       {count && count.total > 0 && (
         <footer className="text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
-          <span>{count.shown === count.total ? `${count.total} records` : `${count.shown} of ${count.total}`}</span>
+          <span>
+            {count.shown === count.total ? `${count.total} records` : `${count.shown} of ${count.total}`}
+          </span>
           {isRefetching && <span className="text-[11px] opacity-75">Syncing in background</span>}
         </footer>
       )}

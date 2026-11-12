@@ -15,6 +15,7 @@ type MobileNavigationProps = {
 
 export function MobileNavigation({ theme, onToggleTheme }: MobileNavigationProps) {
   const primaryItems = useVisibleNavItems(MOBILE_PRIMARY_ITEMS);
+
   return (
     <nav
       aria-label="Mobile navigation"

@@ -12,7 +12,9 @@ export type StatusBannerProps = {
 
 export function StatusBanner({ variant, title, children, className }: StatusBannerProps) {
   let icon: React.ReactNode;
+
   let styles: string;
+
   switch (variant) {
     case 'destructive':
       icon = <WarningCircleIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />;

@@ -18,7 +18,9 @@ type DesktopSidebarProps = {
 
 export function DesktopSidebar({ theme, onToggleTheme }: DesktopSidebarProps) {
   const mainItems = useVisibleNavItems(MAIN_NAV_ITEMS);
+
   const utilityItems = useVisibleNavItems(UTILITY_NAV_ITEMS);
+
   return (
     <aside className="bg-sidebar z-40 hidden h-full w-16 shrink-0 flex-col items-center justify-between border-r py-4 md:flex">
       <div className="flex flex-col items-center gap-6">
@@ -49,6 +51,7 @@ export function DesktopSidebar({ theme, onToggleTheme }: DesktopSidebarProps) {
 
 function SidebarLink({ item }: { item: NavItem }) {
   const end = item.path === '/dashboard';
+
   const isActive = useMatch({ path: item.path, end }) !== null;
 
   return (
@@ -87,7 +90,9 @@ function SidebarLink({ item }: { item: NavItem }) {
 
 function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
   const isDark = theme === 'dark';
+
   const label = isDark ? 'Switch to light theme' : 'Switch to dark theme';
+
   const Icon = isDark ? SunIcon : MoonIcon;
 
   return (

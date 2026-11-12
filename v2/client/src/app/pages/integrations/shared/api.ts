@@ -8,7 +8,11 @@ export function getIntegrations(signal?: AbortSignal) {
 }
 
 export function createWhatsappLinkCode(organisationId: string) {
-  return api.post(routes.integrations.whatsappLinkCodes, { organisation_id: organisationId }, whatsappLinkCodeSchema);
+  return api.post(
+    routes.integrations.whatsappLinkCodes,
+    { organisation_id: organisationId },
+    whatsappLinkCodeSchema,
+  );
 }
 
 export function unlinkWhatsapp(grantId: string) {

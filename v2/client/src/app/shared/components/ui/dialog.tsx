@@ -9,8 +9,14 @@ import { transition } from '@/app/shared/utils/motion';
 
 const DialogOpenContext = React.createContext(false);
 
-function Dialog({ open, defaultOpen, onOpenChange, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
+function Dialog({
+  open,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
   const [isOpen, setOpen] = useOpenState(open, defaultOpen, onOpenChange);
+
   return (
     <DialogOpenContext.Provider value={isOpen}>
       <DialogPrimitive.Root data-slot="dialog" open={isOpen} onOpenChange={setOpen} {...props} />
@@ -65,7 +71,12 @@ function DialogContent({
                 className,
               )}
               initial={{ opacity: 0, y: 8, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.26, ease: transition.enter.ease } }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: { duration: 0.26, ease: transition.enter.ease },
+              }}
               exit={{ opacity: 0, scale: 0.97, transition: transition.exit }}
             >
               {children}
@@ -84,7 +95,9 @@ function DialogContent({
 }
 
 function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div data-slot="dialog-header" className={cn('flex flex-col gap-1.5 text-left', className)} {...props} />;
+  return (
+    <div data-slot="dialog-header" className={cn('flex flex-col gap-1.5 text-left', className)} {...props} />
+  );
 }
 
 function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
@@ -107,7 +120,10 @@ function DialogTitle({ className, ...props }: React.ComponentProps<typeof Dialog
   );
 }
 
-function DialogDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"

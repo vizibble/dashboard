@@ -2,32 +2,48 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { useTemplateActions } from '@/app/pages/templates/shared/hooks/use-template-actions';
-import { useDeleteTemplate, useFetchTemplates } from '@/app/pages/templates/shared/hooks/use-templates-api';
+import { useDeleteTemplate } from '@/app/pages/templates/shared/hooks/use-template-mutations';
+import { useFetchTemplates } from '@/app/pages/templates/shared/hooks/use-template-queries';
 import { ConfirmDialog } from '@/app/shared/components/confirm-dialog';
 import { toast } from '@/app/shared/hooks/use-toast';
+import { getErrorMessage } from '@/app/shared/utils/error-message';
 
 export function TemplateDeleteDialog() {
   const navigate = useNavigate();
-  const { templateId: activeTemplateId } = useParams();
-  const { organisation } = useOrganisationContext();
-  const { action, targetId, closeDialog } = useTemplateActions();
-  const { templates } = useFetchTemplates(organisation.id);
-  const { mutateAsync, isDeleting } = useDeleteTemplate(organisation.id);
 
-  const template = action === 'delete' && targetId ? templates.find((item) => item.id === targetId) : undefined;
+  const { templateId: activeTemplateId } = useParams();
+
+  const { organisation } = useOrganisationContext();
+
+  const { action, targetId, closeDialog } = useTemplateActions();
+
+  const { data: templates = [] } = useFetchTemplates(organisation.id);
+
+  const { mutateAsync, isPending: isDeleting } = useDeleteTemplate(organisation.id);
+
+  const template =
+    action === 'delete' && targetId ? templates.find((item) => item.id === targetId) : undefined;
 
   const handleDelete = async () => {
-    if (!template) return;
+    if (!template) {
+      return;
+    }
     try {
       await mutateAsync(template.id);
       closeDialog();
-      toast({ variant: 'success', title: 'Template deleted', description: `"${template.name}" has been deleted.` });
-      if (activeTemplateId === template.id) void navigate('/templates', { replace: true });
+      toast({
+        variant: 'success',
+        title: 'Template deleted',
+        description: `"${template.name}" has been deleted.`,
+      });
+      if (activeTemplateId === template.id) {
+        void navigate('/templates', { replace: true });
+      }
     } catch (cause: unknown) {
       toast({
         variant: 'destructive',
         title: 'Unable to delete template',
-        description: cause instanceof Error ? cause.message : 'Something went wrong. Please try again.',
+        description: getErrorMessage(cause),
       });
     }
   };

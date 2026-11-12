@@ -23,7 +23,9 @@ export function LocationTree({ nodes }: LocationTreeProps) {
   const renderNodes = (items: LocationTreeNode[], level: number) =>
     items.map(({ location, children }) => {
       const hasChildren = children.length > 0;
+
       const isCollapsed = Boolean(collapsedNodes[location.id]);
+
       return (
         <li
           key={location.id}

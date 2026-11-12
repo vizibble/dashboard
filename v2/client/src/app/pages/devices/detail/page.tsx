@@ -4,7 +4,7 @@ import { useOrganisationContext } from '@/app/pages/(organisation)/context';
 import { DashboardWorkspace } from '@/app/pages/dashboards/shared/components/dashboard-workspace';
 import { DeviceDetails } from '@/app/pages/devices/detail/components/device-details';
 import { DeviceDialogs } from '@/app/pages/devices/shared/components/device-dialogs';
-import { useFetchDevice } from '@/app/pages/devices/shared/hooks/use-devices-api';
+import { useFetchDevice } from '@/app/pages/devices/shared/hooks/use-device-queries';
 import { PageContainer } from '@/app/shared/components/layout/page-container';
 import { PageHeader } from '@/app/shared/components/layout/page-header';
 import { ErrorState } from '@/app/shared/components/states/error-state';
@@ -15,9 +15,12 @@ const BACK = { to: '/devices', label: 'Devices' };
 
 export function DeviceDetailPage() {
   const navigate = useNavigate();
+
   const { organisation } = useOrganisationContext();
+
   const { deviceId } = useParams();
-  const { device, isPending, isError, refetch } = useFetchDevice(organisation.id, deviceId);
+
+  const { data: device, isPending, isError, refetch } = useFetchDevice(organisation.id, deviceId);
 
   if (isPending) {
     return (
@@ -64,7 +67,11 @@ export function DeviceDetailPage() {
   return (
     <PageContainer>
       <DeviceDetails device={device} />
-      <DashboardWorkspace target={{ scope: 'device', deviceId: device.id }} variant="section" title="Telemetry" />
+      <DashboardWorkspace
+        target={{ scope: 'device', deviceId: device.id }}
+        variant="section"
+        title="Telemetry"
+      />
       <DeviceDialogs />
     </PageContainer>
   );

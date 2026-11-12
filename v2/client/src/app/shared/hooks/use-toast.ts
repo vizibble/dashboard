@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { ToastActionElement, ToastProps } from '@/app/shared/components/ui/toast';
 
 const TOAST_LIMIT = 3;
+
 const TOAST_REMOVE_DELAY = 1000000;
 
 type ToasterToast = ToastProps & {
@@ -23,6 +24,7 @@ let count = 0;
 
 function genId() {
   count = (count + 1) % Number.MAX_SAFE_INTEGER;
+
   return count.toString();
 }
 
@@ -51,7 +53,9 @@ type State = {
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 function addToRemoveQueue(toastId: string) {
-  if (toastTimeouts.has(toastId)) return;
+  if (toastTimeouts.has(toastId)) {
+    return;
+  }
 
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId);
@@ -72,7 +76,9 @@ export function reducer(state: State, action: Action): State {
     case actionTypes.UPDATE_TOAST:
       return {
         ...state,
-        toasts: state.toasts.map((toast) => (toast.id === action.toast.id ? { ...toast, ...action.toast } : toast)),
+        toasts: state.toasts.map((toast) =>
+          toast.id === action.toast.id ? { ...toast, ...action.toast } : toast,
+        ),
       };
 
     case actionTypes.DISMISS_TOAST: {
@@ -139,7 +145,9 @@ function toast(props: ToastOptions): ToastReturn {
       id,
       open: true,
       onOpenChange: (open) => {
-        if (!open) dismiss();
+        if (!open) {
+          dismiss();
+        }
       },
     },
   });
@@ -155,7 +163,10 @@ function useToast() {
 
     return () => {
       const index = listeners.indexOf(setState);
-      if (index !== -1) listeners.splice(index, 1);
+
+      if (index !== -1) {
+        listeners.splice(index, 1);
+      }
     };
   }, []);
 

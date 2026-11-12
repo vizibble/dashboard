@@ -10,3 +10,19 @@ export const authClient = createAuthClient({
   // oauthProviderClient carries the signed OAuth query through sign-in and consent (AI app connections).
   plugins: [organizationClient({ ac, roles }), oauthProviderClient()],
 });
+
+type BetterAuthResult<T> = {
+  data: T | null;
+  error: { message?: string } | null;
+};
+
+/** Better Auth returns `{ data, error }`; callers such as react-query expect a throw on failure. */
+export async function unwrap<T>(request: Promise<BetterAuthResult<T>>, fallback: string): Promise<T> {
+  const { data, error } = await request;
+
+  if (error || data === null) {
+    throw new Error(error?.message || fallback);
+  }
+
+  return data;
+}

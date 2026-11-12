@@ -2,7 +2,9 @@ import type { Location } from '@/app/pages/locations/shared/types';
 
 export function getLocationPath(location: Location, locationsById: Map<string, Location>) {
   const path: Location[] = [];
+
   const visited = new Set<string>();
+
   let current: Location | undefined = location;
 
   while (current && !visited.has(current.id)) {
@@ -12,4 +14,11 @@ export function getLocationPath(location: Location, locationsById: Map<string, L
   }
 
   return path;
+}
+
+/** The location's full path from the root, e.g. "Plant / Building A / Floor 2". */
+export function getLocationPathLabel(location: Location, locationsById: Map<string, Location>) {
+  return getLocationPath(location, locationsById)
+    .map((item) => item.name)
+    .join(' / ');
 }

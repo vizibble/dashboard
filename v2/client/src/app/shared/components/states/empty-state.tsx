@@ -11,7 +11,14 @@ export type EmptyStateProps = {
   className?: string;
 };
 
-export function EmptyState({ icon: Icon, title, description, action, secondaryAction, className }: EmptyStateProps) {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  secondaryAction,
+  className,
+}: EmptyStateProps) {
   return (
     <div className={cn('flex flex-col items-center justify-center px-4 py-12 text-center', className)}>
       {Icon && (
@@ -47,7 +54,9 @@ export function EmptySearchResult({
       <p className="text-foreground text-sm font-medium">
         {query ? <>No results found for &ldquo;{query}&rdquo;</> : 'No matching results'}
       </p>
-      <p className="text-muted-foreground mt-1 text-xs">Try adjusting your search terms or clearing active filters.</p>
+      <p className="text-muted-foreground mt-1 text-xs">
+        Try adjusting your search terms or clearing active filters.
+      </p>
       {onClear && (
         <Button variant="outline" size="sm" onClick={onClear} className="mt-4">
           Clear filters

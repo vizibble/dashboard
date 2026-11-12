@@ -16,7 +16,9 @@ export function getTemplates(organisationId: string, signal?: AbortSignal) {
 }
 
 export function getTemplate(organisationId: string, templateId: string, signal?: AbortSignal) {
-  return api.get(buildPath(routes.templates.item, { organisationId, templateId }), templateSchema, { signal });
+  return api.get(buildPath(routes.templates.item, { organisationId, templateId }), templateSchema, {
+    signal,
+  });
 }
 
 export function createTemplate(organisationId: string, values: CreateTemplateInput) {
@@ -44,11 +46,19 @@ export function deleteTemplate(organisationId: string, templateId: string) {
 }
 
 export function getMetricDefinitions(organisationId: string, signal?: AbortSignal) {
-  return api.get(buildPath(routes.metricDefinitions.collection, { organisationId }), metricDefinitionSchema.array(), {
-    signal,
-  });
+  return api.get(
+    buildPath(routes.metricDefinitions.collection, { organisationId }),
+    metricDefinitionSchema.array(),
+    {
+      signal,
+    },
+  );
 }
 
 export function createMetricDefinition(organisationId: string, values: CreateMetricDefinitionInput) {
-  return api.post(buildPath(routes.metricDefinitions.collection, { organisationId }), values, metricDefinitionSchema);
+  return api.post(
+    buildPath(routes.metricDefinitions.collection, { organisationId }),
+    values,
+    metricDefinitionSchema,
+  );
 }
